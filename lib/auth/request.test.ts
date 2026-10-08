@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clientIpFromForwardedFor, UNKNOWN_IP } from "./request";
+import { clientIpFromForwardedFor, forwardedForHeader, UNKNOWN_IP } from "./request";
 
 describe("clientIpFromForwardedFor", () => {
   it("takes the address appended by the trusted proxy, not the client-supplied one", () => {
@@ -17,5 +17,19 @@ describe("clientIpFromForwardedFor", () => {
 
   it.each([null, undefined, "", "  "])("returns UNKNOWN_IP for %j", (value) => {
     expect(clientIpFromForwardedFor(value, 1)).toBe(UNKNOWN_IP);
+  });
+});
+
+describe("forwardedForHeader", () => {
+  it("passes a single header value through", () => {
+    expect(forwardedForHeader("1.2.3.4, 203.0.113.7")).toBe("1.2.3.4, 203.0.113.7");
+  });
+
+  it("joins repeated headers in order, so the proxy-appended entry stays last", () => {
+    expect(forwardedForHeader(["1.2.3.4", "203.0.113.7"])).toBe("1.2.3.4, 203.0.113.7");
+  });
+
+  it.each([undefined, null, 42, {}])("returns null for %j", (value) => {
+    expect(forwardedForHeader(value)).toBeNull();
   });
 });

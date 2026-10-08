@@ -7,7 +7,7 @@ import { findUserByEmail } from "@/lib/users/repo";
 import { authorizeCredentials } from "./authorize";
 import { loginLimiter } from "./limiters";
 import { getDummyPasswordHash, verifyPassword } from "./password";
-import { clientIpFromForwardedFor } from "./request";
+import { clientIpFromForwardedFor, forwardedForHeader } from "./request";
 
 const env = readAuthEnv();
 
@@ -24,8 +24,7 @@ export const authOptions: NextAuthOptions = {
         password: { type: "password" },
       },
       async authorize(credentials, req) {
-        const forwardedFor = req.headers?.["x-forwarded-for"];
-        const ip = clientIpFromForwardedFor(typeof forwardedFor === "string" ? forwardedFor : null);
+        const ip = clientIpFromForwardedFor(forwardedForHeader(req.headers?.["x-forwarded-for"]));
         return authorizeCredentials(credentials, ip, {
           findUserByEmail: (email) => findUserByEmail(db, email),
           verifyPassword,

@@ -15,3 +15,13 @@ export function clientIpFromForwardedFor(
     .filter(Boolean);
   return chain[chain.length - trustedHops] ?? UNKNOWN_IP;
 }
+
+// Repeated X-Forwarded-For headers can arrive as an array; dropping them would turn the client
+// into UNKNOWN_IP and skip the per-IP limit, so they are joined in order instead.
+export function forwardedForHeader(value: unknown): string | null {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value) && value.every((part) => typeof part === "string")) {
+    return value.join(", ");
+  }
+  return null;
+}
