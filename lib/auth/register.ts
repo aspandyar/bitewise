@@ -29,10 +29,13 @@ export async function registerUser(
   if (ip !== UNKNOWN_IP && !deps.limiter.hit(`ip:${ip}`, deps.nowMs)) {
     return { ok: false, formError: ru.auth.tooManyAttempts };
   }
+  // Hash before the allowlist check so every attempt costs the same time; otherwise a fast reply
+  // would reveal which emails are allowed to sign up.
+  const passwordHash = await deps.hashPassword(password);
   // Not allowlisted and already taken share one message, so sign-up cannot probe for accounts.
   if (!isEmailAllowed(email, deps.allowlist)) {
     return { ok: false, formError: ru.auth.registerUnavailable };
   }
-  const created = await deps.createUser(email, await deps.hashPassword(password));
+  const created = await deps.createUser(email, passwordHash);
   return created ? { ok: true } : { ok: false, formError: ru.auth.registerUnavailable };
 }

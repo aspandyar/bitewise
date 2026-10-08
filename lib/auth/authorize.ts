@@ -23,13 +23,19 @@ export async function authorizeCredentials(
   // Clients without a proxy-reported IP would all share one bucket, so they skip this limit.
   if (ip !== UNKNOWN_IP && !deps.limiter.hit(`ip:${ip}`, deps.nowMs)) return null;
 
-  const user = await deps.findUserByEmail(email);
-  // Counting only real accounts keeps junk emails from filling the limiter; the per-account
-  // limit stops guessing one password from many IPs.
-  const accountAllowed = user ? deps.limiter.hit(`email:${email}`, deps.nowMs) : true;
-  // Always pay for one hash check, so a rate-limited or unknown account answers as slowly as a
-  // real attempt and response time reveals nothing.
-  const stored = user && accountAllowed ? user.passwordHash : await deps.getDummyPasswordHash();
-  const passwordOk = await deps.verifyPassword(password, stored);
-  return user && accountAllowed && passwordOk ? { id: user.id, email } : null;
+  try {
+    const user = await deps.findUserByEmail(email);
+    // Counting only real accounts keeps junk emails from filling the limiter; the per-account
+    // limit stops guessing one password from many IPs.
+    const accountAllowed = user ? deps.limiter.hit(`email:${email}`, deps.nowMs) : true;
+    // Always pay for one hash check, so a rate-limited or unknown account answers as slowly as a
+    // real attempt and response time reveals nothing.
+    const stored = user && accountAllowed ? user.passwordHash : await deps.getDummyPasswordHash();
+    const passwordOk = await deps.verifyPassword(password, stored);
+    return user && accountAllowed && passwordOk ? { id: user.id, email } : null;
+  } catch (error) {
+    // Auth.js would put a thrown message (DB host, port, user) into the client redirect URL.
+    console.error("authorize failed", error);
+    return null;
+  }
 }

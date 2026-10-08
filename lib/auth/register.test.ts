@@ -61,4 +61,14 @@ describe("registerUser", () => {
     await registerUser(valid, UNKNOWN_IP, deps);
     expect(await registerUser(valid, UNKNOWN_IP, deps)).toEqual({ ok: true });
   });
+
+  it("hashes the password even for emails outside the allowlist, so timing does not reveal the list", async () => {
+    const hashPassword = vi.fn(async (password: string) => `hashed:${password}`);
+    await registerUser(
+      { email: "other@mail.com", password: "12345678" },
+      "1.1.1.1",
+      makeDeps({ hashPassword }),
+    );
+    expect(hashPassword).toHaveBeenCalledTimes(1);
+  });
 });

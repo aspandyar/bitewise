@@ -94,4 +94,19 @@ describe("authorizeCredentials", () => {
     await authorizeCredentials({ email: "junk@mail.com", password: "whatever1" }, UNKNOWN_IP, deps);
     expect(await authorizeCredentials(right, UNKNOWN_IP, deps)).not.toBeNull();
   });
+
+  it("returns null instead of throwing when the database fails, so its error never reaches the client", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const user = await authorizeCredentials(
+      right,
+      "1.1.1.1",
+      makeDeps({
+        findUserByEmail: async () => {
+          throw new Error("connect ECONNREFUSED 10.0.0.5:5432");
+        },
+      }),
+    );
+    expect(user).toBeNull();
+    consoleError.mockRestore();
+  });
 });
