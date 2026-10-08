@@ -68,3 +68,26 @@ export const TARGET_LIMITS = {
   kcal: { min: 800, max: 6000 },
   macroG: { min: 0, max: 1000 },
 } as const;
+
+const MS_PER_MINUTE = 60_000;
+const SECONDS_PER_DAY = 86_400;
+
+export const AUTH = {
+  passwordLength: { min: 8, max: 128 },
+  sessionMaxAgeSec: 30 * SECONDS_PER_DAY,
+} as const;
+
+// OWASP scrypt profile (N=2^15, r=8, p=3): ~32 MB per hash keeps a small VPS responsive.
+export const PASSWORD_HASH = {
+  N: 2 ** 15,
+  r: 8,
+  p: 3,
+  keyLength: 64,
+  saltBytes: 16,
+  maxmemBytes: 64 * 1024 * 1024,
+} as const;
+
+export const RATE_LIMITS = {
+  login: { max: 10, windowMs: 15 * MS_PER_MINUTE, maxKeys: 10_000 },
+  register: { max: 5, windowMs: 60 * MS_PER_MINUTE, maxKeys: 10_000 },
+} as const;
