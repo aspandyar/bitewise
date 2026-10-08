@@ -132,3 +132,62 @@ describe("calcAutoTargets", () => {
     expect(targets.carbsG).toBeCloseTo(283.989875, 6);
   });
 });
+
+describe("calculation guards", () => {
+  it.each([0, -100, Number.NaN])("calcTdeeKcal throws RangeError for BMR %s", (bmr) => {
+    expect(() => calcTdeeKcal(bmr, "moderate")).toThrow(RangeError);
+  });
+
+  it.each([0, -100, Number.NaN])("calcTargetKcal throws RangeError for TDEE %s", (tdee) => {
+    expect(() => calcTargetKcal(tdee, "maintain")).toThrow(RangeError);
+  });
+
+  it.each([
+    [0, 80],
+    [2000, 0],
+    [-1, 80],
+    [2000, Number.NaN],
+  ])("calcMacroTargets throws RangeError for kcal %s, weight %s", (kcal, weightKg) => {
+    expect(() => calcMacroTargets(kcal, weightKg)).toThrow(RangeError);
+  });
+});
+
+describe("calcAutoTargets limits", () => {
+  it("raises an implausibly low target to the manual minimum of 800 kcal", () => {
+    // BMR 10 × 30 + 6.25 × 100 − 5 × 100 − 161 = 264; × 1.2 × 0.85 = 269.28 → 800
+    const targets = calcAutoTargets(
+      {
+        sex: "female",
+        birthDate: "1926-01-01",
+        heightCm: 100,
+        weightKg: 30,
+        activityLevel: "sedentary",
+        goal: "lose",
+      },
+      "2026-10-09",
+    );
+    expect(targets.kcal).toBe(800);
+    expect(targets.proteinG).toBeCloseTo(54, 6); // 30 × 1.8
+    expect(targets.fatG).toBeCloseTo(24, 6); // 800 × 0.27 / 9
+    expect(targets.carbsG).toBeCloseTo(92, 6); // (800 − 216 − 216) / 4
+  });
+
+  it("caps an extreme target at the manual maximum of 6000 kcal", () => {
+    // BMR 10 × 300 + 6.25 × 250 − 5 × 14 + 5 = 4497.5; × 1.9 × 1.1 = 9399.775 → 6000
+    const targets = calcAutoTargets(
+      {
+        sex: "male",
+        birthDate: "2012-01-01",
+        heightCm: 250,
+        weightKg: 300,
+        activityLevel: "veryActive",
+        goal: "gain",
+      },
+      "2026-10-09",
+    );
+    expect(targets.kcal).toBe(6000);
+    expect(targets.proteinG).toBeCloseTo(540, 6); // 300 × 1.8
+    expect(targets.fatG).toBeCloseTo(180, 6); // 6000 × 0.27 / 9
+    expect(targets.carbsG).toBeCloseTo(555, 6); // (6000 − 2160 − 1620) / 4
+  });
+});

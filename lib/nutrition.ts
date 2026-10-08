@@ -4,6 +4,7 @@ import {
   KCAL_PER_GRAM,
   MACRO_TARGETS,
   MIFFLIN_ST_JEOR,
+  TARGET_LIMITS,
   type ActivityLevel,
   type Goal,
   type Sex,
@@ -55,11 +56,19 @@ export function calcAgeYears(birthDate: IsoDate, today: IsoDate): number {
   return now.year - birth.year - (hadBirthday ? 0 : 1);
 }
 
+function assertPositive(name: string, value: number): void {
+  if (!(Number.isFinite(value) && value > 0)) {
+    throw new RangeError(`${name} must be a positive number, got ${value}`);
+  }
+}
+
 export function calcTdeeKcal(bmrKcal: number, activityLevel: ActivityLevel): number {
+  assertPositive("bmrKcal", bmrKcal);
   return bmrKcal * ACTIVITY_FACTORS[activityLevel];
 }
 
 export function calcTargetKcal(tdeeKcal: number, goal: Goal): number {
+  assertPositive("tdeeKcal", tdeeKcal);
   return tdeeKcal * (1 + GOAL_ADJUSTMENTS[goal]);
 }
 
@@ -71,6 +80,8 @@ export type MacroTargets = {
 };
 
 export function calcMacroTargets(kcal: number, weightKg: number): MacroTargets {
+  assertPositive("kcal", kcal);
+  assertPositive("weightKg", weightKg);
   const proteinG = weightKg * MACRO_TARGETS.proteinGPerKg;
   const fatG = (kcal * MACRO_TARGETS.fatShareOfKcal) / KCAL_PER_GRAM.fat;
   const carbsKcal = kcal - proteinG * KCAL_PER_GRAM.protein - fatG * KCAL_PER_GRAM.fat;
@@ -95,6 +106,9 @@ export function calcAutoTargets(profile: ProfileData, today: IsoDate): MacroTarg
     heightCm: profile.heightCm,
     ageYears: calcAgeYears(profile.birthDate, today),
   });
-  const kcal = calcTargetKcal(calcTdeeKcal(bmrKcal, profile.activityLevel), profile.goal);
+  const rawKcal = calcTargetKcal(calcTdeeKcal(bmrKcal, profile.activityLevel), profile.goal);
+  // Extreme but valid profiles produce targets outside what the user may enter by hand; clamping
+  // keeps the auto target editable and never suggests an unsafe 269 kcal or 9400 kcal day.
+  const kcal = Math.min(TARGET_LIMITS.kcal.max, Math.max(TARGET_LIMITS.kcal.min, rawKcal));
   return calcMacroTargets(kcal, profile.weightKg);
 }
