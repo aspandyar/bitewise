@@ -5,9 +5,12 @@ export type RateLimiter = { hit(key: string, nowMs: number): boolean; size(): nu
 export function createRateLimiter(rule: RateLimitRule): RateLimiter {
   const windows = new Map<string, { startMs: number; count: number }>();
 
+  // Entries sit in window-start order (see hit), so expired ones are always at the front and
+  // pruning stops at the first live entry instead of scanning the whole map on every request.
   function pruneExpired(nowMs: number) {
     for (const [key, window] of windows) {
-      if (nowMs - window.startMs >= rule.windowMs) windows.delete(key);
+      if (nowMs - window.startMs < rule.windowMs) break;
+      windows.delete(key);
     }
   }
 
@@ -21,6 +24,8 @@ export function createRateLimiter(rule: RateLimitRule): RateLimiter {
           // reset someone's attempt budget, which matters more than serving new keys during a flood.
           if (windows.size >= rule.maxKeys) return false;
         }
+        // Delete first: Map.set on an existing key keeps its old position and would break the order.
+        windows.delete(key);
         windows.set(key, { startMs: nowMs, count: 1 });
         return true;
       }

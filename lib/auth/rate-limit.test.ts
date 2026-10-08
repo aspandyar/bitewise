@@ -40,4 +40,23 @@ describe("createRateLimiter", () => {
     expect(limiter.size()).toBe(2);
     expect(limiter.hit("victim", 3)).toBe(false);
   });
+
+  it("prunes expired keys even after a key restarts its window", () => {
+    const limiter = createRateLimiter({ max: 1, windowMs: 1000, maxKeys: 2 });
+    limiter.hit("a", 0);
+    limiter.hit("b", 500);
+    limiter.hit("a", 1000); // "a" starts a new window, "b" is now the oldest live entry
+    expect(limiter.hit("c", 1600)).toBe(true); // "b" expired at 1500 and must be pruned
+    expect(limiter.size()).toBe(2);
+  });
+
+  it("keeps rejecting new keys cheaply while full, without rescanning every entry", () => {
+    const maxKeys = 100_000;
+    const limiter = createRateLimiter({ max: 1, windowMs: 60_000, maxKeys });
+    for (let i = 0; i < maxKeys; i++) limiter.hit(`live-${i}`, 0);
+    const started = performance.now();
+    for (let i = 0; i < 10_000; i++) limiter.hit(`flood-${i}`, 1);
+    // A full scan per request would be 10^9 iterations (seconds); pruning from the front is ~10^4.
+    expect(performance.now() - started).toBeLessThan(500);
+  });
 });
