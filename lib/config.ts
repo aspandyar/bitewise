@@ -87,9 +87,10 @@ export const PASSWORD_HASH = {
   maxmemBytes: 64 * 1024 * 1024,
 } as const;
 
+// ~100 bytes per key, so the cap costs ~10 MB; reaching it takes a botnet, not one script.
 export const RATE_LIMITS = {
-  login: { max: 10, windowMs: 15 * MS_PER_MINUTE, maxKeys: 10_000 },
-  register: { max: 5, windowMs: 60 * MS_PER_MINUTE, maxKeys: 10_000 },
+  login: { max: 10, windowMs: 15 * MS_PER_MINUTE, maxKeys: 100_000 },
+  register: { max: 5, windowMs: 60 * MS_PER_MINUTE, maxKeys: 100_000 },
 } as const;
 
 // Number of reverse proxies we control in front of the app (nginx, stage 6). Each one appends the
