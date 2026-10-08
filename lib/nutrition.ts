@@ -8,7 +8,23 @@ export type BmrInput = {
   ageYears: number;
 };
 
-export function calcBmrKcal({ sex, weightKg, heightCm, ageYears }: BmrInput): number {
+// Forms validate realistic ranges with zod; this guard only stops nonsense from
+// silently producing a plausible-looking number if a caller skips validation.
+function assertBmrInput({ weightKg, heightCm, ageYears }: BmrInput): void {
+  if (!(Number.isFinite(weightKg) && weightKg > 0)) {
+    throw new RangeError(`weightKg must be a positive number, got ${weightKg}`);
+  }
+  if (!(Number.isFinite(heightCm) && heightCm > 0)) {
+    throw new RangeError(`heightCm must be a positive number, got ${heightCm}`);
+  }
+  if (!(Number.isFinite(ageYears) && ageYears >= 0)) {
+    throw new RangeError(`ageYears must be a non-negative number, got ${ageYears}`);
+  }
+}
+
+export function calcBmrKcal(input: BmrInput): number {
+  assertBmrInput(input);
+  const { sex, weightKg, heightCm, ageYears } = input;
   return (
     MIFFLIN_ST_JEOR.kcalPerKg * weightKg +
     MIFFLIN_ST_JEOR.kcalPerCm * heightCm -

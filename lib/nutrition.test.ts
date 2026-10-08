@@ -18,4 +18,18 @@ describe("calcBmrKcal (Mifflin-St Jeor)", () => {
     const female = calcBmrKcal({ sex: "female", ...body });
     expect(male - female).toBe(166);
   });
+
+  it("accepts age 0 because the formula is defined there", () => {
+    // 10 × 3.5 + 6.25 × 50 − 5 × 0 + 5 = 35 + 312.5 + 5
+    expect(calcBmrKcal({ sex: "male", weightKg: 3.5, heightCm: 50, ageYears: 0 })).toBe(352.5);
+  });
+
+  it.each([
+    { field: "weightKg", body: { weightKg: 0, heightCm: 170, ageYears: 30 } },
+    { field: "heightCm", body: { weightKg: 70, heightCm: 0, ageYears: 30 } },
+    { field: "ageYears", body: { weightKg: 70, heightCm: 170, ageYears: -1 } },
+    { field: "weightKg", body: { weightKg: Number.NaN, heightCm: 170, ageYears: 30 } },
+  ])("throws RangeError for invalid $field", ({ body }) => {
+    expect(() => calcBmrKcal({ sex: "female", ...body })).toThrow(RangeError);
+  });
 });

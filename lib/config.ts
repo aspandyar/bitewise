@@ -36,14 +36,3 @@ export const GOAL_ADJUSTMENTS = {
   gain: 0.1,
 } as const;
 export type Goal = keyof typeof GOAL_ADJUSTMENTS;
-
-export const MACRO_TARGETS = {
-  proteinGPerKg: 1.8,
-  fatShareOfKcal: 0.27,
-} as const;
-
-export const KCAL_PER_GRAM = {
-  protein: 4,
-  fat: 9,
-  carbs: 4,
-} as const;
