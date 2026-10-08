@@ -31,11 +31,13 @@ describe("createRateLimiter", () => {
     expect(limiter.size()).toBe(1);
   });
 
-  it("never grows past maxKeys even when every key is still inside its window", () => {
+  it("refuses new keys instead of evicting live counters when full", () => {
     const limiter = createRateLimiter({ max: 1, windowMs: 1000, maxKeys: 2 });
-    limiter.hit("a", 0);
-    limiter.hit("b", 1);
-    limiter.hit("c", 2);
+    expect(limiter.hit("victim", 0)).toBe(true);
+    limiter.hit("flood-1", 1);
+    // Evicting "victim" here would hand an attacker a fresh set of attempts.
+    expect(limiter.hit("flood-2", 2)).toBe(false);
     expect(limiter.size()).toBe(2);
+    expect(limiter.hit("victim", 3)).toBe(false);
   });
 });

@@ -17,15 +17,10 @@ export function createRateLimiter(rule: RateLimitRule): RateLimiter {
       if (!current || nowMs - current.startMs >= rule.windowMs) {
         if (!current && windows.size >= rule.maxKeys) {
           pruneExpired(nowMs);
-          // Hard memory cap: a flood of unique keys inside one window evicts the oldest entries
-          // (Map keeps insertion order) instead of growing without bound.
-          for (const oldest of windows.keys()) {
-            if (windows.size < rule.maxKeys) break;
-            windows.delete(oldest);
-          }
+          // Fail closed when still full: evicting a live counter would let a flood of junk keys
+          // reset someone's attempt budget, which matters more than serving new keys during a flood.
+          if (windows.size >= rule.maxKeys) return false;
         }
-        // Re-inserting moves the key to the end, so eviction order follows window start.
-        windows.delete(key);
         windows.set(key, { startMs: nowMs, count: 1 });
         return true;
       }
