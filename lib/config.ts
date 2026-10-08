@@ -91,3 +91,7 @@ export const RATE_LIMITS = {
   login: { max: 10, windowMs: 15 * MS_PER_MINUTE, maxKeys: 10_000 },
   register: { max: 5, windowMs: 60 * MS_PER_MINUTE, maxKeys: 10_000 },
 } as const;
+
+// Number of reverse proxies we control in front of the app (nginx, stage 6). Each one appends the
+// peer it saw to X-Forwarded-For, so the client IP sits that many entries from the right.
+export const TRUSTED_PROXY_HOPS = 1;

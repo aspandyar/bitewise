@@ -1,7 +1,17 @@
-const UNKNOWN_IP = "unknown";
+import { TRUSTED_PROXY_HOPS } from "@/lib/config";
 
-// nginx (stage 6) must overwrite X-Forwarded-For, otherwise clients can spoof it to dodge limits.
-export function clientIpFromForwardedFor(value: string | null | undefined): string {
-  const first = value?.split(",")[0]?.trim();
-  return first ? first : UNKNOWN_IP;
+// Callers must not rate-limit by this value: every client without a header would share one bucket.
+export const UNKNOWN_IP = "unknown";
+
+// Only entries appended by our own proxies are trustworthy; anything to their left is whatever the
+// client chose to send, so reading the leftmost entry would let anyone dodge per-IP limits.
+export function clientIpFromForwardedFor(
+  value: string | null | undefined,
+  trustedHops: number = TRUSTED_PROXY_HOPS,
+): string {
+  const chain = (value ?? "")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  return chain[chain.length - trustedHops] ?? UNKNOWN_IP;
 }

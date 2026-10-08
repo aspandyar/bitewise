@@ -30,4 +30,12 @@ describe("createRateLimiter", () => {
     limiter.hit("c", 5000);
     expect(limiter.size()).toBe(1);
   });
+
+  it("never grows past maxKeys even when every key is still inside its window", () => {
+    const limiter = createRateLimiter({ max: 1, windowMs: 1000, maxKeys: 2 });
+    limiter.hit("a", 0);
+    limiter.hit("b", 1);
+    limiter.hit("c", 2);
+    expect(limiter.size()).toBe(2);
+  });
 });
