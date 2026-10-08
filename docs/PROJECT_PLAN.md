@@ -18,7 +18,7 @@ tags:
 ---
 
 ## Текущий статус
-0% — выбраны название, стек и подход. Следующий шаг — этап 0 (каркас).
+Этап 0 (каркас) готов в ветке `ft/karkas`: Next.js 16 + TS strict + Tailwind v4, Vitest (BMR по Mifflin-St Jeor), Drizzle + Postgres в compose (порт 5433, тестовая база `bitewise_test`), CI lint + test. Следующий шаг — этап 1 (`ft/auth-profile`).
 
 ---
 
@@ -27,7 +27,7 @@ tags:
 ### MVP — «дневник, которым можно пользоваться каждый день»
 | # | Ветка | Что сделать | Готово, когда |
 | --- | --- | --- | --- |
-| 0 | `ft/karkas` | Next.js + TS strict + Tailwind v4 + Vitest + ESLint; Drizzle + Postgres в `docker compose`; `lib/config.ts`; CI (lint + test) | `docker compose up` поднимает пустое приложение с БД |
+| 0 | `ft/karkas` | Next.js + TS strict + Tailwind v4 + Vitest + ESLint; Drizzle + Postgres в `docker compose`; `lib/config.ts`; CI (lint + test) | `docker compose up -d db && pnpm db:migrate && pnpm dev` поднимает пустую главную; `pnpm lint` и `pnpm test` зелёные |
 | 1 | `ft/auth-profile` | регистрация/вход; профиль (пол, дата рождения, рост, вес, активность, цель); расчёт нормы | после онбординга видна норма ккал/БЖУ, её можно переопределить вручную |
 | 2 | `ft/foods` | таблица продуктов (на 100 г), CRUD своих продуктов, порции («1 шт = 60 г»), поиск (`pg_trgm`), сид базовых продуктов | нашёл «гречка» за 1–2 буквы, добавил свой продукт |
 | 3 | `ft/diary` | день → приёмы пищи (завтрак/обед/ужин/перекус) → записи «продукт × граммы»; итоги и прогресс-бары | добавил/изменил/удалил запись, итоги пересчитались |
