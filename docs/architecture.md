@@ -35,9 +35,9 @@ tags:
 ## Модель данных (черновик)
 | Таблица | Поля (основные) |
 | --- | --- |
-| `users` | id, email, created_at |
-| `profiles` | user_id, sex, birth_date, height_cm, activity_level, goal |
-| `targets` | id, user_id, name («по умолчанию», «тренировка»), kcal, protein_g, fat_g, carbs_g, is_default |
+| `users` | id (uuid), email (уникальный, в нижнем регистре), password_hash (scrypt), created_at |
+| `profiles` | user_id (pk → users, cascade), sex, birth_date, height_cm numeric(5,1), weight_kg numeric(5,1), activity_level, goal, updated_at |
+| `targets` | id, user_id (→ users, cascade, индекс), name («По умолчанию»), mode (`auto/manual`), kcal, protein_g, fat_g, carbs_g — numeric(8,2), is_default (частичный уникальный индекс: одна норма по умолчанию на пользователя), created_at, updated_at |
 | `foods` | id, owner_id (null = общий), name, brand, barcode, source (`user/seed/off/usda/ai_estimate`), kcal_100, protein_100, fat_100, carbs_100, fiber_100?, verified |
 | `food_portions` | id, food_id, label («1 шт»), grams |
 | `recipes` | id, owner_id, name, cooked_weight_g, servings |
