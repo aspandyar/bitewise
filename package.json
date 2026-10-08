@@ -12,7 +12,8 @@
     "test:unit": "vitest run --project unit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "node --env-file-if-exists=.env --import tsx db/seed/index.ts"
+    "db:seed": "node --env-file-if-exists=.env --import tsx db/seed/index.ts",
+    "admin:bootstrap": "node --env-file-if-exists=.env --import tsx scripts/bootstrap-admin.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.3",

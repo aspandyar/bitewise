@@ -6,9 +6,9 @@ import type { UserRole } from "@/lib/config";
 export async function findUserByEmail(
   db: Db,
   email: string,
-): Promise<{ id: string; passwordHash: string } | null> {
+): Promise<{ id: string; passwordHash: string; role: UserRole } | null> {
   const [row] = await db
-    .select({ id: users.id, passwordHash: users.passwordHash })
+    .select({ id: users.id, passwordHash: users.passwordHash, role: users.role })
     .from(users)
     .where(eq(users.email, email))
     .limit(1);
@@ -47,4 +47,13 @@ export async function findUserRoleByEmail(
 
 export async function setUserRole(db: Db, id: string, role: UserRole): Promise<void> {
   await db.update(users).set({ role }).where(eq(users.id, id));
+}
+
+// Separate from createUser so the only path that writes the "admin" role is easy to find and audit.
+export async function createAdmin(db: Db, email: string, passwordHash: string): Promise<void> {
+  await db.insert(users).values({ email, passwordHash, role: "admin" });
+}
+
+export async function updatePasswordHash(db: Db, id: string, passwordHash: string): Promise<void> {
+  await db.update(users).set({ passwordHash }).where(eq(users.id, id));
 }
