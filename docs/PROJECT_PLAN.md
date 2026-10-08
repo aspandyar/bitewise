@@ -18,7 +18,7 @@ tags:
 ---
 
 ## Текущий статус
-Этап 0 (каркас) готов в ветке `ft/karkas`: Next.js 16 + TS strict + Tailwind v4, Vitest (BMR по Mifflin-St Jeor), Drizzle + Postgres в compose (порт 5433, тестовая база `bitewise_test`), CI lint + test. Следующий шаг — этап 1 (`ft/auth-profile`).
+Этапы 0–1 готовы: каркас (`ft/karkas`) и вход + профиль + норма (`ft/auth-profile`): Auth.js v4 (email + пароль, JWT), регистрация по allowlist, онбординг, норма ккал/БЖУ в режимах авто/вручную. Следующий шаг — этап 2 (`ft/foods`).
 
 ---
 
