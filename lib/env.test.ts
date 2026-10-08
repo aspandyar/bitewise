@@ -44,4 +44,3 @@ describe("readAuthEnv", () => {
     ).toBe("http://localhost:3000");
   });
 });
-

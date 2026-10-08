@@ -18,7 +18,6 @@ const authEnvSchema = z
     // Auth.js signs JWTs with this; short secrets are brute-forceable.
     NEXTAUTH_SECRET: z.string().min(32),
     NEXTAUTH_URL: z.url(),
-    SIGNUP_ALLOWLIST: z.string().default(""),
   })
   // Auth.js marks the session cookie Secure only for https URLs, so http in production would
   // send the JWT in clear text. Loopback is exempt: a local production build never leaves the host.

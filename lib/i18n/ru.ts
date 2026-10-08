@@ -24,7 +24,7 @@ export const ru = {
     toLogin: "Уже есть аккаунт? Войти",
     signOut: "Выйти",
     invalidCredentials: "Неверный email или пароль",
-    registerUnavailable: "Регистрация для этого email недоступна",
+    registerFailed: "Не удалось зарегистрироваться с этим email",
     tooManyAttempts: "Слишком много попыток. Попробуйте позже",
   },
   profile: {
