@@ -42,6 +42,10 @@ export const GOAL_ADJUSTMENTS = {
   gain: 0.1,
 } as const satisfies Record<Goal, number>;
 
+// Ordered by privilege. "admin" is only ever granted by the bootstrap script, never by the app.
+export const USER_ROLES = ["user", "manager", "admin"] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+
 export const TARGET_MODES = ["auto", "manual"] as const;
 export type TargetMode = (typeof TARGET_MODES)[number];
 

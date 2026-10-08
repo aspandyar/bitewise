@@ -12,12 +12,13 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 // Relative import: drizzle-kit loads this file outside the Next/Vitest alias resolution.
-import { ACTIVITY_LEVELS, GOALS, SEXES, TARGET_MODES } from "../lib/config";
+import { ACTIVITY_LEVELS, GOALS, SEXES, TARGET_MODES, USER_ROLES } from "../lib/config";
 
 export const sexEnum = pgEnum("sex", SEXES);
 export const activityLevelEnum = pgEnum("activity_level", ACTIVITY_LEVELS);
 export const goalEnum = pgEnum("goal", GOALS);
 export const targetModeEnum = pgEnum("target_mode", TARGET_MODES);
+export const userRoleEnum = pgEnum("user_role", USER_ROLES);
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 const updatedAt = () => timestamp("updated_at", { withTimezone: true }).notNull().defaultNow();
@@ -31,6 +32,8 @@ export const users = pgTable(
     // Stored lowercased by the app, so a plain unique index is enough.
     email: text("email").notNull(),
     passwordHash: text("password_hash").notNull(),
+    // Sign-up never sets this; managers are assigned by an admin, the admin by the bootstrap script.
+    role: userRoleEnum("role").notNull().default("user"),
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex("users_email_unique").on(t.email)],
