@@ -29,6 +29,9 @@ export function LoginForm() {
       }
       router.push("/");
       router.refresh();
+    } catch {
+      // A thrown action or fetch (server down, offline) must still leave visible feedback.
+      setError(ru.common.networkError);
     } finally {
       setPending(false);
     }

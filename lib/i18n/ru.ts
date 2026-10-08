@@ -10,6 +10,8 @@ export const ru = {
     errorTitle: "Что-то пошло не так",
     retry: "Попробовать снова",
     save: "Сохранить",
+    back: "← Назад",
+    networkError: "Не удалось связаться с сервером. Попробуйте ещё раз",
   },
   auth: {
     email: "Email",

@@ -30,6 +30,9 @@ export function RegisterForm() {
       });
       router.push(signedIn?.ok ? "/onboarding" : "/login");
       router.refresh();
+    } catch {
+      // A thrown action or fetch (server down, offline) must still leave visible feedback.
+      setResult({ ok: false, formError: ru.common.networkError });
     } finally {
       setPending(false);
     }

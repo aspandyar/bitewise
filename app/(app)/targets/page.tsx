@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { db } from "@/db/client";
+import { BackLink } from "@/components/ui/back-link";
 import { PageLoading } from "@/components/ui/page-loading";
 import { TargetsForm } from "@/components/targets/targets-form";
 import { requireUserId } from "@/lib/auth/session";
@@ -20,8 +21,9 @@ async function TargetsContent() {
   const calculated = calcAutoTargets(profile, todayIsoDate(new Date()));
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
+      <BackLink />
       <h1 className="text-2xl font-semibold">{ru.targets.editTitle}</h1>
-      <TargetsForm current={target} calculated={calculated} />
+      <TargetsForm current={target} calculated={calculated} mode={target.mode} />
     </main>
   );
 }

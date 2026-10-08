@@ -59,10 +59,10 @@ export function TextField({
         defaultValue={defaultValue}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errorId : undefined}
-        className="min-h-11 rounded-lg border border-foreground/20 bg-background px-3 text-base"
+        className="min-h-11 rounded-lg border border-foreground/40 bg-background px-3 text-base aria-[invalid=true]:border-red-500"
       />
       {error ? (
-        <p id={errorId} className="text-sm text-red-600">
+        <p id={errorId} className="text-sm text-red-600 dark:text-red-400">
           {error}
         </p>
       ) : null}
@@ -98,7 +98,7 @@ export function ChoiceGroup<T extends string>({
         {options.map((option) => (
           <label
             key={option.value}
-            className="flex min-h-11 cursor-pointer flex-col justify-center rounded-lg border border-foreground/20 px-3 py-2 has-[:checked]:border-foreground has-[:checked]:bg-foreground/5 has-[:focus-visible]:ring-2"
+            className="flex min-h-11 cursor-pointer flex-col justify-center rounded-lg border border-foreground/40 px-3 py-2 has-[:checked]:border-foreground has-[:checked]:bg-foreground/10 has-[:checked]:font-medium has-[:checked]:ring-2 has-[:checked]:ring-foreground has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-blue-500"
           >
             <input
               type="radio"
@@ -112,7 +112,7 @@ export function ChoiceGroup<T extends string>({
           </label>
         ))}
       </div>
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="text-sm text-red-600 dark:text-red-400">{error}</p> : null}
     </fieldset>
   );
 }
@@ -131,7 +131,7 @@ export function SubmitButton({ pending, children }: { pending: boolean; children
 
 export function FormError({ message }: { message?: string }) {
   return message ? (
-    <p role="alert" className="text-sm text-red-600">
+    <p role="alert" className="text-sm text-red-600 dark:text-red-400">
       {message}
     </p>
   ) : null;

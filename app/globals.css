@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
 :root {
+  /* Native controls (date picker icon, calendar) follow the theme instead of staying light. */
+  color-scheme: light dark;
   --background: #ffffff;
   --foreground: #171717;
 }
