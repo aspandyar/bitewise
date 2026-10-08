@@ -1,0 +1,138 @@
+"use client";
+
+import {
+  startTransition,
+  useActionState,
+  useId,
+  type FormEvent,
+  type HTMLInputTypeAttribute,
+  type ReactNode,
+} from "react";
+import type { FormState } from "@/lib/forms";
+
+// React 19 resets a form after a `form action` runs, wiping input on validation errors;
+// submitting through onSubmit + startTransition keeps what the user typed.
+export function usePreservingFormAction(
+  action: (prev: FormState, formData: FormData) => Promise<FormState>,
+) {
+  const [state, formAction, pending] = useActionState(action, {});
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    startTransition(() => formAction(formData));
+  }
+  return { state, pending, onSubmit };
+}
+
+type TextFieldProps = {
+  label: string;
+  name: string;
+  type?: HTMLInputTypeAttribute;
+  inputMode?: "text" | "decimal" | "email";
+  autoComplete?: string;
+  defaultValue?: string | number;
+  error?: string;
+};
+
+export function TextField({
+  label,
+  name,
+  type = "text",
+  inputMode,
+  autoComplete,
+  defaultValue,
+  error,
+}: TextFieldProps) {
+  const id = useId();
+  const errorId = `${id}-error`;
+  return (
+    <div className="flex flex-col gap-1">
+      <label htmlFor={id} className="text-sm font-medium">
+        {label}
+      </label>
+      <input
+        id={id}
+        name={name}
+        type={type}
+        inputMode={inputMode}
+        autoComplete={autoComplete}
+        defaultValue={defaultValue}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
+        className="min-h-11 rounded-lg border border-foreground/20 bg-background px-3 text-base"
+      />
+      {error ? (
+        <p id={errorId} className="text-sm text-red-600">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+type ChoiceOption<T extends string> = { value: T; label: string; hint?: string };
+
+export function ChoiceGroup<T extends string>({
+  legend,
+  name,
+  options,
+  defaultValue,
+  error,
+  layout = "column",
+}: {
+  legend: string;
+  name: string;
+  options: readonly ChoiceOption<T>[];
+  defaultValue?: T;
+  error?: string;
+  layout?: "row" | "column";
+}) {
+  return (
+    <fieldset className="flex flex-col gap-1">
+      <legend className="mb-1 text-sm font-medium">{legend}</legend>
+      <div
+        className={
+          layout === "row" ? "grid auto-cols-fr grid-flow-col gap-2" : "flex flex-col gap-2"
+        }
+      >
+        {options.map((option) => (
+          <label
+            key={option.value}
+            className="flex min-h-11 cursor-pointer flex-col justify-center rounded-lg border border-foreground/20 px-3 py-2 has-[:checked]:border-foreground has-[:checked]:bg-foreground/5 has-[:focus-visible]:ring-2"
+          >
+            <input
+              type="radio"
+              name={name}
+              value={option.value}
+              defaultChecked={defaultValue === option.value}
+              className="sr-only"
+            />
+            <span className="text-base">{option.label}</span>
+            {option.hint ? <span className="text-sm text-foreground/60">{option.hint}</span> : null}
+          </label>
+        ))}
+      </div>
+      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+    </fieldset>
+  );
+}
+
+export function SubmitButton({ pending, children }: { pending: boolean; children: ReactNode }) {
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="min-h-11 rounded-lg bg-foreground px-4 font-medium text-background disabled:opacity-60"
+    >
+      {children}
+    </button>
+  );
+}
+
+export function FormError({ message }: { message?: string }) {
+  return message ? (
+    <p role="alert" className="text-sm text-red-600">
+      {message}
+    </p>
+  ) : null;
+}
