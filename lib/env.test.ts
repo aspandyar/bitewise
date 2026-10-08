@@ -33,4 +33,15 @@ describe("readAuthEnv", () => {
       }).NEXTAUTH_URL,
     ).toBe("http://localhost:3000");
   });
+
+  it("allows http://localhost in production, so a local production build still works", () => {
+    expect(
+      readAuthEnv({
+        NODE_ENV: "production",
+        NEXTAUTH_SECRET: secret,
+        NEXTAUTH_URL: "http://localhost:3000",
+      }).NEXTAUTH_URL,
+    ).toBe("http://localhost:3000");
+  });
 });
+

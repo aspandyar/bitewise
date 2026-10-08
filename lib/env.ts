@@ -5,6 +5,13 @@ const dbEnvSchema = z.object({
   DATABASE_URL: z.url(),
 });
 
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+function isSecureOrLoopback(url: string): boolean {
+  const parsed = new URL(url);
+  return parsed.protocol === "https:" || LOOPBACK_HOSTS.has(parsed.hostname);
+}
+
 const authEnvSchema = z
   .object({
     NODE_ENV: z.string().optional(),
@@ -14,8 +21,8 @@ const authEnvSchema = z
     SIGNUP_ALLOWLIST: z.string().default(""),
   })
   // Auth.js marks the session cookie Secure only for https URLs, so http in production would
-  // send the JWT in clear text.
-  .refine((env) => env.NODE_ENV !== "production" || env.NEXTAUTH_URL.startsWith("https://"), {
+  // send the JWT in clear text. Loopback is exempt: a local production build never leaves the host.
+  .refine((env) => env.NODE_ENV !== "production" || isSecureOrLoopback(env.NEXTAUTH_URL), {
     message: "NEXTAUTH_URL must use https in production",
     path: ["NEXTAUTH_URL"],
   });
