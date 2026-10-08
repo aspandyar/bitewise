@@ -4,13 +4,13 @@ description: Провести этап N из docs/PROJECT_PLAN.md — ветк�
 argument-hint: <номер этапа>
 ---
 1. Прочитай этап $ARGUMENTS в docs/PROJECT_PLAN.md, docs/notes.md и rules, относящиеся к затронутым путям.
-2. Проверь, что рабочее дерево чистое и main свежий. `git switch -c ft/<имя-этапа>`.
+2. Проверь, что рабочее дерево чистое и master свежий. `git switch -c ft/<имя-этапа>`.
 3. Если этап большой (новая таблица, новый экран или внешний API) — используй superpowers: brainstorming → spec в docs/superpowers/.
 4. Напиши план: файлы, изменения схемы БД, новые зависимости, тесты, критерий «готово» из плана.
    ОСТАНОВИСЬ и жди моего «ок».
 5. Реализуй. Для расчётов — сначала тест. Изменения схемы — через /db-change.
 6. `pnpm lint && pnpm test` — до зелёного.
-7. Запусти субагента reviewer на `git diff main...HEAD`; для этапов с auth/API/AI — ещё security-reviewer;
+7. Запусти субагента reviewer на `git diff master...HEAD`; для этапов с auth/API/AI — ещё security-reviewer;
    для UI-этапов — ui-checker. Исправь замечания.
 8. Обнови «Текущий статус» в docs/PROJECT_PLAN.md и решения в docs/notes.md.
 9. Коммит(ы) по Conventional Commits. Итог: что сделано, что осталось, что дальше. Не пушь без спроса.
