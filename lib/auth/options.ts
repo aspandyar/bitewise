@@ -37,11 +37,15 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     jwt({ token, user }) {
-      if (user) token.sub = user.id;
+      if (user) {
+        token.sub = user.id;
+        token.role = user.role;
+      }
       return token;
     },
     session({ session, token }) {
-      return { ...session, user: { id: token.sub ?? "" } };
+      // A token without a role predates roles; treating it as "user" never grants extra rights.
+      return { ...session, user: { id: token.sub ?? "", role: token.role ?? "user" } };
     },
   },
 };

@@ -1,9 +1,12 @@
+import type { UserRole } from "@/lib/config";
 import type { RateLimiter } from "./rate-limit";
 import { UNKNOWN_IP } from "./request";
 import { credentialsSchema } from "./schema";
 
 export type AuthorizeDeps = {
-  findUserByEmail(email: string): Promise<{ id: string; passwordHash: string } | null>;
+  findUserByEmail(
+    email: string,
+  ): Promise<{ id: string; passwordHash: string; role: UserRole } | null>;
   verifyPassword(password: string, stored: string): Promise<boolean>;
   getDummyPasswordHash(): Promise<string>;
   limiter: RateLimiter;
@@ -15,7 +18,7 @@ export async function authorizeCredentials(
   raw: unknown,
   ip: string,
   deps: AuthorizeDeps,
-): Promise<{ id: string; email: string } | null> {
+): Promise<{ id: string; email: string; role: UserRole } | null> {
   const parsed = credentialsSchema.safeParse(raw);
   if (!parsed.success) return null;
   const { email, password } = parsed.data;
@@ -32,7 +35,7 @@ export async function authorizeCredentials(
     // real attempt and response time reveals nothing.
     const stored = user && accountAllowed ? user.passwordHash : await deps.getDummyPasswordHash();
     const passwordOk = await deps.verifyPassword(password, stored);
-    return user && accountAllowed && passwordOk ? { id: user.id, email } : null;
+    return user && accountAllowed && passwordOk ? { id: user.id, email, role: user.role } : null;
   } catch (error) {
     // Auth.js would put a thrown message (DB host, port, user) into the client redirect URL.
     console.error("authorize failed", error);

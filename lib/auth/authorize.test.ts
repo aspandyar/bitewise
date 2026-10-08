@@ -6,7 +6,7 @@ import { UNKNOWN_IP } from "./request";
 function makeDeps(overrides: Partial<AuthorizeDeps> = {}): AuthorizeDeps {
   return {
     findUserByEmail: async (email) =>
-      email === "me@mail.com" ? { id: "u1", passwordHash: "stored" } : null,
+      email === "me@mail.com" ? { id: "u1", passwordHash: "stored", role: "manager" } : null,
     verifyPassword: async (password, stored) => stored === "stored" && password === "right-pass",
     getDummyPasswordHash: async () => "dummy",
     limiter: createRateLimiter({ max: 100, windowMs: 1000, maxKeys: 100 }),
@@ -24,7 +24,7 @@ describe("authorizeCredentials", () => {
       "1.1.1.1",
       makeDeps(),
     );
-    expect(user).toEqual({ id: "u1", email: "me@mail.com" });
+    expect(user).toEqual({ id: "u1", email: "me@mail.com", role: "manager" });
   });
 
   it("returns null for a wrong password", async () => {
