@@ -1,6 +1,23 @@
+# secrets
 .env
 .env.*
 !.env.example
 CLAUDE.local.md
+
+# dependencies
 node_modules/
+
+# next.js
 .next/
+out/
+build/
+next-env.d.ts
+*.tsbuildinfo
+
+# testing
+coverage/
+
+# misc
+.DS_Store
+*.pem
+.pnpm-debug.log*
