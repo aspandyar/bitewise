@@ -32,7 +32,7 @@ async function FoodContent({ params }: { params: Promise<{ id: string }> }) {
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8">
       <BackLink href="/foods" />
-      <h1 className="text-2xl font-semibold break-words">{food.name}</h1>
+      <h1 className="text-2xl font-semibold [overflow-wrap:anywhere]">{food.name}</h1>
       <section className="flex flex-col gap-3 rounded-2xl border border-foreground/10 p-5">
         <p className="text-3xl font-semibold">
           {formatKcal(food.kcal100)}{" "}

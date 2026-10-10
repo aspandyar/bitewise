@@ -10,7 +10,7 @@ export function FoodList({ items }: { items: FoodListItem[] }) {
         <li key={food.id}>
           <Link href={`/foods/${food.id}`} className="flex min-h-11 flex-col gap-0.5 py-2">
             <span className="flex items-start justify-between gap-2">
-              <span className="font-medium break-words">{food.name}</span>
+              <span className="min-w-0 font-medium [overflow-wrap:anywhere]">{food.name}</span>
               <span className="shrink-0 rounded-full bg-foreground/5 px-2 py-0.5 text-xs">
                 {ru.foods.sources[food.source]}
               </span>

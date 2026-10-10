@@ -17,6 +17,9 @@ export function FoodSearch({ ownFoods }: { ownFoods: FoodListItem[] }) {
   const router = useRouter();
   const [input, setInput] = useState("");
   const [state, setState] = useState<SearchState | null>(null);
+  // The last successful list stays on screen while the next query loads, so typing does not
+  // make the results blink away on every letter.
+  const [lastItems, setLastItems] = useState<FoodListItem[]>([]);
   const query = input.trim();
 
   useEffect(() => {
@@ -41,6 +44,7 @@ export function FoodSearch({ ownFoods }: { ownFoods: FoodListItem[] }) {
         }
         const body = (await response.json()) as { items: FoodListItem[] };
         setState({ kind: "results", query, items: body.items });
+        setLastItems(body.items);
       } catch {
         if (controller.signal.aborted) return;
         setState({ kind: "error", query, message: ru.common.networkError });
@@ -80,9 +84,15 @@ export function FoodSearch({ ownFoods }: { ownFoods: FoodListItem[] }) {
           <p className="text-foreground/60">{ru.foods.startTyping}</p>
         )
       ) : !current || current.kind === "loading" ? (
-        <p className="text-foreground/60" aria-live="polite">
-          {ru.foods.searching}
-        </p>
+        lastItems.length > 0 ? (
+          <div aria-busy="true" className="opacity-60">
+            <FoodList items={lastItems} />
+          </div>
+        ) : (
+          <p className="text-foreground/60" aria-live="polite">
+            {ru.foods.searching}
+          </p>
+        )
       ) : current.kind === "error" ? (
         <p role="alert" className="text-red-600 dark:text-red-400">
           {current.message}

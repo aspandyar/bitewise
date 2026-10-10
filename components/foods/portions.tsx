@@ -41,7 +41,7 @@ export function Portions({ foodId, portions }: { foodId: string; portions: Porti
         <ul className="flex flex-col divide-y divide-foreground/10">
           {portions.map((portion) => (
             <li key={portion.id} className="flex min-h-11 items-center justify-between gap-2">
-              <span className="break-words">
+              <span className="min-w-0 [overflow-wrap:anywhere]">
                 {portion.label} — {formatGrams(portion.grams)} {ru.targets.gramsUnit}
               </span>
               {portion.isOwn ? (
