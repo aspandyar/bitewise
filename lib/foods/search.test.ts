@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { FOOD_SEARCH } from "@/lib/config";
-import { escapeLike, normalizeFoodQuery } from "./search";
+import { escapeLike, foodQuerySchema, normalizeFoodQuery } from "./search";
 
 describe("normalizeFoodQuery", () => {
   it("trims, lowercases and collapses spaces", () => {
@@ -32,5 +32,19 @@ describe("escapeLike", () => {
 
   it("leaves ordinary text alone", () => {
     expect(escapeLike("гречка")).toBe("гречка");
+  });
+});
+
+describe("foodQuerySchema", () => {
+  it("parses and normalizes a raw query with zod", () => {
+    expect(foodQuerySchema.safeParse(" ГРЁ ").data).toBe("гре");
+  });
+
+  it("rejects blank, missing and over-long queries", () => {
+    expect(foodQuerySchema.safeParse("  ").success).toBe(false);
+    expect(foodQuerySchema.safeParse(null).success).toBe(false);
+    expect(foodQuerySchema.safeParse("а".repeat(FOOD_SEARCH.maxQueryLength + 1)).success).toBe(
+      false,
+    );
   });
 });
