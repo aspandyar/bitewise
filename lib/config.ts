@@ -95,8 +95,52 @@ export const PASSWORD_HASH = {
 export const RATE_LIMITS = {
   login: { max: 10, windowMs: 15 * MS_PER_MINUTE, maxKeys: 100_000 },
   register: { max: 5, windowMs: 60 * MS_PER_MINUTE, maxKeys: 100_000 },
+  // Search fires on every typed letter after a debounce; 2 per second is far above human typing.
+  foodSearch: { max: 120, windowMs: MS_PER_MINUTE, maxKeys: 100_000 },
 } as const;
 
 // Number of reverse proxies we control in front of the app (nginx, stage 6). Each one appends the
 // peer it saw to X-Forwarded-For, so the client IP sits that many entries from the right.
 export const TRUSTED_PROXY_HOPS = 1;
+
+// Where a food's numbers come from; shown as a badge in search. "off" and "ai_estimate" arrive
+// with their own stages through a migration.
+export const FOOD_SOURCES = ["user", "usda", "label"] as const;
+export type FoodSource = (typeof FOOD_SOURCES)[number];
+
+// Per 100 g: pure fat is ~900 kcal, and no 100 g of food holds more than 100 g of nutrients.
+export const FOOD_LIMITS = {
+  nameLength: { min: 1, max: 100 },
+  kcal100: { min: 0, max: 900 },
+  nutrient100G: { min: 0, max: 100 },
+  maxTotalGramsPer100G: 100,
+} as const;
+
+export const PORTION_LIMITS = {
+  labelLength: { min: 1, max: 40 },
+  grams: { min: 0.1, max: 5000 },
+  // Keeps a portion list scannable on a phone screen.
+  maxOwnPerFood: 20,
+} as const;
+
+export const FOOD_SEARCH = {
+  limit: 20,
+  maxQueryLength: 50,
+  // Trigrams carry no signal below 3 letters; shorter queries match word starts only.
+  minTrigramLength: 3,
+  // pg_trgm word_similarity cut-off: low enough for one typo in a 6-letter word.
+  wordSimilarityThreshold: 0.5,
+  debounceMs: 250,
+} as const;
+
+// FoodData Central nutrient ids (nutrient.csv), all per 100 g.
+export const USDA_NUTRIENT_IDS = {
+  kcal: 1008,
+  protein: 1003,
+  fat: 1004,
+  carbsByDifference: 1005,
+  fiber: 1079,
+} as const;
+
+// Matches numeric(8,2): seed values are rounded to what the column stores, so diffs stay stable.
+export const NUTRIENT_STORAGE_DECIMALS = 2;

@@ -4,6 +4,7 @@ import {
   calcAutoTargets,
   calcBmrKcal,
   calcMacroTargets,
+  calcNetCarbsPer100g,
   calcTargetKcal,
   calcTdeeKcal,
 } from "./nutrition";
@@ -189,5 +190,32 @@ describe("calcAutoTargets limits", () => {
     expect(targets.proteinG).toBeCloseTo(540, 6); // 300 × 1.8
     expect(targets.fatG).toBeCloseTo(180, 6); // 6000 × 0.27 / 9
     expect(targets.carbsG).toBeCloseTo(555, 6); // (6000 − 2160 − 1620) / 4
+  });
+});
+
+describe("calcNetCarbsPer100g", () => {
+  it("subtracts fiber from carbs by difference", () => {
+    // Buckwheat groats, USDA SR Legacy: 71.5 g carbs by difference, 10 g fiber.
+    expect(calcNetCarbsPer100g(71.5, 10)).toBeCloseTo(61.5, 10);
+  });
+
+  it("keeps carbs as they are when fiber is unknown", () => {
+    expect(calcNetCarbsPer100g(12.3, null)).toBe(12.3);
+  });
+
+  it("returns 0 for 0 g carbs", () => {
+    expect(calcNetCarbsPer100g(0, 0)).toBe(0);
+  });
+
+  it("clamps to 0 when fiber exceeds carbs by difference", () => {
+    // Happens in lab data for some greens: carbs by difference 2.9 g, fiber 3.1 g.
+    expect(calcNetCarbsPer100g(2.9, 3.1)).toBe(0);
+  });
+
+  it("rejects negative and NaN inputs", () => {
+    expect(() => calcNetCarbsPer100g(-1, 0)).toThrow(RangeError);
+    expect(() => calcNetCarbsPer100g(10, -1)).toThrow(RangeError);
+    expect(() => calcNetCarbsPer100g(Number.NaN, 0)).toThrow(RangeError);
+    expect(() => calcNetCarbsPer100g(10, Number.NaN)).toThrow(RangeError);
   });
 });
