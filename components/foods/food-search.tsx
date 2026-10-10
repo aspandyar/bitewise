@@ -71,6 +71,9 @@ export function FoodSearch({ ownFoods }: { ownFoods: FoodListItem[] }) {
           maxLength={FOOD_SEARCH.maxQueryLength}
           autoComplete="off"
           enterKeyHint="search"
+          // Search is the only job of this screen; desktop browsers focus it at once (iOS will
+          // not raise the keyboard without a tap, which is fine).
+          autoFocus
           className="min-h-11 rounded-lg border border-foreground/40 bg-background px-3 text-base"
         />
       </label>
