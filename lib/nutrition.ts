@@ -112,3 +112,19 @@ export function calcAutoTargets(profile: ProfileData, today: IsoDate): MacroTarg
   const kcal = Math.min(TARGET_LIMITS.kcal.max, Math.max(TARGET_LIMITS.kcal.min, rawKcal));
   return calcMacroTargets(kcal, profile.weightKg);
 }
+
+function assertNonNegative(name: string, value: number): void {
+  if (!(Number.isFinite(value) && value >= 0)) {
+    throw new RangeError(`${name} must be a non-negative number, got ${value}`);
+  }
+}
+
+// USDA reports carbs "by difference", which includes fiber; Russian labels and tables do not.
+// Storing net carbs keeps seeded foods comparable with what users read on packages.
+export function calcNetCarbsPer100g(carbsByDifferenceG: number, fiberG: number | null): number {
+  assertNonNegative("carbsByDifferenceG", carbsByDifferenceG);
+  if (fiberG === null) return carbsByDifferenceG;
+  assertNonNegative("fiberG", fiberG);
+  // Lab rounding can put fiber above carbs by difference; negative carbs are meaningless.
+  return Math.max(0, carbsByDifferenceG - fiberG);
+}

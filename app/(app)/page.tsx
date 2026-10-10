@@ -47,6 +47,12 @@ async function HomeContent() {
       </section>
       <nav className="flex flex-col gap-2">
         <Link
+          href="/foods"
+          className="flex min-h-11 items-center rounded-lg border border-foreground/20 px-4"
+        >
+          {ru.foods.title}
+        </Link>
+        <Link
           href="/targets"
           className="flex min-h-11 items-center rounded-lg border border-foreground/20 px-4"
         >

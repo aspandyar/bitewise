@@ -18,6 +18,8 @@ next-env.d.ts
 coverage/
 
 # misc
+# downloaded source datasets (USDA CSV), rebuilt locally
+.cache/
 .DS_Store
 *.pem
 .pnpm-debug.log*

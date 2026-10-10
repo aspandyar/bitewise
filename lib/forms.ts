@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-export type FormState = { fieldErrors?: Record<string, string>; formError?: string };
+// `ok` lets a form clear itself after a successful submit that stays on the same page.
+export type FormState = { fieldErrors?: Record<string, string>; formError?: string; ok?: true };
 
 export function firstFieldErrors(error: z.ZodError): Record<string, string> {
   const fieldErrors: Record<string, string[] | undefined> = z.flattenError(error).fieldErrors;
@@ -23,5 +24,13 @@ export function decimalField(limits: { min: number; max: number }, message: stri
       .number({ error: message })
       .min(limits.min, { error: message })
       .max(limits.max, { error: message }),
+  );
+}
+
+// For optional numbers an empty field means "unknown" (null), never 0.
+export function optionalDecimalField(limits: { min: number; max: number }, message: string) {
+  return z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? null : value),
+    decimalField(limits, message).nullable(),
   );
 }
