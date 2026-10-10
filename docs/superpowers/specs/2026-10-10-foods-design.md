@@ -29,7 +29,7 @@
 
 ## Данные (`db/schema.ts`, через `/db-change`)
 Две миграции:
-1. **Custom** (`drizzle-kit generate --custom`): `CREATE EXTENSION IF NOT EXISTS pg_trgm;`. Файл создаётся пустым именно для ручного SQL, сгенерированные миграции не правятся.
+1. **Custom** (`drizzle-kit generate --custom`): `CREATE EXTENSION IF NOT EXISTS pg_trgm;`. Файл создаётся пустым именно для ручного SQL, сгенерированные миграции не правятся. Правка `db/migrations/**` мне запрещена настройками, поэтому эту одну строку вписывает пользователь (или разрешает разовую запись).
 2. **Generated**: enum и таблицы ниже.
 
 `food_source` (enum, кортеж `FOOD_SOURCES` в `config.ts`): `user`, `usda`, `label`. Значения `off`, `ai_estimate` добавляются миграциями на своих этапах.
@@ -74,7 +74,7 @@ CHECK:
 - `calcNetCarbsPer100g(carbsByDifferenceG, fiberG)` = `max(0, carbsByDifference − fiber)`; `fiber = null` → углеводы как есть. RangeError на отрицательные и NaN — как остальные функции модуля.
 
 ## Поиск (`lib/foods/search.ts` — чистые функции; `lib/foods/repo.ts` — SQL)
-**Нормализация запроса** (`normalizeFoodQuery`): trim, схлопнуть пробелы, нижний регистр, `ё` → `е`, обрезка до `FOOD_SEARCH.maxQueryLength` (50). Пустая строка → 400. `%`, `_`, `\` экранируются для `LIKE`.
+**Нормализация запроса** (`normalizeFoodQuery`): trim, схлопнуть пробелы, нижний регистр, `ё` → `е`. Пустая строка или длиннее `FOOD_SEARCH.maxQueryLength` (50) → 400 (поле ввода ограничено тем же `maxLength`, так что из интерфейса длинный запрос не уходит). `%`, `_`, `\` экранируются для `LIKE`.
 
 **Совпадение** (вместе с видимостью):
 - всегда: `search_name LIKE q || '%' OR search_name LIKE '% ' || q || '%'` — начало любого слова;
