@@ -1,0 +1,96 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import { db } from "@/db/client";
+import { CopyFoodButton, DeleteFoodButton } from "@/components/foods/food-actions";
+import { Portions } from "@/components/foods/portions";
+import { BackLink } from "@/components/ui/back-link";
+import { PageLoading } from "@/components/ui/page-loading";
+import { requireUserId } from "@/lib/auth/session";
+import { formatGrams, formatKcal } from "@/lib/format";
+import { getVisibleFood, listVisiblePortions } from "@/lib/foods/repo";
+import { parseFoodId } from "@/lib/foods/schema";
+import { ru } from "@/lib/i18n/ru";
+
+async function FoodContent({ params }: { params: Promise<{ id: string }> }) {
+  const userId = await requireUserId();
+  const foodId = parseFoodId((await params).id);
+  if (!foodId) notFound();
+  const [food, portions] = await Promise.all([
+    getVisibleFood(db, userId, foodId),
+    listVisiblePortions(db, userId, foodId),
+  ]);
+  if (!food) notFound();
+
+  const rows = [
+    { label: ru.targets.protein, grams: food.protein100 },
+    { label: ru.targets.fat, grams: food.fat100 },
+    { label: ru.targets.carbs, grams: food.carbs100 },
+    ...(food.fiber100 === null ? [] : [{ label: ru.foods.fiber, grams: food.fiber100 }]),
+  ];
+
+  return (
+    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8">
+      <BackLink href="/foods" />
+      <h1 className="text-2xl font-semibold break-words">{food.name}</h1>
+      <section className="flex flex-col gap-3 rounded-2xl border border-foreground/10 p-5">
+        <p className="text-3xl font-semibold">
+          {formatKcal(food.kcal100)}{" "}
+          <span className="text-base font-normal">
+            {ru.targets.kcalUnit} {ru.foods.per100g}
+          </span>
+        </p>
+        <dl className="grid grid-cols-2 gap-2">
+          {rows.map((row) => (
+            <div key={row.label} className="rounded-lg bg-foreground/5 px-3 py-2">
+              <dt className="text-xs text-foreground/60">{row.label}</dt>
+              <dd className="font-medium">
+                {formatGrams(row.grams)} {ru.targets.gramsUnit}
+              </dd>
+            </div>
+          ))}
+        </dl>
+        <p className="text-sm text-foreground/60">
+          {ru.foods.sourceTitle}:{" "}
+          {food.sourceUrl ? (
+            <a
+              href={food.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              {ru.foods.sourceNames[food.source]}
+            </a>
+          ) : (
+            ru.foods.sourceNames[food.source]
+          )}
+        </p>
+      </section>
+      {food.isOwn ? (
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/foods/${food.id}/edit`}
+            className="flex min-h-11 items-center rounded-lg border border-foreground/40 px-4"
+          >
+            {ru.foods.edit}
+          </Link>
+          <DeleteFoodButton foodId={food.id} />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <p className="text-sm text-foreground/60">{ru.foods.copyHint}</p>
+          <CopyFoodButton foodId={food.id} />
+        </div>
+      )}
+      <Portions foodId={food.id} portions={portions} />
+    </main>
+  );
+}
+
+export default function FoodPage({ params }: PageProps<"/foods/[id]">) {
+  return (
+    <Suspense fallback={<PageLoading />}>
+      <FoodContent params={params} />
+    </Suspense>
+  );
+}

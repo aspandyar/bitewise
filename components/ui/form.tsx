@@ -31,6 +31,7 @@ type TextFieldProps = {
   inputMode?: "text" | "decimal" | "email";
   autoComplete?: string;
   defaultValue?: string | number;
+  placeholder?: string;
   error?: string;
 };
 
@@ -41,6 +42,7 @@ export function TextField({
   inputMode,
   autoComplete,
   defaultValue,
+  placeholder,
   error,
 }: TextFieldProps) {
   const id = useId();
@@ -57,6 +59,7 @@ export function TextField({
         inputMode={inputMode}
         autoComplete={autoComplete}
         defaultValue={defaultValue}
+        placeholder={placeholder}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errorId : undefined}
         className="min-h-11 rounded-lg border border-foreground/40 bg-background px-3 text-base aria-[invalid=true]:border-red-500"
