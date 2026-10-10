@@ -32,6 +32,14 @@ describe("seedFileSchema", () => {
     expect(seedFileSchema.safeParse([label]).success).toBe(false);
   });
 
+  it("rejects duplicate portion labels within a food", () => {
+    const portions = [
+      { label: "1 ст. л.", grams: 12 },
+      { label: "1 ст. л.", grams: 13 },
+    ];
+    expect(seedFileSchema.safeParse([{ ...food, portions }]).success).toBe(false);
+  });
+
   it("rejects out-of-range nutrients", () => {
     expect(seedFileSchema.safeParse([{ ...food, kcal100: 901 }]).success).toBe(false);
   });

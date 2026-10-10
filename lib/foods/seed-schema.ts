@@ -47,6 +47,10 @@ const seedFood = z
   .refine((food) => food.key.startsWith(`${food.source}:`), { error: "key must match source" })
   .refine((food) => (food.source === "label") === (food.sourceUrl !== null), {
     error: "label foods need a source url, usda foods have none",
+  })
+  // loadFoodSeed syncs shared portions by label, so a label must identify one portion.
+  .refine((food) => new Set(food.portions.map((p) => p.label)).size === food.portions.length, {
+    error: "duplicate portion labels",
   });
 export type SeedFood = z.infer<typeof seedFood>;
 

@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { foods } from "@/db/schema";
+import { foodPortions, foods } from "@/db/schema";
 import { closeTestDb, resetDb, testDb } from "@/tests/db";
 import { newUserId } from "@/tests/foods";
 import { addPortion, copyFood, getVisibleFood, listVisiblePortions } from "./repo";
@@ -41,6 +41,20 @@ async function idOf(key: string): Promise<string> {
 beforeEach(resetDb);
 afterAll(closeTestDb);
 
+async function snapshot(key: string) {
+  const id = await idOf(key);
+  const [food] = await testDb
+    .select({ updatedAt: foods.updatedAt })
+    .from(foods)
+    .where(eq(foods.id, id));
+  const portions = await testDb
+    .select({ id: foodPortions.id, label: foodPortions.label, grams: foodPortions.grams })
+    .from(foodPortions)
+    .where(eq(foodPortions.foodId, id))
+    .orderBy(foodPortions.label);
+  return { updatedAt: food?.updatedAt, portions };
+}
+
 describe("loadFoodSeed", () => {
   it("inserts shared foods with their portions", async () => {
     const alice = await newUserId("alice@mail.com");
@@ -69,6 +83,24 @@ describe("loadFoodSeed", () => {
     expect(await listVisiblePortions(testDb, alice, id)).toHaveLength(1);
   });
 
+  it("leaves rows untouched on a re-run with the same data, so portion ids stay stable", async () => {
+    const seeded = {
+      ...buckwheat,
+      portions: [...buckwheat.portions, { label: "1 стакан", grams: 165 }],
+    };
+    await loadFoodSeed(testDb, [seeded]);
+    const before = await snapshot("usda:170286");
+    await loadFoodSeed(testDb, [seeded]);
+    expect(await snapshot("usda:170286")).toEqual(before);
+  });
+
+  it("keeps the id of a shared portion whose grams change", async () => {
+    await loadFoodSeed(testDb, [buckwheat]);
+    const [before] = (await snapshot("usda:170286")).portions;
+    await loadFoodSeed(testDb, [{ ...buckwheat, portions: [{ label: "1 ст. л.", grams: 13 }] }]);
+    expect((await snapshot("usda:170286")).portions).toEqual([{ ...before, grams: 13 }]);
+  });
+
   it("updates values and replaces shared portions when the seed changes", async () => {
     const alice = await newUserId("alice@mail.com");
     await loadFoodSeed(testDb, [buckwheat]);
@@ -88,7 +120,7 @@ describe("loadFoodSeed", () => {
     const id = await idOf("usda:170286");
     await addPortion(testDb, alice, id, { label: "моя тарелка", grams: 250 });
     const copy = await copyFood(testDb, alice, id);
-    if (!copy) throw new Error("no copy");
+    if (!copy || copy === "limit") throw new Error("no copy");
 
     await loadFoodSeed(testDb, [{ ...buckwheat, portions: [] }]);
 
@@ -114,7 +146,7 @@ describe("loadFoodSeed", () => {
     const alice = await newUserId("alice@mail.com");
     await loadFoodSeed(testDb, [buckwheat]);
     const copy = await copyFood(testDb, alice, await idOf("usda:170286"));
-    if (!copy) throw new Error("no copy");
+    if (!copy || copy === "limit") throw new Error("no copy");
     expect((await loadFoodSeed(testDb, [])).retired).toBe(1);
     expect(await getVisibleFood(testDb, alice, copy.id)).not.toBeNull();
   });
