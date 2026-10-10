@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   date,
   index,
   numeric,
@@ -12,18 +13,28 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 // Relative import: drizzle-kit loads this file outside the Next/Vitest alias resolution.
-import { ACTIVITY_LEVELS, GOALS, SEXES, TARGET_MODES, USER_ROLES } from "../lib/config";
+import {
+  ACTIVITY_LEVELS,
+  FOOD_SOURCES,
+  GOALS,
+  SEXES,
+  TARGET_MODES,
+  USER_ROLES,
+} from "../lib/config";
 
 export const sexEnum = pgEnum("sex", SEXES);
 export const activityLevelEnum = pgEnum("activity_level", ACTIVITY_LEVELS);
 export const goalEnum = pgEnum("goal", GOALS);
 export const targetModeEnum = pgEnum("target_mode", TARGET_MODES);
 export const userRoleEnum = pgEnum("user_role", USER_ROLES);
+export const foodSourceEnum = pgEnum("food_source", FOOD_SOURCES);
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 const updatedAt = () => timestamp("updated_at", { withTimezone: true }).notNull().defaultNow();
 const nutrient = (name: string) =>
   numeric(name, { precision: 8, scale: 2, mode: "number" }).notNull();
+const optionalNutrient = (name: string) =>
+  numeric(name, { precision: 8, scale: 2, mode: "number" });
 
 export const users = pgTable(
   "users",
@@ -76,5 +87,65 @@ export const targets = pgTable(
     uniqueIndex("targets_one_default_per_user")
       .on(t.userId)
       .where(sql`${t.isDefault}`),
+  ],
+);
+
+export const foods = pgTable(
+  "foods",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    // Null means a shared food from the seed; otherwise the food belongs to this user only.
+    ownerId: uuid("owner_id").references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    // Search compares against this, so "свекла" finds "Свёкла" and case never matters.
+    searchName: text("search_name")
+      .notNull()
+      .generatedAlwaysAs(sql`replace(lower("name"), 'ё', 'е')`),
+    kcal100: nutrient("kcal_100"),
+    protein100: nutrient("protein_100"),
+    fat100: nutrient("fat_100"),
+    // Net of fiber, the way Russian labels count carbs.
+    carbs100: nutrient("carbs_100"),
+    fiber100: optionalNutrient("fiber_100"),
+    source: foodSourceEnum("source").notNull(),
+    // Stable key the seed upserts by: "usda:<fdcId>" or "label:<slug>".
+    seedKey: text("seed_key"),
+    sourceUrl: text("source_url"),
+    // Soft delete: diary entries (stage 3) will keep pointing at foods the user removed.
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("foods_owner_id_idx").on(t.ownerId),
+    uniqueIndex("foods_seed_key_unique").on(t.seedKey),
+    index("foods_search_name_trgm_idx").using("gin", t.searchName.op("gin_trgm_ops")),
+    // A user's own food is never seed data, and every shared food comes from the seed.
+    check("foods_user_source_has_owner", sql`(${t.source} = 'user') = (${t.ownerId} IS NOT NULL)`),
+    check("foods_seed_key_iff_shared", sql`(${t.ownerId} IS NULL) = (${t.seedKey} IS NOT NULL)`),
+    check(
+      "foods_nutrients_non_negative",
+      sql`${t.kcal100} >= 0 AND ${t.protein100} >= 0 AND ${t.fat100} >= 0 AND ${t.carbs100} >= 0 AND (${t.fiber100} IS NULL OR ${t.fiber100} >= 0)`,
+    ),
+  ],
+);
+
+export const foodPortions = pgTable(
+  "food_portions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    foodId: uuid("food_id")
+      .notNull()
+      .references(() => foods.id, { onDelete: "cascade" }),
+    // Null means a shared portion from the seed; otherwise only this user sees it.
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    label: text("label").notNull(),
+    grams: nutrient("grams"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("food_portions_food_id_idx").on(t.foodId),
+    index("food_portions_user_id_idx").on(t.userId),
+    check("food_portions_grams_positive", sql`${t.grams} > 0`),
   ],
 );

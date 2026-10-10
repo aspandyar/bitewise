@@ -15,6 +15,20 @@
       "when": 1791500433873,
       "tag": "0001_nosy_lady_bullseye",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791644223124,
+      "tag": "0002_enable_pg_trgm",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791644243273,
+      "tag": "0003_red_reptil",
+      "breakpoints": true
     }
   ]
 }
