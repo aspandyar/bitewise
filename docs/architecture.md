@@ -38,8 +38,8 @@ tags:
 | `users` | id (uuid), email (уникальный, в нижнем регистре), password_hash (scrypt), role (`user/manager/admin`, по умолчанию `user`; admin — только bootstrap-скриптом), created_at |
 | `profiles` | user_id (pk → users, cascade), sex, birth_date, height_cm numeric(5,1), weight_kg numeric(5,1), activity_level, goal, updated_at |
 | `targets` | id, user_id (→ users, cascade, индекс), name («По умолчанию»), mode (`auto/manual`), kcal, protein_g, fat_g, carbs_g — numeric(8,2), is_default (частичный уникальный индекс: одна норма по умолчанию на пользователя), created_at, updated_at |
-| `foods` | id, owner_id (null = общий), name, brand, barcode, source (`user/seed/off/usda/ai_estimate`), kcal_100, protein_100, fat_100, carbs_100, fiber_100?, verified |
-| `food_portions` | id, food_id, label («1 шт»), grams |
+| `foods` | id, owner_id (→ users, cascade, индекс; null = общий из сида), name, search_name (generated: `replace(lower(name), 'ё', 'е')`, GIN `gin_trgm_ops`), kcal_100, protein_100, fat_100, carbs_100 (без клетчатки), fiber_100? — numeric(8,2), source (`user/usda/label`; позже `off/ai_estimate`), seed_key (уникальный: `usda:<fdcId>` / `label:<slug>`), source_url?, deleted_at (мягкое удаление), created_at, updated_at. CHECK: `source = user` ⇔ есть владелец ⇔ нет seed_key; нутриенты ≥ 0. Штрихкод — этап 7 |
+| `food_portions` | id, food_id (→ foods, cascade, индекс), user_id (→ users, cascade, индекс; null = общая из сида), label («1 шт»), grams numeric(8,2) > 0, created_at |
 | `recipes` | id, owner_id, name, cooked_weight_g, servings |
 | `recipe_items` | recipe_id, food_id, grams |
 | `diary_entries` | id, user_id, date, slot (`breakfast/lunch/dinner/snack`), food_id?, recipe_id?, grams, kcal, protein_g, fat_g, carbs_g (снимок), source, ai_confidence?, created_at |
@@ -64,7 +64,7 @@ TDEE       = BMR × активность (1.2 … 1.9)
 | Источник | Что даёт | Нюансы |
 | --- | --- | --- |
 | Свои продукты | всё, что ввёл пользователь | основной источник |
-| Сид-набор | ~200 базовых продуктов на русском | собрать один раз, хранить в репо (`db/seed/`) |
+| Сид-набор | 222 базовых продукта на русском: 209 из USDA SR Legacy (перевод названий, порции из `food_portion.csv`) + 13 «с этикетки» (страницы ВкусВилла) | `db/seed/sources/*.json` → `pnpm seed:build` → `db/seed/foods.json` → `pnpm db:seed` |
 | **Open Food Facts** | штрихкоды, упакованные продукты, есть СНГ | лицензия ODbL — указать атрибуцию; данные бывают неполными → кэш + пометка |
 | **USDA FoodData Central** | «сырые» ингредиенты, точные данные | названия на английском; бесплатный API-ключ |
 
