@@ -1,1 +1,3313 @@
-[]
+[
+  {
+    "key": "label:ayran-2",
+    "name": "Айран 2 %",
+    "source": "label",
+    "kcal100": 32.4,
+    "protein100": 1.4,
+    "fat100": 2,
+    "carbs100": 2.2,
+    "fiber100": null,
+    "sourceUrl": "https://vkusvill.ru/goods/ayran-2-37029/",
+    "portions": []
+  },
+  {
+    "key": "label:kefir-1",
+    "name": "Кефир 1 %",
+    "source": "label",
+    "kcal100": 37,
+    "protein100": 3,
+    "fat100": 1,
+    "carbs100": 4,
+    "fiber100": null,
+    "sourceUrl": "https://vkusvill.ru/goods/kefir-1-v-butylke-20028/",
+    "portions": []
+  },
+  {
+    "key": "label:kefir-2-5",
+    "name": "Кефир 2,5 %",
+    "source": "label",
+    "kcal100": 50.5,
+    "protein100": 3,
+    "fat100": 2.5,
+    "carbs100": 4,
+    "fiber100": null,
+    "sourceUrl": "https://vkusvill.ru/goods/kefir-2-42406/",
+    "portions": []
+  },
+  {
+    "key": "label:kefir-3-2",
+    "name": "Кефир 3,2 %",
+    "source": "label",
+    "kcal100": 57,
+    "protein100": 3,
+    "fat100": 3.2,
+    "carbs100": 4,
+    "fiber100": null,
+    "sourceUrl": "https://vkusvill.ru/goods/kefir-3-158/",
+    "portions": []
+  },
+  {
+    "key": "label:pelmeni-govyadina-svinina",
+    "name": "Пельмени с говядиной и свининой",
+    "source": "label",
+    "kcal100": 248.3,
+    "protein100": 13.2,
+    "fat100": 9.1,
+    "carbs100": 28.4,
+    "fiber100": null,
+    "sourceUrl": "https://vkusvill.ru/goods/pelmeni-s-govyadinoy-i-svininoy-49771/",
+    "portions": []
+  },
+  {
+    "key": "label:prostokvasha-4",
+    "name": "Простокваша 4 %",
+    "source": "label",
+    "kcal100": 63.2,
+    "protein100": 2.6,
+    "fat100": 4,
+    "carbs100": 4.2,
+    "fiber100": null,
+    "sourceUrl": "https://vkusvill.ru/goods/prostokvasha-4-75/",
+    "portions": []
+  },
+  {
+    "key": "label:ryazhenka-4",
+    "name": "Ряженка 4 %",
+    "source": "label",
+    "kcal100": 64.8,
+    "protein100": 3,
+    "fat100": 4,
+    "carbs100": 4.2,
+    "fiber100": null,
+    "sourceUrl": "https://vkusvill.ru/goods/ryazhenka-4-117287/",
+    "portions": []
+  },
+  {
+    "key": "label:smetana-15",
+    "name": "Сметана 15 %",
+    "source": "label",
+    "kcal100": 159.8,
+    "protein100": 2.6,
+    "fat100": 15,
+    "carbs100": 3.6,
+    "fiber100": null,
+    "sourceUrl": "https://vkusvill.ru/goods/smetana-15-14526/",
+    "portions": []
+  },
+  {
+    "key": "label:smetana-20",
+    "name": "Сметана 20 %",
+    "source": "label",
+    "kcal100": 203.6,
+    "protein100": 2.5,
+    "fat100": 20,
+    "carbs100": 3.4,
+    "fiber100": null,
+    "sourceUrl": "https://vkusvill.ru/goods/smetana-20-143/",
+    "portions": []
+  },
+  {
+    "key": "label:syrok-glazirovannyy-5",
+    "name": "Сырок творожный глазированный, ванильный",
+    "source": "label",
+    "kcal100": 298.6,
+    "protein100": 15,
+    "fat100": 11,
+    "carbs100": 34.9,
+    "fiber100": null,
+    "sourceUrl": "https://vkusvill.ru/goods/syrok-tvorozhnyy-s-vanilyu-v-molochnom-shokolade-5-1573/",
+    "portions": [
+      {
+        "label": "1 шт",
+        "grams": 40
+      }
+    ]
+  },
+  {
+    "key": "label:tvorog-5",
+    "name": "Творог 5 %",
+    "source": "label",
+    "kcal100": 121,
+    "protein100": 16,
+    "fat100": 5,
+    "carbs100": 3,
+    "fiber100": null,
+    "sourceUrl": "https://vkusvill.ru/goods/tvorog-5-185/",
+    "portions": []
+  },
+  {
+    "key": "label:tvorog-9",
+    "name": "Творог 9 %",
+    "source": "label",
+    "kcal100": 157,
+    "protein100": 16,
+    "fat100": 9,
+    "carbs100": 3,
+    "fiber100": null,
+    "sourceUrl": "https://vkusvill.ru/goods/tvorog-9-188/",
+    "portions": []
+  },
+  {
+    "key": "label:vareniki-kartofel-luk",
+    "name": "Вареники с картофелем и луком",
+    "source": "label",
+    "kcal100": 195.1,
+    "protein100": 5.8,
+    "fat100": 2.7,
+    "carbs100": 36.9,
+    "fiber100": null,
+    "sourceUrl": "https://vkusvill.ru/goods/vareniki-s-kartofelem-i-lukom-53122/",
+    "portions": []
+  },
+  {
+    "key": "usda:167575",
+    "name": "Мороженое ванильное",
+    "source": "usda",
+    "kcal100": 207,
+    "protein100": 3.5,
+    "fat100": 11,
+    "carbs100": 22.9,
+    "fiber100": 0.7,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 порция (½ стакана)",
+        "grams": 66
+      }
+    ]
+  },
+  {
+    "key": "usda:167587",
+    "name": "Шоколад молочный",
+    "source": "usda",
+    "kcal100": 535,
+    "protein100": 7.65,
+    "fat100": 29.66,
+    "carbs100": 56,
+    "fiber100": 3.4,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:167746",
+    "name": "Лимон без кожуры",
+    "source": "usda",
+    "kcal100": 29,
+    "protein100": 1.1,
+    "fat100": 0.3,
+    "carbs100": 6.52,
+    "fiber100": 2.8,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 долька",
+        "grams": 7
+      }
+    ]
+  },
+  {
+    "key": "usda:167755",
+    "name": "Малина",
+    "source": "usda",
+    "kcal100": 52,
+    "protein100": 1.2,
+    "fat100": 0.65,
+    "carbs100": 5.44,
+    "fiber100": 6.5,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:167762",
+    "name": "Клубника",
+    "source": "usda",
+    "kcal100": 32,
+    "protein100": 0.67,
+    "fat100": 0.3,
+    "carbs100": 5.68,
+    "fiber100": 2,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:167765",
+    "name": "Арбуз",
+    "source": "usda",
+    "kcal100": 30,
+    "protein100": 0.61,
+    "fat100": 0.15,
+    "carbs100": 7.15,
+    "fiber100": 0.4,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:167811",
+    "name": "Сало свиное",
+    "source": "usda",
+    "kcal100": 812,
+    "protein100": 2.92,
+    "fat100": 88.69,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:167843",
+    "name": "Свинина, лопатка сырая",
+    "source": "usda",
+    "kcal100": 236,
+    "protein100": 17.18,
+    "fat100": 17.99,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:167959",
+    "name": "Попкорн без масла",
+    "source": "usda",
+    "kcal100": 387,
+    "protein100": 12.94,
+    "fat100": 4.54,
+    "carbs100": 63.28,
+    "fiber100": 14.5,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:167995",
+    "name": "Маршмеллоу",
+    "source": "usda",
+    "kcal100": 318,
+    "protein100": 1.8,
+    "fat100": 0.2,
+    "carbs100": 81.2,
+    "fiber100": 0.1,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт",
+        "grams": 7.2
+      }
+    ]
+  },
+  {
+    "key": "usda:168153",
+    "name": "Киви",
+    "source": "usda",
+    "kcal100": 61,
+    "protein100": 1.14,
+    "fat100": 0.52,
+    "carbs100": 11.66,
+    "fiber100": 3,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт",
+        "grams": 69
+      }
+    ]
+  },
+  {
+    "key": "usda:168162",
+    "name": "Чернослив",
+    "source": "usda",
+    "kcal100": 240,
+    "protein100": 2.18,
+    "fat100": 0.38,
+    "carbs100": 56.78,
+    "fiber100": 7.1,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт",
+        "grams": 9.5
+      }
+    ]
+  },
+  {
+    "key": "usda:168165",
+    "name": "Изюм",
+    "source": "usda",
+    "kcal100": 299,
+    "protein100": 3.3,
+    "fat100": 0.25,
+    "carbs100": 74.82,
+    "fiber100": 4.5,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:168191",
+    "name": "Финики",
+    "source": "usda",
+    "kcal100": 277,
+    "protein100": 1.81,
+    "fat100": 0.15,
+    "carbs100": 68.27,
+    "fiber100": 6.7,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт (без косточки)",
+        "grams": 24
+      }
+    ]
+  },
+  {
+    "key": "usda:168249",
+    "name": "Свинина, вырезка сырая",
+    "source": "usda",
+    "kcal100": 109,
+    "protein100": 20.95,
+    "fat100": 2.17,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:168277",
+    "name": "Бекон сырой",
+    "source": "usda",
+    "kcal100": 393,
+    "protein100": 13.66,
+    "fat100": 37.13,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ломтик",
+        "grams": 28
+      }
+    ]
+  },
+  {
+    "key": "usda:168372",
+    "name": "Свиной фарш 16 % жира, сырой",
+    "source": "usda",
+    "kcal100": 218,
+    "protein100": 17.99,
+    "fat100": 16,
+    "carbs100": 0.44,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:168409",
+    "name": "Огурец",
+    "source": "usda",
+    "kcal100": 15,
+    "protein100": 0.65,
+    "fat100": 0.11,
+    "carbs100": 3.13,
+    "fiber100": 0.5,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт (длинный, 21 см)",
+        "grams": 301
+      }
+    ]
+  },
+  {
+    "key": "usda:168448",
+    "name": "Тыква",
+    "source": "usda",
+    "kcal100": 26,
+    "protein100": 1,
+    "fat100": 0.1,
+    "carbs100": 6,
+    "fiber100": 0.5,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:168462",
+    "name": "Шпинат",
+    "source": "usda",
+    "kcal100": 23,
+    "protein100": 2.86,
+    "fat100": 0.39,
+    "carbs100": 1.43,
+    "fiber100": 2.2,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:168482",
+    "name": "Батат, сырой",
+    "source": "usda",
+    "kcal100": 86,
+    "protein100": 1.57,
+    "fat100": 0.05,
+    "carbs100": 17.12,
+    "fiber100": 3,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт",
+        "grams": 130
+      }
+    ]
+  },
+  {
+    "key": "usda:168556",
+    "name": "Кетчуп",
+    "source": "usda",
+    "kcal100": 101,
+    "protein100": 1.04,
+    "fat100": 0.1,
+    "carbs100": 27.1,
+    "fiber100": 0.3,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ст. л.",
+        "grams": 17
+      }
+    ]
+  },
+  {
+    "key": "usda:168580",
+    "name": "Вешенки",
+    "source": "usda",
+    "kcal100": 33,
+    "protein100": 3.31,
+    "fat100": 0.41,
+    "carbs100": 3.79,
+    "fiber100": 2.3,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:168746",
+    "name": "Пиво",
+    "source": "usda",
+    "kcal100": 43,
+    "protein100": 0.46,
+    "fat100": 0,
+    "carbs100": 3.55,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 банка (355 мл)",
+        "grams": 356
+      }
+    ]
+  },
+  {
+    "key": "usda:168867",
+    "name": "Кукурузная крупа, сухая",
+    "source": "usda",
+    "kcal100": 370,
+    "protein100": 7.11,
+    "fat100": 1.75,
+    "carbs100": 75.55,
+    "fiber100": 3.9,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 157
+      }
+    ]
+  },
+  {
+    "key": "usda:168871",
+    "name": "Пшено варёное",
+    "source": "usda",
+    "kcal100": 119,
+    "protein100": 3.51,
+    "fat100": 1,
+    "carbs100": 22.37,
+    "fiber100": 1.3,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 174
+      }
+    ]
+  },
+  {
+    "key": "usda:168874",
+    "name": "Киноа, сухая",
+    "source": "usda",
+    "kcal100": 368,
+    "protein100": 14.12,
+    "fat100": 6.07,
+    "carbs100": 57.16,
+    "fiber100": 7,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 170
+      }
+    ]
+  },
+  {
+    "key": "usda:168877",
+    "name": "Рис белый, сухой",
+    "source": "usda",
+    "kcal100": 365,
+    "protein100": 7.13,
+    "fat100": 0.66,
+    "carbs100": 78.65,
+    "fiber100": 1.3,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 185
+      }
+    ]
+  },
+  {
+    "key": "usda:168878",
+    "name": "Рис белый варёный",
+    "source": "usda",
+    "kcal100": 130,
+    "protein100": 2.69,
+    "fat100": 0.28,
+    "carbs100": 27.77,
+    "fiber100": 0.4,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 158
+      }
+    ]
+  },
+  {
+    "key": "usda:168894",
+    "name": "Мука пшеничная",
+    "source": "usda",
+    "kcal100": 364,
+    "protein100": 10.33,
+    "fat100": 0.98,
+    "carbs100": 73.61,
+    "fiber100": 2.7,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 125
+      }
+    ]
+  },
+  {
+    "key": "usda:168917",
+    "name": "Киноа варёная",
+    "source": "usda",
+    "kcal100": 120,
+    "protein100": 4.4,
+    "fat100": 1.92,
+    "carbs100": 18.5,
+    "fiber100": 2.8,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 185
+      }
+    ]
+  },
+  {
+    "key": "usda:168946",
+    "name": "Картофель фри, замороженный",
+    "source": "usda",
+    "kcal100": 162,
+    "protein100": 2.56,
+    "fat100": 7.47,
+    "carbs100": 19.82,
+    "fiber100": 2.4,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:169092",
+    "name": "Дыня (канталупа)",
+    "source": "usda",
+    "kcal100": 34,
+    "protein100": 0.84,
+    "fat100": 0.19,
+    "carbs100": 7.26,
+    "fiber100": 0.9,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:169097",
+    "name": "Апельсин",
+    "source": "usda",
+    "kcal100": 47,
+    "protein100": 0.94,
+    "fat100": 0.12,
+    "carbs100": 9.35,
+    "fiber100": 2.4,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт",
+        "grams": 131
+      }
+    ]
+  },
+  {
+    "key": "usda:169098",
+    "name": "Сок апельсиновый свежевыжатый",
+    "source": "usda",
+    "kcal100": 45,
+    "protein100": 0.7,
+    "fat100": 0.2,
+    "carbs100": 10.2,
+    "fiber100": 0.2,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 248
+      }
+    ]
+  },
+  {
+    "key": "usda:169105",
+    "name": "Мандарин",
+    "source": "usda",
+    "kcal100": 53,
+    "protein100": 0.81,
+    "fat100": 0.31,
+    "carbs100": 11.54,
+    "fiber100": 1.8,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт (средний)",
+        "grams": 88
+      }
+    ]
+  },
+  {
+    "key": "usda:169118",
+    "name": "Груша",
+    "source": "usda",
+    "kcal100": 57,
+    "protein100": 0.36,
+    "fat100": 0.14,
+    "carbs100": 12.13,
+    "fiber100": 3.1,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт (средняя)",
+        "grams": 178
+      }
+    ]
+  },
+  {
+    "key": "usda:169124",
+    "name": "Ананас",
+    "source": "usda",
+    "kcal100": 50,
+    "protein100": 0.54,
+    "fat100": 0.12,
+    "carbs100": 11.72,
+    "fiber100": 1.4,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:169134",
+    "name": "Гранат",
+    "source": "usda",
+    "kcal100": 83,
+    "protein100": 1.67,
+    "fat100": 1.17,
+    "carbs100": 14.7,
+    "fiber100": 4,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "½ стакана зёрен",
+        "grams": 87
+      }
+    ]
+  },
+  {
+    "key": "usda:169145",
+    "name": "Свёкла, сырая",
+    "source": "usda",
+    "kcal100": 43,
+    "protein100": 1.61,
+    "fat100": 0.17,
+    "carbs100": 6.76,
+    "fiber100": 2.8,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт (Ø 5 см)",
+        "grams": 82
+      }
+    ]
+  },
+  {
+    "key": "usda:169146",
+    "name": "Свёкла варёная",
+    "source": "usda",
+    "kcal100": 44,
+    "protein100": 1.68,
+    "fat100": 0.18,
+    "carbs100": 7.96,
+    "fiber100": 2,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:169214",
+    "name": "Кукуруза консервированная",
+    "source": "usda",
+    "kcal100": 67,
+    "protein100": 2.29,
+    "fat100": 1.22,
+    "carbs100": 12.34,
+    "fiber100": 2,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:169228",
+    "name": "Баклажан",
+    "source": "usda",
+    "kcal100": 25,
+    "protein100": 0.98,
+    "fat100": 0.18,
+    "carbs100": 2.88,
+    "fiber100": 3,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:169230",
+    "name": "Чеснок",
+    "source": "usda",
+    "kcal100": 149,
+    "protein100": 6.36,
+    "fat100": 0.5,
+    "carbs100": 30.96,
+    "fiber100": 2.1,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 зубчик",
+        "grams": 3
+      }
+    ]
+  },
+  {
+    "key": "usda:169249",
+    "name": "Салат листовой",
+    "source": "usda",
+    "kcal100": 15,
+    "protein100": 1.36,
+    "fat100": 0.15,
+    "carbs100": 1.57,
+    "fiber100": 1.3,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:169251",
+    "name": "Шампиньоны",
+    "source": "usda",
+    "kcal100": 22,
+    "protein100": 3.09,
+    "fat100": 0.34,
+    "carbs100": 2.26,
+    "fiber100": 1,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт (средний)",
+        "grams": 18
+      }
+    ]
+  },
+  {
+    "key": "usda:169276",
+    "name": "Редис",
+    "source": "usda",
+    "kcal100": 16,
+    "protein100": 0.68,
+    "fat100": 0.1,
+    "carbs100": 1.8,
+    "fiber100": 1.6,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:169279",
+    "name": "Капуста квашеная",
+    "source": "usda",
+    "kcal100": 19,
+    "protein100": 0.91,
+    "fat100": 0.14,
+    "carbs100": 1.38,
+    "fiber100": 2.9,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:169291",
+    "name": "Кабачок (цукини)",
+    "source": "usda",
+    "kcal100": 17,
+    "protein100": 1.21,
+    "fat100": 0.32,
+    "carbs100": 2.11,
+    "fiber100": 1,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт (средний)",
+        "grams": 196
+      }
+    ]
+  },
+  {
+    "key": "usda:169414",
+    "name": "Семена льна",
+    "source": "usda",
+    "kcal100": 534,
+    "protein100": 18.29,
+    "fat100": 42.16,
+    "carbs100": 1.58,
+    "fiber100": 27.3,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ст. л.",
+        "grams": 10.3
+      }
+    ]
+  },
+  {
+    "key": "usda:169451",
+    "name": "Говяжья печень, сырая",
+    "source": "usda",
+    "kcal100": 135,
+    "protein100": 20.36,
+    "fat100": 3.63,
+    "carbs100": 3.89,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:169593",
+    "name": "Какао-порошок",
+    "source": "usda",
+    "kcal100": 228,
+    "protein100": 19.6,
+    "fat100": 13.7,
+    "carbs100": 20.9,
+    "fiber100": 37,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ст. л.",
+        "grams": 5.4
+      }
+    ]
+  },
+  {
+    "key": "usda:169640",
+    "name": "Мёд",
+    "source": "usda",
+    "kcal100": 304,
+    "protein100": 0.3,
+    "fat100": 0,
+    "carbs100": 82.2,
+    "fiber100": 0.2,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ст. л.",
+        "grams": 21
+      }
+    ]
+  },
+  {
+    "key": "usda:169641",
+    "name": "Варенье, джем",
+    "source": "usda",
+    "kcal100": 278,
+    "protein100": 0.37,
+    "fat100": 0.07,
+    "carbs100": 67.76,
+    "fiber100": 1.1,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ст. л.",
+        "grams": 20
+      }
+    ]
+  },
+  {
+    "key": "usda:169655",
+    "name": "Сахар",
+    "source": "usda",
+    "kcal100": 387,
+    "protein100": 0,
+    "fat100": 0,
+    "carbs100": 99.98,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ч. л.",
+        "grams": 4.2
+      },
+      {
+        "label": "1 кубик",
+        "grams": 2.3
+      }
+    ]
+  },
+  {
+    "key": "usda:169677",
+    "name": "Чипсы картофельные",
+    "source": "usda",
+    "kcal100": 532,
+    "protein100": 6.39,
+    "fat100": 33.98,
+    "carbs100": 50.73,
+    "fiber100": 3.1,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:169699",
+    "name": "Кускус, сухой",
+    "source": "usda",
+    "kcal100": 376,
+    "protein100": 12.76,
+    "fat100": 0.64,
+    "carbs100": 72.43,
+    "fiber100": 5,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 173
+      }
+    ]
+  },
+  {
+    "key": "usda:169700",
+    "name": "Кускус варёный",
+    "source": "usda",
+    "kcal100": 112,
+    "protein100": 3.79,
+    "fat100": 0.16,
+    "carbs100": 21.82,
+    "fiber100": 1.4,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 157
+      }
+    ]
+  },
+  {
+    "key": "usda:169702",
+    "name": "Пшено, крупа сухая",
+    "source": "usda",
+    "kcal100": 378,
+    "protein100": 11.02,
+    "fat100": 4.22,
+    "carbs100": 64.35,
+    "fiber100": 8.5,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "key": "usda:169703",
+    "name": "Рис бурый, сухой",
+    "source": "usda",
+    "kcal100": 367,
+    "protein100": 7.54,
+    "fat100": 3.2,
+    "carbs100": 72.65,
+    "fiber100": 3.6,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 185
+      }
+    ]
+  },
+  {
+    "key": "usda:169704",
+    "name": "Рис бурый варёный",
+    "source": "usda",
+    "kcal100": 123,
+    "protein100": 2.74,
+    "fat100": 0.97,
+    "carbs100": 23.98,
+    "fiber100": 1.6,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 202
+      }
+    ]
+  },
+  {
+    "key": "usda:169715",
+    "name": "Манка, крупа сухая",
+    "source": "usda",
+    "kcal100": 360,
+    "protein100": 12.68,
+    "fat100": 1.05,
+    "carbs100": 68.93,
+    "fiber100": 3.9,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 167
+      }
+    ]
+  },
+  {
+    "key": "usda:169736",
+    "name": "Макароны, сухие",
+    "source": "usda",
+    "kcal100": 371,
+    "protein100": 13.04,
+    "fat100": 1.51,
+    "carbs100": 71.47,
+    "fiber100": 3.2,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:169737",
+    "name": "Макароны варёные",
+    "source": "usda",
+    "kcal100": 158,
+    "protein100": 5.8,
+    "fat100": 0.93,
+    "carbs100": 29.06,
+    "fiber100": 1.8,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 124
+      }
+    ]
+  },
+  {
+    "key": "usda:169910",
+    "name": "Манго",
+    "source": "usda",
+    "kcal100": 60,
+    "protein100": 0.82,
+    "fat100": 0.38,
+    "carbs100": 13.38,
+    "fiber100": 1.6,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:169928",
+    "name": "Персик",
+    "source": "usda",
+    "kcal100": 39,
+    "protein100": 0.91,
+    "fat100": 0.25,
+    "carbs100": 8.04,
+    "fiber100": 1.5,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт (средний)",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "key": "usda:169941",
+    "name": "Хурма",
+    "source": "usda",
+    "kcal100": 70,
+    "protein100": 0.58,
+    "fat100": 0.19,
+    "carbs100": 14.99,
+    "fiber100": 3.6,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт",
+        "grams": 168
+      }
+    ]
+  },
+  {
+    "key": "usda:169949",
+    "name": "Слива",
+    "source": "usda",
+    "kcal100": 46,
+    "protein100": 0.7,
+    "fat100": 0.28,
+    "carbs100": 10.02,
+    "fiber100": 1.4,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт",
+        "grams": 66
+      }
+    ]
+  },
+  {
+    "key": "usda:169961",
+    "name": "Фасоль стручковая",
+    "source": "usda",
+    "kcal100": 31,
+    "protein100": 1.83,
+    "fat100": 0.22,
+    "carbs100": 4.27,
+    "fiber100": 2.7,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:169967",
+    "name": "Брокколи варёная",
+    "source": "usda",
+    "kcal100": 35,
+    "protein100": 2.38,
+    "fat100": 0.41,
+    "carbs100": 3.88,
+    "fiber100": 3.3,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:169975",
+    "name": "Капуста белокочанная",
+    "source": "usda",
+    "kcal100": 25,
+    "protein100": 1.28,
+    "fat100": 0.1,
+    "carbs100": 3.3,
+    "fiber100": 2.5,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:169986",
+    "name": "Цветная капуста",
+    "source": "usda",
+    "kcal100": 25,
+    "protein100": 1.92,
+    "fat100": 0.28,
+    "carbs100": 2.97,
+    "fiber100": 2,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:169988",
+    "name": "Сельдерей стеблевой",
+    "source": "usda",
+    "kcal100": 14,
+    "protein100": 0.69,
+    "fat100": 0.17,
+    "carbs100": 1.37,
+    "fiber100": 1.6,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стебель (крупный)",
+        "grams": 64
+      }
+    ]
+  },
+  {
+    "key": "usda:170000",
+    "name": "Лук репчатый",
+    "source": "usda",
+    "kcal100": 40,
+    "protein100": 1.1,
+    "fat100": 0.1,
+    "carbs100": 7.64,
+    "fiber100": 1.7,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт (крупная)",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "key": "usda:170005",
+    "name": "Лук зелёный",
+    "source": "usda",
+    "kcal100": 32,
+    "protein100": 1.83,
+    "fat100": 0.19,
+    "carbs100": 4.74,
+    "fiber100": 2.6,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ст. л.",
+        "grams": 6
+      }
+    ]
+  },
+  {
+    "key": "usda:170016",
+    "name": "Горошек зелёный, замороженный",
+    "source": "usda",
+    "kcal100": 77,
+    "protein100": 5.22,
+    "fat100": 0.4,
+    "carbs100": 9.12,
+    "fiber100": 4.5,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:170026",
+    "name": "Картофель, сырой",
+    "source": "usda",
+    "kcal100": 77,
+    "protein100": 2.05,
+    "fat100": 0.09,
+    "carbs100": 15.39,
+    "fiber100": 2.1,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт (средний)",
+        "grams": 213
+      }
+    ]
+  },
+  {
+    "key": "usda:170093",
+    "name": "Картофель запечённый в кожуре",
+    "source": "usda",
+    "kcal100": 93,
+    "protein100": 2.5,
+    "fat100": 0.13,
+    "carbs100": 18.95,
+    "fiber100": 2.2,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт (средний)",
+        "grams": 173
+      }
+    ]
+  },
+  {
+    "key": "usda:170108",
+    "name": "Перец болгарский красный",
+    "source": "usda",
+    "kcal100": 26,
+    "protein100": 0.99,
+    "fat100": 0.3,
+    "carbs100": 3.93,
+    "fiber100": 2.1,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт (крупный)",
+        "grams": 164
+      }
+    ]
+  },
+  {
+    "key": "usda:170150",
+    "name": "Кунжут",
+    "source": "usda",
+    "kcal100": 573,
+    "protein100": 17.73,
+    "fat100": 49.67,
+    "carbs100": 11.65,
+    "fiber100": 11.8,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ст. л.",
+        "grams": 9
+      }
+    ]
+  },
+  {
+    "key": "usda:170162",
+    "name": "Кешью",
+    "source": "usda",
+    "kcal100": 553,
+    "protein100": 18.22,
+    "fat100": 43.85,
+    "carbs100": 26.89,
+    "fiber100": 3.3,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:170170",
+    "name": "Кокосовая стружка",
+    "source": "usda",
+    "kcal100": 660,
+    "protein100": 6.88,
+    "fat100": 64.53,
+    "carbs100": 7.35,
+    "fiber100": 16.3,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:170184",
+    "name": "Фисташки",
+    "source": "usda",
+    "kcal100": 560,
+    "protein100": 20.16,
+    "fat100": 45.32,
+    "carbs100": 16.57,
+    "fiber100": 10.6,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:170187",
+    "name": "Грецкий орех",
+    "source": "usda",
+    "kcal100": 654,
+    "protein100": 15.23,
+    "fat100": 65.21,
+    "carbs100": 7.01,
+    "fiber100": 6.7,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:170273",
+    "name": "Шоколад тёмный 70–85 %",
+    "source": "usda",
+    "kcal100": 598,
+    "protein100": 7.79,
+    "fat100": 42.63,
+    "carbs100": 35,
+    "fiber100": 10.9,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:170284",
+    "name": "Перловка, крупа сухая",
+    "source": "usda",
+    "kcal100": 352,
+    "protein100": 9.91,
+    "fat100": 1.16,
+    "carbs100": 62.12,
+    "fiber100": 15.6,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "key": "usda:170285",
+    "name": "Перловка варёная",
+    "source": "usda",
+    "kcal100": 123,
+    "protein100": 2.26,
+    "fat100": 0.44,
+    "carbs100": 24.42,
+    "fiber100": 3.8,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 157
+      }
+    ]
+  },
+  {
+    "key": "usda:170287",
+    "name": "Булгур варёный",
+    "source": "usda",
+    "kcal100": 83,
+    "protein100": 3.08,
+    "fat100": 0.24,
+    "carbs100": 14.08,
+    "fiber100": 4.5,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 182
+      }
+    ]
+  },
+  {
+    "key": "usda:170317",
+    "name": "Пицца с сыром",
+    "source": "usda",
+    "kcal100": 268,
+    "protein100": 10.36,
+    "fat100": 12.28,
+    "carbs100": 26.82,
+    "fiber100": 2.2,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:170379",
+    "name": "Брокколи, сырая",
+    "source": "usda",
+    "kcal100": 34,
+    "protein100": 2.82,
+    "fat100": 0.37,
+    "carbs100": 4.04,
+    "fiber100": 2.6,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:170393",
+    "name": "Морковь, сырая",
+    "source": "usda",
+    "kcal100": 41,
+    "protein100": 0.93,
+    "fat100": 0.24,
+    "carbs100": 6.78,
+    "fiber100": 2.8,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт (крупная)",
+        "grams": 72
+      }
+    ]
+  },
+  {
+    "key": "usda:170394",
+    "name": "Морковь варёная",
+    "source": "usda",
+    "kcal100": 35,
+    "protein100": 0.76,
+    "fat100": 0.18,
+    "carbs100": 5.22,
+    "fiber100": 3,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт",
+        "grams": 46
+      }
+    ]
+  },
+  {
+    "key": "usda:170416",
+    "name": "Петрушка",
+    "source": "usda",
+    "kcal100": 36,
+    "protein100": 2.97,
+    "fat100": 0.79,
+    "carbs100": 3.03,
+    "fiber100": 3.3,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ст. л.",
+        "grams": 3.8
+      }
+    ]
+  },
+  {
+    "key": "usda:170440",
+    "name": "Картофель варёный",
+    "source": "usda",
+    "kcal100": 86,
+    "protein100": 1.71,
+    "fat100": 0.1,
+    "carbs100": 18.21,
+    "fiber100": 1.8,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт (средний)",
+        "grams": 167
+      }
+    ]
+  },
+  {
+    "key": "usda:170457",
+    "name": "Помидор",
+    "source": "usda",
+    "kcal100": 18,
+    "protein100": 0.88,
+    "fat100": 0.2,
+    "carbs100": 2.69,
+    "fiber100": 1.2,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт (сливка)",
+        "grams": 62
+      },
+      {
+        "label": "1 черри",
+        "grams": 17
+      }
+    ]
+  },
+  {
+    "key": "usda:170554",
+    "name": "Семена чиа",
+    "source": "usda",
+    "kcal100": 486,
+    "protein100": 16.54,
+    "fat100": 30.74,
+    "carbs100": 7.72,
+    "fiber100": 34.4,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:170556",
+    "name": "Тыквенные семечки",
+    "source": "usda",
+    "kcal100": 559,
+    "protein100": 30.23,
+    "fat100": 49.05,
+    "carbs100": 4.71,
+    "fiber100": 6,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:170562",
+    "name": "Семечки подсолнечника",
+    "source": "usda",
+    "kcal100": 584,
+    "protein100": 20.78,
+    "fat100": 51.46,
+    "carbs100": 11.4,
+    "fiber100": 8.6,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:170567",
+    "name": "Миндаль",
+    "source": "usda",
+    "kcal100": 579,
+    "protein100": 21.15,
+    "fat100": 49.93,
+    "carbs100": 9.05,
+    "fiber100": 12.5,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:170581",
+    "name": "Фундук",
+    "source": "usda",
+    "kcal100": 628,
+    "protein100": 14.95,
+    "fat100": 60.75,
+    "carbs100": 7,
+    "fiber100": 9.7,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:170591",
+    "name": "Кедровые орехи",
+    "source": "usda",
+    "kcal100": 673,
+    "protein100": 13.69,
+    "fat100": 68.37,
+    "carbs100": 9.38,
+    "fiber100": 3.7,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:170615",
+    "name": "Говядина тушёная, нежирная",
+    "source": "usda",
+    "kcal100": 212,
+    "protein100": 33.36,
+    "fat100": 7.67,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:170685",
+    "name": "Гречка, крупа сухая",
+    "source": "usda",
+    "kcal100": 346,
+    "protein100": 11.73,
+    "fat100": 2.71,
+    "carbs100": 64.65,
+    "fiber100": 10.3,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 164
+      }
+    ]
+  },
+  {
+    "key": "usda:170686",
+    "name": "Гречка варёная",
+    "source": "usda",
+    "kcal100": 92,
+    "protein100": 3.38,
+    "fat100": 0.62,
+    "carbs100": 17.24,
+    "fiber100": 2.7,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 168
+      }
+    ]
+  },
+  {
+    "key": "usda:170688",
+    "name": "Булгур, сухой",
+    "source": "usda",
+    "kcal100": 342,
+    "protein100": 12.29,
+    "fat100": 1.33,
+    "carbs100": 63.37,
+    "fiber100": 12.5,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 140
+      }
+    ]
+  },
+  {
+    "key": "usda:170845",
+    "name": "Сыр моцарелла",
+    "source": "usda",
+    "kcal100": 299,
+    "protein100": 22.17,
+    "fat100": 22.14,
+    "carbs100": 2.4,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:170848",
+    "name": "Сыр пармезан",
+    "source": "usda",
+    "kcal100": 392,
+    "protein100": 35.75,
+    "fat100": 25,
+    "carbs100": 3.22,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:170851",
+    "name": "Сыр рикотта",
+    "source": "usda",
+    "kcal100": 150,
+    "protein100": 7.54,
+    "fat100": 10.18,
+    "carbs100": 7.27,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:170859",
+    "name": "Сливки 33–36 %",
+    "source": "usda",
+    "kcal100": 340,
+    "protein100": 2.84,
+    "fat100": 36.08,
+    "carbs100": 2.84,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ст. л.",
+        "grams": 15
+      }
+    ]
+  },
+  {
+    "key": "usda:170872",
+    "name": "Молоко 1 %",
+    "source": "usda",
+    "kcal100": 42,
+    "protein100": 3.37,
+    "fat100": 0.97,
+    "carbs100": 4.99,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 244
+      }
+    ]
+  },
+  {
+    "key": "usda:170874",
+    "name": "Пахта 1 %",
+    "source": "usda",
+    "kcal100": 40,
+    "protein100": 3.31,
+    "fat100": 1.07,
+    "carbs100": 4.79,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 245
+      }
+    ]
+  },
+  {
+    "key": "usda:170894",
+    "name": "Греческий йогурт 0 %",
+    "source": "usda",
+    "kcal100": 59,
+    "protein100": 10.19,
+    "fat100": 0.39,
+    "carbs100": 3.6,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стаканчик",
+        "grams": 170
+      }
+    ]
+  },
+  {
+    "key": "usda:171009",
+    "name": "Майонез",
+    "source": "usda",
+    "kcal100": 680,
+    "protein100": 0.96,
+    "fat100": 74.85,
+    "carbs100": 0.57,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ст. л.",
+        "grams": 13.8
+      }
+    ]
+  },
+  {
+    "key": "usda:171025",
+    "name": "Масло подсолнечное",
+    "source": "usda",
+    "kcal100": 884,
+    "protein100": 0,
+    "fat100": 100,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ст. л.",
+        "grams": 13.6
+      },
+      {
+        "label": "1 ч. л.",
+        "grams": 4.5
+      }
+    ]
+  },
+  {
+    "key": "usda:171060",
+    "name": "Куриная печень, сырая",
+    "source": "usda",
+    "kcal100": 119,
+    "protein100": 16.92,
+    "fat100": 4.83,
+    "carbs100": 0.73,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт",
+        "grams": 44
+      }
+    ]
+  },
+  {
+    "key": "usda:171077",
+    "name": "Куриная грудка, филе сырое",
+    "source": "usda",
+    "kcal100": 120,
+    "protein100": 22.5,
+    "fat100": 2.62,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:171116",
+    "name": "Куриный фарш, сырой",
+    "source": "usda",
+    "kcal100": 143,
+    "protein100": 17.44,
+    "fat100": 8.1,
+    "carbs100": 0.04,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:171241",
+    "name": "Сыр гауда",
+    "source": "usda",
+    "kcal100": 356,
+    "protein100": 24.94,
+    "fat100": 27.44,
+    "carbs100": 2.22,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:171255",
+    "name": "Сливки 10–12 %",
+    "source": "usda",
+    "kcal100": 131,
+    "protein100": 3.13,
+    "fat100": 11.5,
+    "carbs100": 4.3,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ст. л.",
+        "grams": 15
+      }
+    ]
+  },
+  {
+    "key": "usda:171265",
+    "name": "Молоко 3,2 %",
+    "source": "usda",
+    "kcal100": 61,
+    "protein100": 3.15,
+    "fat100": 3.25,
+    "carbs100": 4.8,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 244
+      },
+      {
+        "label": "1 ст. л.",
+        "grams": 15
+      }
+    ]
+  },
+  {
+    "key": "usda:171267",
+    "name": "Молоко 2 %",
+    "source": "usda",
+    "kcal100": 50,
+    "protein100": 3.3,
+    "fat100": 1.98,
+    "carbs100": 4.8,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 244
+      }
+    ]
+  },
+  {
+    "key": "usda:171269",
+    "name": "Молоко обезжиренное",
+    "source": "usda",
+    "kcal100": 34,
+    "protein100": 3.37,
+    "fat100": 0.08,
+    "carbs100": 4.96,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 245
+      }
+    ]
+  },
+  {
+    "key": "usda:171275",
+    "name": "Сгущённое молоко с сахаром",
+    "source": "usda",
+    "kcal100": 321,
+    "protein100": 7.91,
+    "fat100": 8.7,
+    "carbs100": 54.4,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:171284",
+    "name": "Йогурт натуральный 3,2 %",
+    "source": "usda",
+    "kcal100": 61,
+    "protein100": 3.47,
+    "fat100": 3.25,
+    "carbs100": 4.66,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 245
+      }
+    ]
+  },
+  {
+    "key": "usda:171287",
+    "name": "Яйцо куриное, сырое",
+    "source": "usda",
+    "kcal100": 143,
+    "protein100": 12.56,
+    "fat100": 9.51,
+    "carbs100": 0.72,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт (крупное)",
+        "grams": 50
+      },
+      {
+        "label": "1 шт (очень крупное)",
+        "grams": 56
+      }
+    ]
+  },
+  {
+    "key": "usda:171290",
+    "name": "Сыр плавленый ломтиками",
+    "source": "usda",
+    "kcal100": 371,
+    "protein100": 18.13,
+    "fat100": 31.79,
+    "carbs100": 3.7,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ломтик",
+        "grams": 21
+      }
+    ]
+  },
+  {
+    "key": "usda:171304",
+    "name": "Греческий йогурт 5 %",
+    "source": "usda",
+    "kcal100": 97,
+    "protein100": 9,
+    "fat100": 5,
+    "carbs100": 3.98,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:171412",
+    "name": "Масло кокосовое",
+    "source": "usda",
+    "kcal100": 892,
+    "protein100": 0,
+    "fat100": 99.06,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ст. л.",
+        "grams": 13.6
+      }
+    ]
+  },
+  {
+    "key": "usda:171413",
+    "name": "Масло оливковое",
+    "source": "usda",
+    "kcal100": 884,
+    "protein100": 0,
+    "fat100": 100,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ст. л.",
+        "grams": 13.5
+      },
+      {
+        "label": "1 ч. л.",
+        "grams": 4.5
+      }
+    ]
+  },
+  {
+    "key": "usda:171477",
+    "name": "Куриная грудка запечённая",
+    "source": "usda",
+    "kcal100": 165,
+    "protein100": 31.02,
+    "fat100": 3.57,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:171505",
+    "name": "Индейка, фарш сырой",
+    "source": "usda",
+    "kcal100": 148,
+    "protein100": 19.66,
+    "fat100": 7.66,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:171688",
+    "name": "Яблоко",
+    "source": "usda",
+    "kcal100": 52,
+    "protein100": 0.26,
+    "fat100": 0.17,
+    "carbs100": 11.41,
+    "fiber100": 2.4,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт (среднее)",
+        "grams": 182
+      }
+    ]
+  },
+  {
+    "key": "usda:171697",
+    "name": "Абрикос",
+    "source": "usda",
+    "kcal100": 48,
+    "protein100": 1.4,
+    "fat100": 0.39,
+    "carbs100": 9.12,
+    "fiber100": 2,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт",
+        "grams": 35
+      }
+    ]
+  },
+  {
+    "key": "usda:171705",
+    "name": "Авокадо",
+    "source": "usda",
+    "kcal100": 160,
+    "protein100": 2,
+    "fat100": 14.66,
+    "carbs100": 1.83,
+    "fiber100": 6.7,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт",
+        "grams": 201
+      }
+    ]
+  },
+  {
+    "key": "usda:171711",
+    "name": "Черника",
+    "source": "usda",
+    "kcal100": 57,
+    "protein100": 0.74,
+    "fat100": 0.33,
+    "carbs100": 12.09,
+    "fiber100": 2.4,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:171719",
+    "name": "Черешня",
+    "source": "usda",
+    "kcal100": 63,
+    "protein100": 1.06,
+    "fat100": 0.2,
+    "carbs100": 13.91,
+    "fiber100": 2.1,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:171722",
+    "name": "Клюква",
+    "source": "usda",
+    "kcal100": 46,
+    "protein100": 0.46,
+    "fat100": 0.13,
+    "carbs100": 8.37,
+    "fiber100": 3.6,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:171796",
+    "name": "Говяжий фарш 15 % жира, сырой",
+    "source": "usda",
+    "kcal100": 215,
+    "protein100": 18.59,
+    "fat100": 15,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:171812",
+    "name": "Говядина, вырезка сырая",
+    "source": "usda",
+    "kcal100": 153,
+    "protein100": 22.12,
+    "fat100": 6.52,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:171890",
+    "name": "Кофе чёрный",
+    "source": "usda",
+    "kcal100": 1,
+    "protein100": 0.12,
+    "fat100": 0.02,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 237
+      }
+    ]
+  },
+  {
+    "key": "usda:171955",
+    "name": "Треска, сырая",
+    "source": "usda",
+    "kcal100": 82,
+    "protein100": 17.81,
+    "fat100": 0.67,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:172013",
+    "name": "Колбаса варёная",
+    "source": "usda",
+    "kcal100": 308,
+    "protein100": 15.2,
+    "fat100": 24.59,
+    "carbs100": 5.49,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:172179",
+    "name": "Творог зернёный 4 %",
+    "source": "usda",
+    "kcal100": 98,
+    "protein100": 11.12,
+    "fat100": 4.3,
+    "carbs100": 3.38,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 225
+      }
+    ]
+  },
+  {
+    "key": "usda:172183",
+    "name": "Яичный белок, сырой",
+    "source": "usda",
+    "kcal100": 52,
+    "protein100": 10.9,
+    "fat100": 0.17,
+    "carbs100": 0.73,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт",
+        "grams": 33
+      }
+    ]
+  },
+  {
+    "key": "usda:172184",
+    "name": "Яичный желток, сырой",
+    "source": "usda",
+    "kcal100": 322,
+    "protein100": 15.86,
+    "fat100": 26.54,
+    "carbs100": 3.59,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт",
+        "grams": 17
+      }
+    ]
+  },
+  {
+    "key": "usda:172233",
+    "name": "Укроп",
+    "source": "usda",
+    "kcal100": 43,
+    "protein100": 3.46,
+    "fat100": 1.12,
+    "carbs100": 4.92,
+    "fiber100": 2.1,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:172234",
+    "name": "Горчица",
+    "source": "usda",
+    "kcal100": 60,
+    "protein100": 3.74,
+    "fat100": 3.34,
+    "carbs100": 1.83,
+    "fiber100": 4,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ч. л.",
+        "grams": 5
+      }
+    ]
+  },
+  {
+    "key": "usda:172388",
+    "name": "Куриное бедро без кожи, запечённое",
+    "source": "usda",
+    "kcal100": 179,
+    "protein100": 24.76,
+    "fat100": 8.15,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт",
+        "grams": 116
+      }
+    ]
+  },
+  {
+    "key": "usda:172390",
+    "name": "Куриные крылья с кожей, сырые",
+    "source": "usda",
+    "kcal100": 191,
+    "protein100": 17.52,
+    "fat100": 12.85,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:172420",
+    "name": "Чечевица, сухая",
+    "source": "usda",
+    "kcal100": 352,
+    "protein100": 24.63,
+    "fat100": 1.06,
+    "carbs100": 52.65,
+    "fiber100": 10.7,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ст. л.",
+        "grams": 12
+      }
+    ]
+  },
+  {
+    "key": "usda:172421",
+    "name": "Чечевица варёная",
+    "source": "usda",
+    "kcal100": 116,
+    "protein100": 9.02,
+    "fat100": 0.38,
+    "carbs100": 12.23,
+    "fiber100": 7.9,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 198
+      }
+    ]
+  },
+  {
+    "key": "usda:172429",
+    "name": "Горох колотый варёный",
+    "source": "usda",
+    "kcal100": 118,
+    "protein100": 8.34,
+    "fat100": 0.39,
+    "carbs100": 12.8,
+    "fiber100": 8.3,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 196
+      }
+    ]
+  },
+  {
+    "key": "usda:172430",
+    "name": "Арахис",
+    "source": "usda",
+    "kcal100": 567,
+    "protein100": 25.8,
+    "fat100": 49.24,
+    "carbs100": 7.63,
+    "fiber100": 8.5,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:172470",
+    "name": "Арахисовая паста",
+    "source": "usda",
+    "kcal100": 598,
+    "protein100": 22.21,
+    "fat100": 51.36,
+    "carbs100": 17.31,
+    "fiber100": 5,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ст. л.",
+        "grams": 16
+      }
+    ]
+  },
+  {
+    "key": "usda:172475",
+    "name": "Тофу",
+    "source": "usda",
+    "kcal100": 144,
+    "protein100": 17.27,
+    "fat100": 8.72,
+    "carbs100": 0.48,
+    "fiber100": 2.3,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:172521",
+    "name": "Кролик, сырой",
+    "source": "usda",
+    "kcal100": 136,
+    "protein100": 20.05,
+    "fat100": 5.55,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:172684",
+    "name": "Хлеб ржаной",
+    "source": "usda",
+    "kcal100": 259,
+    "protein100": 8.5,
+    "fat100": 3.3,
+    "carbs100": 42.5,
+    "fiber100": 5.8,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ломтик",
+        "grams": 32
+      }
+    ]
+  },
+  {
+    "key": "usda:172688",
+    "name": "Хлеб цельнозерновой",
+    "source": "usda",
+    "kcal100": 252,
+    "protein100": 12.45,
+    "fat100": 3.5,
+    "carbs100": 36.71,
+    "fiber100": 6,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ломтик",
+        "grams": 32
+      }
+    ]
+  },
+  {
+    "key": "usda:172725",
+    "name": "Печенье овсяное",
+    "source": "usda",
+    "kcal100": 450,
+    "protein100": 6.2,
+    "fat100": 18.1,
+    "carbs100": 65.9,
+    "fiber100": 2.8,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт (большое)",
+        "grams": 25
+      }
+    ]
+  },
+  {
+    "key": "usda:172968",
+    "name": "Сосиски",
+    "source": "usda",
+    "kcal100": 290,
+    "protein100": 10.26,
+    "fat100": 25.76,
+    "carbs100": 4.17,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт",
+        "grams": 52
+      }
+    ]
+  },
+  {
+    "key": "usda:173126",
+    "name": "Говядина, нежирная мякоть сырая",
+    "source": "usda",
+    "kcal100": 130,
+    "protein100": 20.76,
+    "fat100": 4.55,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:173190",
+    "name": "Вино красное сухое",
+    "source": "usda",
+    "kcal100": 85,
+    "protein100": 0.07,
+    "fat100": 0,
+    "carbs100": 2.61,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 бокал (150 мл)",
+        "grams": 147
+      }
+    ]
+  },
+  {
+    "key": "usda:173227",
+    "name": "Чай чёрный",
+    "source": "usda",
+    "kcal100": 1,
+    "protein100": 0,
+    "fat100": 0,
+    "carbs100": 0.3,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 237
+      }
+    ]
+  },
+  {
+    "key": "usda:173414",
+    "name": "Сыр чеддер",
+    "source": "usda",
+    "kcal100": 403,
+    "protein100": 22.87,
+    "fat100": 33.31,
+    "carbs100": 3.37,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ломтик",
+        "grams": 28
+      }
+    ]
+  },
+  {
+    "key": "usda:173417",
+    "name": "Творог зернёный 1 %",
+    "source": "usda",
+    "kcal100": 72,
+    "protein100": 12.39,
+    "fat100": 1.02,
+    "carbs100": 2.72,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 226
+      }
+    ]
+  },
+  {
+    "key": "usda:173418",
+    "name": "Сливочный сыр",
+    "source": "usda",
+    "kcal100": 350,
+    "protein100": 6.15,
+    "fat100": 34.44,
+    "carbs100": 5.52,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ст. л.",
+        "grams": 14.5
+      }
+    ]
+  },
+  {
+    "key": "usda:173420",
+    "name": "Сыр фета (брынза)",
+    "source": "usda",
+    "kcal100": 265,
+    "protein100": 14.21,
+    "fat100": 21.49,
+    "carbs100": 3.88,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:173423",
+    "name": "Яичница (жареное яйцо)",
+    "source": "usda",
+    "kcal100": 196,
+    "protein100": 13.61,
+    "fat100": 14.84,
+    "carbs100": 0.83,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 яйцо",
+        "grams": 46
+      }
+    ]
+  },
+  {
+    "key": "usda:173424",
+    "name": "Яйцо куриное варёное",
+    "source": "usda",
+    "kcal100": 155,
+    "protein100": 12.58,
+    "fat100": 10.61,
+    "carbs100": 1.12,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт (крупное)",
+        "grams": 50
+      }
+    ]
+  },
+  {
+    "key": "usda:173430",
+    "name": "Масло сливочное",
+    "source": "usda",
+    "kcal100": 717,
+    "protein100": 0.85,
+    "fat100": 81.11,
+    "carbs100": 0.06,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ст. л.",
+        "grams": 14.2
+      },
+      {
+        "label": "1 ч. л.",
+        "grams": 5
+      }
+    ]
+  },
+  {
+    "key": "usda:173627",
+    "name": "Куриное бедро без кожи, сырое",
+    "source": "usda",
+    "kcal100": 121,
+    "protein100": 19.66,
+    "fat100": 4.12,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт",
+        "grams": 149
+      }
+    ]
+  },
+  {
+    "key": "usda:173709",
+    "name": "Тунец консервированный в собственном соку",
+    "source": "usda",
+    "kcal100": 86,
+    "protein100": 19.44,
+    "fat100": 0.96,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 банка (без жидкости)",
+        "grams": 165
+      }
+    ]
+  },
+  {
+    "key": "usda:173725",
+    "name": "Минтай, сырой",
+    "source": "usda",
+    "kcal100": 76,
+    "protein100": 17.17,
+    "fat100": 0.82,
+    "carbs100": 0,
+    "fiber100": null,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:173744",
+    "name": "Фасоль красная, сухая",
+    "source": "usda",
+    "kcal100": 337,
+    "protein100": 22.53,
+    "fat100": 1.06,
+    "carbs100": 46.09,
+    "fiber100": 15.2,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:173756",
+    "name": "Нут, сухой",
+    "source": "usda",
+    "kcal100": 378,
+    "protein100": 20.47,
+    "fat100": 6.04,
+    "carbs100": 50.75,
+    "fiber100": 12.2,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:173757",
+    "name": "Нут варёный",
+    "source": "usda",
+    "kcal100": 164,
+    "protein100": 8.86,
+    "fat100": 2.59,
+    "carbs100": 19.82,
+    "fiber100": 7.6,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 164
+      }
+    ]
+  },
+  {
+    "key": "usda:173864",
+    "name": "Ветчина",
+    "source": "usda",
+    "kcal100": 164,
+    "protein100": 16.6,
+    "fat100": 8.8,
+    "carbs100": 2.33,
+    "fiber100": 1.3,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ломтик",
+        "grams": 28
+      }
+    ]
+  },
+  {
+    "key": "usda:173904",
+    "name": "Овсяные хлопья, сухие",
+    "source": "usda",
+    "kcal100": 379,
+    "protein100": 13.15,
+    "fat100": 6.52,
+    "carbs100": 57.6,
+    "fiber100": 10.1,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 81
+      }
+    ]
+  },
+  {
+    "key": "usda:173905",
+    "name": "Овсяная каша на воде",
+    "source": "usda",
+    "kcal100": 71,
+    "protein100": 2.54,
+    "fat100": 1.52,
+    "carbs100": 10.3,
+    "fiber100": 1.7,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 234
+      },
+      {
+        "label": "1 ст. л.",
+        "grams": 14.6
+      }
+    ]
+  },
+  {
+    "key": "usda:173933",
+    "name": "Сок яблочный",
+    "source": "usda",
+    "kcal100": 46,
+    "protein100": 0.1,
+    "fat100": 0.13,
+    "carbs100": 11.1,
+    "fiber100": 0.2,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 248
+      }
+    ]
+  },
+  {
+    "key": "usda:173941",
+    "name": "Курага",
+    "source": "usda",
+    "kcal100": 241,
+    "protein100": 3.39,
+    "fat100": 0.51,
+    "carbs100": 55.34,
+    "fiber100": 7.3,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:173944",
+    "name": "Банан",
+    "source": "usda",
+    "kcal100": 89,
+    "protein100": 1.09,
+    "fat100": 0.33,
+    "carbs100": 20.24,
+    "fiber100": 2.6,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт (небольшой)",
+        "grams": 101
+      }
+    ]
+  },
+  {
+    "key": "usda:173954",
+    "name": "Вишня",
+    "source": "usda",
+    "kcal100": 50,
+    "protein100": 1,
+    "fat100": 0.3,
+    "carbs100": 10.58,
+    "fiber100": 1.6,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:173963",
+    "name": "Смородина чёрная",
+    "source": "usda",
+    "kcal100": 63,
+    "protein100": 1.4,
+    "fat100": 0.41,
+    "carbs100": 15.38,
+    "fiber100": null,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:174034",
+    "name": "Говяжий фарш 15 % жира, жареный",
+    "source": "usda",
+    "kcal100": 256,
+    "protein100": 27.73,
+    "fat100": 15.3,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:174188",
+    "name": "Икра красная и чёрная",
+    "source": "usda",
+    "kcal100": 264,
+    "protein100": 24.6,
+    "fat100": 17.9,
+    "carbs100": 4,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ст. л.",
+        "grams": 16
+      }
+    ]
+  },
+  {
+    "key": "usda:174223",
+    "name": "Кальмар, сырой",
+    "source": "usda",
+    "kcal100": 92,
+    "protein100": 15.58,
+    "fat100": 1.38,
+    "carbs100": 3.08,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:174278",
+    "name": "Соевый соус",
+    "source": "usda",
+    "kcal100": 60,
+    "protein100": 10.51,
+    "fat100": 0.1,
+    "carbs100": 4.77,
+    "fiber100": 0.8,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ст. л.",
+        "grams": 18
+      }
+    ]
+  },
+  {
+    "key": "usda:174285",
+    "name": "Фасоль красная консервированная",
+    "source": "usda",
+    "kcal100": 124,
+    "protein100": 7.98,
+    "fat100": 1.05,
+    "carbs100": 15.99,
+    "fiber100": 5.5,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:174289",
+    "name": "Хумус",
+    "source": "usda",
+    "kcal100": 237,
+    "protein100": 7.78,
+    "fat100": 17.82,
+    "carbs100": 9.5,
+    "fiber100": 5.5,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ст. л.",
+        "grams": 15
+      }
+    ]
+  },
+  {
+    "key": "usda:174370",
+    "name": "Баранина, фарш сырой",
+    "source": "usda",
+    "kcal100": 282,
+    "protein100": 16.56,
+    "fat100": 23.41,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:174515",
+    "name": "Индейка, филе грудки сырое",
+    "source": "usda",
+    "kcal100": 114,
+    "protein100": 23.34,
+    "fat100": 2.33,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:174665",
+    "name": "Инжир сушёный",
+    "source": "usda",
+    "kcal100": 249,
+    "protein100": 3.3,
+    "fat100": 0.93,
+    "carbs100": 54.07,
+    "fiber100": 9.8,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт",
+        "grams": 8.4
+      }
+    ]
+  },
+  {
+    "key": "usda:174673",
+    "name": "Грейпфрут",
+    "source": "usda",
+    "kcal100": 42,
+    "protein100": 0.77,
+    "fat100": 0.14,
+    "carbs100": 9.06,
+    "fiber100": 1.6,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "½ шт",
+        "grams": 123
+      }
+    ]
+  },
+  {
+    "key": "usda:174683",
+    "name": "Виноград",
+    "source": "usda",
+    "kcal100": 69,
+    "protein100": 0.72,
+    "fat100": 0.16,
+    "carbs100": 17.2,
+    "fiber100": 0.9,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "10 ягод",
+        "grams": 49
+      }
+    ]
+  },
+  {
+    "key": "usda:174852",
+    "name": "Кола",
+    "source": "usda",
+    "kcal100": 42,
+    "protein100": 0,
+    "fat100": 0.25,
+    "carbs100": 10.36,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 банка (355 мл)",
+        "grams": 370
+      }
+    ]
+  },
+  {
+    "key": "usda:174915",
+    "name": "Пита, лепёшка пшеничная",
+    "source": "usda",
+    "kcal100": 275,
+    "protein100": 9.1,
+    "fat100": 1.2,
+    "carbs100": 53.5,
+    "fiber100": 2.2,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт (большая)",
+        "grams": 60
+      }
+    ]
+  },
+  {
+    "key": "usda:174924",
+    "name": "Хлеб белый (тостовый)",
+    "source": "usda",
+    "kcal100": 266,
+    "protein100": 8.85,
+    "fat100": 3.33,
+    "carbs100": 46.72,
+    "fiber100": 2.7,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 ломтик",
+        "grams": 29
+      }
+    ]
+  },
+  {
+    "key": "usda:175009",
+    "name": "Блины (оладьи) домашние",
+    "source": "usda",
+    "kcal100": 227,
+    "protein100": 6.4,
+    "fat100": 9.7,
+    "carbs100": 28.3,
+    "fiber100": null,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 шт (Ø 15 см)",
+        "grams": 77
+      }
+    ]
+  },
+  {
+    "key": "usda:175116",
+    "name": "Сельдь, сырая",
+    "source": "usda",
+    "kcal100": 158,
+    "protein100": 17.96,
+    "fat100": 9.04,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:175118",
+    "name": "Сельдь маринованная",
+    "source": "usda",
+    "kcal100": 262,
+    "protein100": 14.19,
+    "fat100": 18,
+    "carbs100": 9.64,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:175119",
+    "name": "Скумбрия, сырая",
+    "source": "usda",
+    "kcal100": 205,
+    "protein100": 18.6,
+    "fat100": 13.89,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:175138",
+    "name": "Горбуша, сырая",
+    "source": "usda",
+    "kcal100": 127,
+    "protein100": 20.5,
+    "fat100": 4.4,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:175139",
+    "name": "Сардины в масле, консервы",
+    "source": "usda",
+    "kcal100": 208,
+    "protein100": 24.62,
+    "fat100": 11.45,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 банка (без масла)",
+        "grams": 92
+      }
+    ]
+  },
+  {
+    "key": "usda:175167",
+    "name": "Лосось (сёмга), сырой",
+    "source": "usda",
+    "kcal100": 208,
+    "protein100": 20.42,
+    "fat100": 13.42,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:175168",
+    "name": "Лосось (сёмга), запечённый",
+    "source": "usda",
+    "kcal100": 206,
+    "protein100": 22.1,
+    "fat100": 12.35,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:175176",
+    "name": "Тилапия, сырая",
+    "source": "usda",
+    "kcal100": 96,
+    "protein100": 20.08,
+    "fat100": 1.7,
+    "carbs100": 0,
+    "fiber100": 0,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 филе",
+        "grams": 116
+      }
+    ]
+  },
+  {
+    "key": "usda:175179",
+    "name": "Креветки, сырые",
+    "source": "usda",
+    "kcal100": 85,
+    "protein100": 20.1,
+    "fat100": 0.51,
+    "carbs100": 0,
+    "fiber100": null,
+    "sourceUrl": null,
+    "portions": []
+  },
+  {
+    "key": "usda:175194",
+    "name": "Фасоль красная варёная",
+    "source": "usda",
+    "kcal100": 127,
+    "protein100": 8.67,
+    "fat100": 0.5,
+    "carbs100": 15.4,
+    "fiber100": 7.4,
+    "sourceUrl": null,
+    "portions": [
+      {
+        "label": "1 стакан (240 мл)",
+        "grams": 177
+      }
+    ]
+  }
+]
