@@ -128,8 +128,9 @@ export const FOOD_SEARCH = {
   maxQueryLength: 50,
   // Trigrams carry no signal below 3 letters; shorter queries match word starts only.
   minTrigramLength: 3,
-  // pg_trgm word_similarity cut-off: low enough for one typo in a 6-letter word.
-  wordSimilarityThreshold: 0.5,
+  // pg_trgm word_similarity cut-off, tuned on real typos: "грчка" → "гречка" scores 0.44 and
+  // "гречко" 0.71, while the unrelated "гречко" → "молоко" scores 0.14.
+  wordSimilarityThreshold: 0.4,
   debounceMs: 250,
 } as const;
 

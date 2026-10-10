@@ -1,7 +1,8 @@
 import { and, asc, count, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { foodPortions, foods } from "@/db/schema";
 import type { Db } from "@/db/types";
-import { PORTION_LIMITS } from "@/lib/config";
+import { FOOD_SEARCH, PORTION_LIMITS } from "@/lib/config";
+import { escapeLike } from "./search";
 import type { FoodDetails, FoodListItem, FoodValues, PortionItem, PortionValues } from "./types";
 
 // Every read goes through this filter: shared or own, and never soft-deleted.
@@ -182,4 +183,35 @@ export async function deleteOwnPortion(
     .where(and(eq(foodPortions.id, portionId), eq(foodPortions.userId, userId)))
     .returning({ id: foodPortions.id });
   return rows.length > 0;
+}
+
+// `query` must come from normalizeFoodQuery: it already matches search_name's lower/ё→е form.
+export async function searchFoods(db: Db, userId: string, query: string): Promise<FoodListItem[]> {
+  const escaped = escapeLike(query);
+  const namePrefix = `${escaped}%`;
+  const wordPrefix = `% ${escaped}%`;
+  const startsWord = sql`(${foods.searchName} LIKE ${namePrefix} OR ${foods.searchName} LIKE ${wordPrefix})`;
+  const match =
+    query.length >= FOOD_SEARCH.minTrigramLength
+      ? sql`(${startsWord} OR ${query} <% ${foods.searchName})`
+      : startsWord;
+
+  return db.transaction(async (tx) => {
+    // `<%` reads its cut-off from this setting; LOCAL keeps it inside this transaction.
+    await tx.execute(
+      sql`SELECT set_config('pg_trgm.word_similarity_threshold', ${String(FOOD_SEARCH.wordSimilarityThreshold)}, true)`,
+    );
+    return tx
+      .select(listColumns)
+      .from(foods)
+      .where(and(visibleTo(userId), match))
+      .orderBy(
+        sql`${foods.ownerId} IS NULL`,
+        sql`${foods.searchName} LIKE ${namePrefix} DESC`,
+        sql`${foods.searchName} LIKE ${wordPrefix} DESC`,
+        sql`word_similarity(${query}, ${foods.searchName}) DESC`,
+        asc(foods.name),
+      )
+      .limit(FOOD_SEARCH.limit);
+  });
 }
