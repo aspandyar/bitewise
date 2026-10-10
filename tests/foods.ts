@@ -1,5 +1,6 @@
 import { foodPortions, foods } from "@/db/schema";
 import type { FoodValues } from "@/lib/foods/types";
+import { createFood } from "@/lib/foods/repo";
 import { createUser } from "@/lib/users/repo";
 import { testDb } from "./db";
 
@@ -41,4 +42,11 @@ export async function insertSharedPortion(
     .returning({ id: foodPortions.id });
   if (!row) throw new Error("portion not inserted");
   return row.id;
+}
+
+// For tests that need an own food and are not about the per-user cap.
+export async function createOwnFood(userId: string, values: FoodValues): Promise<{ id: string }> {
+  const created = await createFood(testDb, userId, values);
+  if (created === "limit") throw new Error("own food cap reached in a test");
+  return created;
 }

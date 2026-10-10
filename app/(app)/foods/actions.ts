@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/db/client";
 import { requireUserId } from "@/lib/auth/session";
-import { PORTION_LIMITS } from "@/lib/config";
+import { FOOD_LIMITS, PORTION_LIMITS } from "@/lib/config";
 import { firstFieldErrors, type FormState } from "@/lib/forms";
 import {
   addPortion,
@@ -28,8 +28,9 @@ export async function createFoodAction(_prev: FormState, formData: FormData): Pr
   const userId = await requireUserId();
   const parsed = foodSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
-  const { id } = await createFood(db, userId, parsed.data);
-  redirect(`/foods/${id}`);
+  const created = await createFood(db, userId, parsed.data);
+  if (created === "limit") return { formError: ru.foods.foodLimit(FOOD_LIMITS.maxOwnFoods) };
+  redirect(`/foods/${created.id}`);
 }
 
 export async function updateFoodAction(
@@ -55,6 +56,9 @@ export async function copyFoodAction(foodId: string): Promise<void> {
   const userId = await requireUserId();
   const copy = await copyFood(db, userId, requireId(foodId));
   if (!copy) notFound();
+  // The copy button has no form state to show a message in; reaching the cap means a script,
+  // not a person, so the generic error screen is enough.
+  if (copy === "limit") throw new Error("own food cap reached");
   redirect(`/foods/${copy.id}/edit`);
 }
 

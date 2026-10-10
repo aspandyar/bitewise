@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { PORTION_LIMITS } from "@/lib/config";
+import { foods } from "@/db/schema";
+import { FOOD_LIMITS, PORTION_LIMITS } from "@/lib/config";
 import { closeTestDb, resetDb, testDb } from "@/tests/db";
-import { insertSharedFood, insertSharedPortion, newUserId } from "@/tests/foods";
+import { createOwnFood, insertSharedFood, insertSharedPortion, newUserId } from "@/tests/foods";
 import type { FoodValues } from "./types";
 import {
   addPortion,
@@ -33,7 +34,7 @@ describe("food visibility", () => {
     const alice = await newUserId("alice@mail.com");
     const bob = await newUserId("bob@mail.com");
     const shared = await insertSharedFood({ name: "Гречка" });
-    const { id: own } = await createFood(testDb, alice, oats);
+    const { id: own } = await createOwnFood(alice, oats);
 
     expect((await getVisibleFood(testDb, alice, own))?.isOwn).toBe(true);
     expect((await getVisibleFood(testDb, alice, shared))?.isOwn).toBe(false);
@@ -42,7 +43,7 @@ describe("food visibility", () => {
 
   it("returns stored values with full precision and no owner id", async () => {
     const alice = await newUserId("alice@mail.com");
-    const { id } = await createFood(testDb, alice, oats);
+    const { id } = await createOwnFood(alice, oats);
     const food = await getVisibleFood(testDb, alice, id);
     expect(food).toEqual({ id, ...oats, source: "user", sourceUrl: null, isOwn: true });
     expect(food).not.toHaveProperty("ownerId");
@@ -58,7 +59,7 @@ describe("own foods", () => {
   it("updates only the owner's food", async () => {
     const alice = await newUserId("alice@mail.com");
     const bob = await newUserId("bob@mail.com");
-    const { id } = await createFood(testDb, alice, oats);
+    const { id } = await createOwnFood(alice, oats);
 
     expect(await updateOwnFood(testDb, bob, id, { ...oats, name: "Взлом" })).toBe(false);
     expect(await updateOwnFood(testDb, alice, id, { ...oats, kcal100: 360 })).toBe(true);
@@ -75,7 +76,7 @@ describe("own foods", () => {
 
   it("hides a soft-deleted food everywhere and refuses to touch it again", async () => {
     const alice = await newUserId("alice@mail.com");
-    const { id } = await createFood(testDb, alice, oats);
+    const { id } = await createOwnFood(alice, oats);
 
     expect(await softDeleteOwnFood(testDb, alice, id)).toBe(true);
     expect(await getVisibleFood(testDb, alice, id)).toBeNull();
@@ -105,7 +106,7 @@ describe("copyFood", () => {
     await addPortion(testDb, alice, shared, { label: "моё яйцо", grams: 60 });
 
     const copy = await copyFood(testDb, alice, shared);
-    if (!copy) throw new Error("no copy");
+    if (!copy || copy === "limit") throw new Error("no copy");
     const food = await getVisibleFood(testDb, alice, copy.id);
     expect(food).toMatchObject({
       name: "Яйцо",
@@ -124,7 +125,7 @@ describe("copyFood", () => {
   it("refuses to copy someone else's food", async () => {
     const alice = await newUserId("alice@mail.com");
     const bob = await newUserId("bob@mail.com");
-    const { id } = await createFood(testDb, alice, oats);
+    const { id } = await createOwnFood(alice, oats);
     expect(await copyFood(testDb, bob, id)).toBeNull();
   });
 });
@@ -135,9 +136,7 @@ describe("portions", () => {
     const bob = await newUserId("bob@mail.com");
     const shared = await insertSharedFood({ name: "Яйцо" });
     await insertSharedPortion(shared, "1 шт", 50);
-    expect(await addPortion(testDb, alice, shared, { label: "моя порция", grams: 120 })).toBe(
-      "ok",
-    );
+    expect(await addPortion(testDb, alice, shared, { label: "моя порция", grams: 120 })).toBe("ok");
 
     const forAlice = await listVisiblePortions(testDb, alice, shared);
     const forBob = await listVisiblePortions(testDb, bob, shared);
@@ -151,7 +150,7 @@ describe("portions", () => {
   it("does not add a portion to someone else's food", async () => {
     const alice = await newUserId("alice@mail.com");
     const bob = await newUserId("bob@mail.com");
-    const { id } = await createFood(testDb, alice, oats);
+    const { id } = await createOwnFood(alice, oats);
     expect(await addPortion(testDb, bob, id, { label: "x", grams: 10 })).toBe("not_found");
   });
 
@@ -179,5 +178,40 @@ describe("portions", () => {
       expect(await addPortion(testDb, alice, shared, { label: `p${i}`, grams: 10 })).toBe("ok");
     }
     expect(await addPortion(testDb, alice, shared, { label: "extra", grams: 10 })).toBe("limit");
+  });
+});
+
+describe("own food cap", () => {
+  async function fillOwnFoods(userId: string, count: number) {
+    // One bulk insert: creating the cap one by one would make the test needlessly slow.
+    await testDb.insert(foods).values(
+      Array.from({ length: count }, (_, i) => ({
+        ...oats,
+        name: `Мой ${i}`,
+        ownerId: userId,
+        source: "user" as const,
+      })),
+    );
+  }
+
+  it("refuses to create or copy a food once the user has the maximum", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const shared = await insertSharedFood({ name: "Гречка" });
+    await fillOwnFoods(alice, FOOD_LIMITS.maxOwnFoods);
+
+    expect(await createFood(testDb, alice, oats)).toBe("limit");
+    expect(await copyFood(testDb, alice, shared)).toBe("limit");
+  });
+
+  it("does not count deleted foods or other users' foods", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const bob = await newUserId("bob@mail.com");
+    await fillOwnFoods(bob, FOOD_LIMITS.maxOwnFoods);
+    await fillOwnFoods(alice, FOOD_LIMITS.maxOwnFoods - 1);
+    const created = await createFood(testDb, alice, oats);
+    if (created === "limit") throw new Error("unexpected limit");
+    await softDeleteOwnFood(testDb, alice, created.id);
+
+    expect(await createFood(testDb, alice, oats)).not.toBe("limit");
   });
 });

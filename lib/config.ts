@@ -114,6 +114,8 @@ export const FOOD_LIMITS = {
   kcal100: { min: 0, max: 900 },
   nutrient100G: { min: 0, max: 100 },
   maxTotalGramsPer100G: 100,
+  // Far above any real personal list; bounds what one account can add to the shared search index.
+  maxOwnFoods: 1000,
 } as const;
 
 export const PORTION_LIMITS = {

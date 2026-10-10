@@ -1,7 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { FOOD_SEARCH } from "@/lib/config";
 import { closeTestDb, resetDb, testDb } from "@/tests/db";
-import { insertSharedFood, newUserId } from "@/tests/foods";
+import { createOwnFood, insertSharedFood, newUserId } from "@/tests/foods";
 import { createFood, searchFoods, softDeleteOwnFood } from "./repo";
 import { normalizeFoodQuery } from "./search";
 
@@ -75,7 +75,7 @@ describe("searchFoods", () => {
 
   it("never shows another user's or a deleted food", async () => {
     const bob = await newUserId("bob@mail.com");
-    const { id } = await createFood(testDb, bob, { ...values, name: "Гречка Боба" });
+    const { id } = await createOwnFood(bob, { ...values, name: "Гречка Боба" });
     expect(await names(alice, "гречка")).not.toContain("Гречка Боба");
     await softDeleteOwnFood(testDb, bob, id);
     expect(await names(bob, "гречка")).not.toContain("Гречка Боба");

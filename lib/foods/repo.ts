@@ -1,7 +1,7 @@
 import { and, asc, count, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { foodPortions, foods } from "@/db/schema";
 import type { Db } from "@/db/types";
-import { FOOD_SEARCH, PORTION_LIMITS } from "@/lib/config";
+import { FOOD_LIMITS, FOOD_SEARCH, PORTION_LIMITS } from "@/lib/config";
 import { escapeLike } from "./search";
 import type { FoodDetails, FoodListItem, FoodValues, PortionItem, PortionValues } from "./types";
 
@@ -50,11 +50,17 @@ export async function listOwnFoods(db: Db, userId: string, limit: number): Promi
     .limit(limit);
 }
 
+// Two simultaneous creates can overshoot by one; the cap bounds abuse, it is not exact accounting.
 export async function createFood(
   db: Db,
   userId: string,
   values: FoodValues,
-): Promise<{ id: string }> {
+): Promise<{ id: string } | "limit"> {
+  const [owned] = await db
+    .select({ total: count() })
+    .from(foods)
+    .where(and(eq(foods.ownerId, userId), isNull(foods.deletedAt)));
+  if ((owned?.total ?? 0) >= FOOD_LIMITS.maxOwnFoods) return "limit";
   const [row] = await db
     .insert(foods)
     .values({ ...values, ownerId: userId, source: "user" })
@@ -123,7 +129,7 @@ export async function copyFood(
   db: Db,
   userId: string,
   foodId: string,
-): Promise<{ id: string } | null> {
+): Promise<{ id: string } | null | "limit"> {
   return db.transaction(async (tx) => {
     const [source] = await tx
       .select({
@@ -139,6 +145,7 @@ export async function copyFood(
       .limit(1);
     if (!source) return null;
     const copy = await createFood(tx, userId, source);
+    if (copy === "limit") return copy;
     const portions = await listVisiblePortions(tx, userId, foodId);
     if (portions.length > 0) {
       await tx

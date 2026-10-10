@@ -114,6 +114,7 @@ export const ru = {
     addPortion: "Добавить порцию",
     deletePortion: "Удалить",
     portionLimit: (max: number) => `Не больше ${max} своих порций у продукта`,
+    foodLimit: (max: number) => `Не больше ${max} своих продуктов. Удалите ненужные`,
   },
   errors: {
     email: "Введите корректный email",
