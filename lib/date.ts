@@ -21,3 +21,34 @@ export function parseIsoDate(value: string): { year: number; month: number; day:
 export function todayIsoDate(now: Date): IsoDate {
   return now.toISOString().slice(0, 10);
 }
+
+// Intl is the only zone-aware calendar in Node; formatToParts avoids relying on a locale's layout.
+export function todayInTimeZone(now: Date, timeZone: string): IsoDate {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((item) => item.type === type)?.value ?? "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+// Calendar arithmetic in UTC: no zone means no daylight-saving hour to skip a day over.
+export function addDays(date: IsoDate, days: number): IsoDate {
+  const parsed = parseIsoDate(date);
+  if (!parsed) throw new RangeError(`invalid date: ${date}`);
+  const shifted = new Date(Date.UTC(parsed.year, parsed.month - 1, parsed.day + days));
+  return shifted.toISOString().slice(0, 10);
+}
+
+export function isValidTimeZone(value: string): boolean {
+  if (!value) return false;
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+}

@@ -81,6 +81,16 @@ export const AUTH = {
   sessionMaxAgeSec: 30 * SECONDS_PER_DAY,
 } as const;
 
+// Used until the browser reports its own zone through the cookie (first visit, JS off).
+export const DEFAULT_TIME_ZONE = "Asia/Almaty";
+
+export const TIME_ZONE_COOKIE = {
+  name: "tz",
+  maxAgeSec: 365 * SECONDS_PER_DAY,
+  // IANA names are at most ~30 characters; longer values are garbage, not a zone.
+  maxLength: 64,
+} as const;
+
 // OWASP scrypt profile (N=2^15, r=8, p=3): ~32 MB per hash keeps a small VPS responsive.
 export const PASSWORD_HASH = {
   N: 2 ** 15,
