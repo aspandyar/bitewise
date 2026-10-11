@@ -33,6 +33,7 @@ type TextFieldProps = {
   defaultValue?: string | number;
   placeholder?: string;
   error?: string;
+  autoFocus?: boolean;
 };
 
 export function TextField({
@@ -44,6 +45,7 @@ export function TextField({
   defaultValue,
   placeholder,
   error,
+  autoFocus,
 }: TextFieldProps) {
   const id = useId();
   const errorId = `${id}-error`;
@@ -60,6 +62,7 @@ export function TextField({
         autoComplete={autoComplete}
         defaultValue={defaultValue}
         placeholder={placeholder}
+        autoFocus={autoFocus}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errorId : undefined}
         className="min-h-11 rounded-lg border border-foreground/40 bg-background px-3 text-base aria-[invalid=true]:border-red-500"
@@ -72,6 +75,13 @@ export function TextField({
     </div>
   );
 }
+
+// Four short options (meals) do not fit one row at 375 px, so they get a 2 × 2 grid.
+const choiceLayouts = {
+  row: "grid auto-cols-fr grid-flow-col gap-2",
+  column: "flex flex-col gap-2",
+  grid: "grid grid-cols-2 gap-2",
+} as const;
 
 type ChoiceOption<T extends string> = { value: T; label: string; hint?: string };
 
@@ -88,16 +98,12 @@ export function ChoiceGroup<T extends string>({
   options: readonly ChoiceOption<T>[];
   defaultValue?: T;
   error?: string;
-  layout?: "row" | "column";
+  layout?: keyof typeof choiceLayouts;
 }) {
   return (
     <fieldset className="flex flex-col gap-1">
       <legend className="mb-1 text-sm font-medium">{legend}</legend>
-      <div
-        className={
-          layout === "row" ? "grid auto-cols-fr grid-flow-col gap-2" : "flex flex-col gap-2"
-        }
-      >
+      <div className={choiceLayouts[layout]}>
         {options.map((option) => (
           <label
             key={option.value}
