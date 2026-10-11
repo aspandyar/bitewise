@@ -57,13 +57,11 @@ export const ru = {
   },
   targets: {
     defaultName: "По умолчанию",
-    cardTitle: "Норма на день",
     kcalUnit: "ккал",
     gramsUnit: "г",
     protein: "Белки",
     fat: "Жиры",
     carbs: "Углеводы",
-    modes: { auto: "авто", manual: "вручную" },
     editProfile: "Изменить профиль",
     editTargets: "Изменить норму",
     editTitle: "Норма",
@@ -192,8 +190,5 @@ export const ru = {
     kcalPer100g: (kcal: string) => `${kcal} ккал на 100 г`,
     editTitle: "Изменить запись",
     entryLimit: (max: number) => `Не больше ${max} записей за день`,
-  },
-  home: {
-    tagline: "Быстро записывай, что съел, и смотри, сколько осталось до нормы.",
   },
 } as const;
