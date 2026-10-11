@@ -136,6 +136,24 @@ export const FOOD_SEARCH = {
   debounceMs: 250,
 } as const;
 
+// Foods store nutrients per this many grams; every entry scales from it.
+export const NUTRIENT_BASE_GRAMS = 100;
+
+// Order here is the order on the day screen and in the Postgres enum (ORDER BY follows it).
+export const MEALS = ["breakfast", "lunch", "dinner", "snack"] as const;
+export type Meal = (typeof MEALS)[number];
+
+export const DIARY_LIMITS = {
+  // Same bounds as a food portion: from a pinch of salt to a big pot.
+  grams: { min: 0.1, max: 5000 },
+  // Quarter portions are the finest split people use; the stepper moves in halves.
+  portionCount: { min: 0.25, max: 50, step: 0.5, default: 1 },
+  // Far above any real day; bounds what a script can write into one account.
+  maxEntriesPerDay: 100,
+  // Older dates are typos, not history kept in this app.
+  minDate: "2000-01-01",
+} as const;
+
 // FoodData Central nutrient ids (nutrient.csv), all per 100 g.
 export const USDA_NUTRIENT_IDS = {
   kcal: 1008,

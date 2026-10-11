@@ -4,6 +4,7 @@ import {
   KCAL_PER_GRAM,
   MACRO_TARGETS,
   MIFFLIN_ST_JEOR,
+  NUTRIENT_BASE_GRAMS,
   TARGET_LIMITS,
   type ActivityLevel,
   type Goal,
@@ -127,4 +128,60 @@ export function calcNetCarbsPer100g(carbsByDifferenceG: number, fiberG: number |
   assertNonNegative("fiberG", fiberG);
   // Lab rounding can put fiber above carbs by difference; negative carbs are meaningless.
   return Math.max(0, carbsByDifferenceG - fiberG);
+}
+
+export type Per100g = { kcal100: number; protein100: number; fat100: number; carbs100: number };
+
+export type Nutrients = { kcal: number; proteinG: number; fatG: number; carbsG: number };
+
+export function calcEntryNutrients(per100g: Per100g, grams: number): Nutrients {
+  assertNonNegative("grams", grams);
+  const scale = (valuePer100g: number) => (valuePer100g * grams) / NUTRIENT_BASE_GRAMS;
+  return {
+    kcal: scale(per100g.kcal100),
+    proteinG: scale(per100g.protein100),
+    fatG: scale(per100g.fat100),
+    carbsG: scale(per100g.carbs100),
+  };
+}
+
+export function calcPortionGrams(portionGrams: number, count: number): number {
+  assertPositive("portionGrams", portionGrams);
+  assertPositive("count", count);
+  return portionGrams * count;
+}
+
+const ZERO_NUTRIENTS: Nutrients = { kcal: 0, proteinG: 0, fatG: 0, carbsG: 0 };
+
+export function sumNutrients(list: readonly Nutrients[]): Nutrients {
+  return list.reduce(
+    (total, item) => ({
+      kcal: total.kcal + item.kcal,
+      proteinG: total.proteinG + item.proteinG,
+      fatG: total.fatG + item.fatG,
+      carbsG: total.carbsG + item.carbsG,
+    }),
+    ZERO_NUTRIENTS,
+  );
+}
+
+export type NutrientProgress = { eaten: number; target: number; remaining: number; share: number };
+
+export type DayProgress = Record<keyof Nutrients, NutrientProgress>;
+
+function calcNutrientProgress(target: number, eaten: number): NutrientProgress {
+  assertNonNegative("target", target);
+  assertNonNegative("eaten", eaten);
+  // A manual target may set a macro to 0 g; anything eaten then is fully "over", never NaN.
+  const share = target > 0 ? eaten / target : eaten > 0 ? Infinity : 0;
+  return { eaten, target, remaining: target - eaten, share };
+}
+
+export function calcDayProgress(target: Nutrients, eaten: Nutrients): DayProgress {
+  return {
+    kcal: calcNutrientProgress(target.kcal, eaten.kcal),
+    proteinG: calcNutrientProgress(target.proteinG, eaten.proteinG),
+    fatG: calcNutrientProgress(target.fatG, eaten.fatG),
+    carbsG: calcNutrientProgress(target.carbsG, eaten.carbsG),
+  };
 }
