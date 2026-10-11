@@ -5,6 +5,7 @@ import { TextField } from "@/components/ui/form";
 import { DIARY_LIMITS } from "@/lib/config";
 import { formatAmount, formatGrams, formatKcal } from "@/lib/format";
 import { ru } from "@/lib/i18n/ru";
+import { calcPortionGrams } from "@/lib/nutrition";
 
 // kcal is computed by the server page: the client never derives nutrients itself.
 export type PortionOption = { id: string | null; label: string; grams: number; kcal: number };
@@ -45,7 +46,19 @@ export function AmountFields({
   const [mode, setMode] = useState<AmountMode>(portions.length > 0 ? initial.mode : "grams");
   const [portionIndex, setPortionIndex] = useState(initial.portionIndex);
   const [count, setCount] = useState(formatAmount(initial.count));
+  const [gramsDefault, setGramsDefault] = useState(
+    initial.grams === null ? "" : formatAmount(initial.grams),
+  );
   const current = parseCount(count);
+
+  // Switching from portions carries the amount over, so saving grams keeps what was picked.
+  function selectMode(next: AmountMode) {
+    const portion = portions[portionIndex];
+    if (next === "grams" && mode === "portion" && portion && current !== null && current > 0) {
+      setGramsDefault(formatAmount(calcPortionGrams(portion.grams, current)));
+    }
+    setMode(next);
+  }
 
   return (
     <fieldset className="flex flex-col gap-3">
@@ -58,7 +71,7 @@ export function AmountFields({
               key={option}
               type="button"
               aria-pressed={mode === option}
-              onClick={() => setMode(option)}
+              onClick={() => selectMode(option)}
               className={segment}
             >
               {option === "portion" ? ru.diary.modePortions : ru.diary.modeGrams}
@@ -72,7 +85,7 @@ export function AmountFields({
           name="grams"
           inputMode="decimal"
           autoFocus
-          defaultValue={initial.grams ?? ""}
+          defaultValue={gramsDefault}
           error={errors.grams}
         />
       ) : (

@@ -7,6 +7,7 @@ import { BackLink } from "@/components/ui/back-link";
 import { PageLoading } from "@/components/ui/page-loading";
 import { requireUserId } from "@/lib/auth/session";
 import { addHref } from "@/lib/diary/paths";
+import { countDayEntries } from "@/lib/diary/repo";
 import { parseDiaryDate, parseId, parseMeal } from "@/lib/diary/schema";
 import { getUserToday } from "@/lib/diary/today";
 import { getVisibleFood, listVisiblePortions } from "@/lib/foods/repo";
@@ -25,9 +26,10 @@ async function AmountContent({
   const date = parseDiaryDate(query.date, today);
   const meal = parseMeal(query.meal);
   if (!foodId || !date || !meal) notFound();
-  const [food, portions] = await Promise.all([
+  const [food, portions, dayCount] = await Promise.all([
     getVisibleFood(db, userId, foodId),
     listVisiblePortions(db, userId, foodId),
+    countDayEntries(db, userId, date),
   ]);
   if (!food) notFound();
   const options: PortionOption[] = portions.map((portion) => ({
@@ -43,7 +45,15 @@ async function AmountContent({
         <h1 className="text-2xl font-semibold [overflow-wrap:anywhere]">{food.name}</h1>
         <p className="text-foreground/60">{ru.diary.kcalPer100g(formatKcal(food.kcal100))}</p>
       </div>
-      <AddEntryForm date={date} foodId={food.id} meal={meal} portions={options} />
+      {/* cacheComponents keeps hidden screens alive; without this key a revisit would keep the
+          meal and amount picked last time instead of the ones in the URL. */}
+      <AddEntryForm
+        key={`${food.id}:${date}:${meal}:${dayCount}`}
+        date={date}
+        foodId={food.id}
+        meal={meal}
+        portions={options}
+      />
     </main>
   );
 }

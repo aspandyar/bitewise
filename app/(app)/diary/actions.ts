@@ -42,6 +42,9 @@ export async function addEntryAction(_prev: FormState, formData: FormData): Prom
   });
   if (result === "not_found") notFound();
   if (result === "limit") return { formError: ru.diary.entryLimit(DIARY_LIMITS.maxEntriesPerDay) };
+  if (result === "total_limit") {
+    return { formError: ru.diary.entryTotalLimit(DIARY_LIMITS.maxEntriesTotal) };
+  }
   redirect(dayHref(date, today));
 }
 

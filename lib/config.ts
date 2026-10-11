@@ -158,8 +158,10 @@ export const DIARY_LIMITS = {
   grams: { min: 0.1, max: 5000 },
   // Quarter portions are the finest split people use; the stepper moves in halves.
   portionCount: { min: 0.25, max: 50, step: 0.5, default: 1 },
-  // Far above any real day; bounds what a script can write into one account.
+  // Far above any real day; bounds what a script can write into one day.
   maxEntriesPerDay: 100,
+  // ~27 years at 10 entries a day; stops a script sweeping every allowed date to fill the disk.
+  maxEntriesTotal: 100_000,
   // Older dates are typos, not history kept in this app.
   minDate: "2000-01-01",
 } as const;

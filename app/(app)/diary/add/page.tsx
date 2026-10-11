@@ -9,6 +9,7 @@ import { FOOD_SEARCH } from "@/lib/config";
 import { dayHref, diarySearch } from "@/lib/diary/paths";
 import { parseDiaryDate, parseMeal } from "@/lib/diary/schema";
 import { getUserToday } from "@/lib/diary/today";
+import { countDayEntries } from "@/lib/diary/repo";
 import { listOwnFoods } from "@/lib/foods/repo";
 import { formatDayLabel } from "@/lib/format";
 import { ru } from "@/lib/i18n/ru";
@@ -20,14 +21,20 @@ async function AddContent({ searchParams }: Pick<PageProps<"/diary/add">, "searc
   const date = parseDiaryDate(params.date, today);
   const meal = parseMeal(params.meal);
   if (!date || !meal) notFound();
-  const ownFoods = await listOwnFoods(db, userId, FOOD_SEARCH.limit);
+  const [ownFoods, dayCount] = await Promise.all([
+    listOwnFoods(db, userId, FOOD_SEARCH.limit),
+    countDayEntries(db, userId, date),
+  ]);
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
       <BackLink href={dayHref(date, today)} />
       <h1 className="text-2xl font-semibold">
         {ru.diary.addTitle(ru.diary.meals[meal], formatDayLabel(date, today))}
       </h1>
+      {/* cacheComponents keeps this screen alive with its query; a new key after every add
+          starts a fresh search, while Back from the amount step keeps the results. */}
       <FoodSearch
+        key={`${date}:${meal}:${dayCount}`}
         ownFoods={ownFoods}
         link={{ prefix: "/diary/add/", search: diarySearch(date, meal) }}
       />

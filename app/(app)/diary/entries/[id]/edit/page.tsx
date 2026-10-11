@@ -49,7 +49,10 @@ async function EditEntryContent({ params }: Pick<PageProps<"/diary/entries/[id]/
         <p className="text-sm text-foreground/60">{ru.diary.editTitle}</p>
         <h1 className="text-2xl font-semibold [overflow-wrap:anywhere]">{entry.foodName}</h1>
       </div>
+      {/* cacheComponents keeps hidden screens alive; keyed by the stored values so a revisit
+          after saving never shows (and re-saves) the previous amount. */}
       <EditEntryForm
+        key={`${entry.id}:${entry.meal}:${entry.grams}:${entry.portionCount}`}
         action={updateEntryAction.bind(null, entry.id)}
         meal={entry.meal}
         portion={portion}

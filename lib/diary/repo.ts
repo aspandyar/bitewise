@@ -40,6 +40,14 @@ export async function getDayEntries(db: Db, userId: string, date: IsoDate): Prom
   );
 }
 
+export async function countDayEntries(db: Db, userId: string, date: IsoDate): Promise<number> {
+  const [row] = await db
+    .select({ total: count() })
+    .from(diaryEntries)
+    .where(and(eq(diaryEntries.userId, userId), eq(diaryEntries.date, date)));
+  return row?.total ?? 0;
+}
+
 export async function getEntry(
   db: Db,
   userId: string,
@@ -69,8 +77,12 @@ export async function addEntry(
   db: Db,
   userId: string,
   input: AddEntryInput,
-): Promise<"ok" | "not_found" | "limit"> {
+  // Injectable so tests can reach the caps without inserting a hundred thousand rows.
+  limits: { maxEntriesPerDay: number; maxEntriesTotal: number } = DIARY_LIMITS,
+): Promise<"ok" | "not_found" | "limit" | "total_limit"> {
   return db.transaction(async (tx) => {
+    // Serializes one user's adds so parallel submits cannot all pass the cap checks below.
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${userId}))`);
     const [food] = await tx
       .select({
         name: foods.name,
@@ -89,12 +101,17 @@ export async function addEntry(
       portion = await getVisiblePortion(tx, userId, input.foodId, amount.portionId);
       if (!portion) return "not_found";
     }
-    // Two simultaneous submits can overshoot by one; the cap bounds scripts, not people.
-    const [day] = await tx
-      .select({ total: count() })
+    const [counts] = await tx
+      .select({
+        total: count(),
+        day: sql<number>`count(*) FILTER (WHERE ${diaryEntries.date} = ${input.date})`.mapWith(
+          Number,
+        ),
+      })
       .from(diaryEntries)
-      .where(and(eq(diaryEntries.userId, userId), eq(diaryEntries.date, input.date)));
-    if ((day?.total ?? 0) >= DIARY_LIMITS.maxEntriesPerDay) return "limit";
+      .where(eq(diaryEntries.userId, userId));
+    if ((counts?.day ?? 0) >= limits.maxEntriesPerDay) return "limit";
+    if ((counts?.total ?? 0) >= limits.maxEntriesTotal) return "total_limit";
     await tx.insert(diaryEntries).values({
       userId,
       date: input.date,

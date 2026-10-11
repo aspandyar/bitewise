@@ -190,5 +190,6 @@ export const ru = {
     kcalPer100g: (kcal: string) => `${kcal} ккал на 100 г`,
     editTitle: "Изменить запись",
     entryLimit: (max: number) => `Не больше ${max} записей за день`,
+    entryTotalLimit: (max: number) => `Не больше ${max} записей в дневнике`,
   },
 } as const;

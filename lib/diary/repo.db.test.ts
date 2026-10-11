@@ -12,7 +12,14 @@ import {
 } from "@/lib/foods/repo";
 import { closeTestDb, resetDb, testDb } from "@/tests/db";
 import { createOwnFood, insertSharedFood, insertSharedPortion, newUserId } from "@/tests/foods";
-import { addEntry, deleteEntry, getDayEntries, getEntry, updateEntry } from "./repo";
+import {
+  addEntry,
+  countDayEntries,
+  deleteEntry,
+  getDayEntries,
+  getEntry,
+  updateEntry,
+} from "./repo";
 
 const DAY = "2026-10-11";
 const buckwheat = { name: "Гречка", kcal100: 343, protein100: 13.3, fat100: 3.4, carbs100: 62.1 };
@@ -185,6 +192,21 @@ describe("addEntry", () => {
   });
 });
 
+describe("addEntry account cap", () => {
+  it("stops at the per-account total even when every day has room", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const foodId = await insertSharedFood(buckwheat);
+    const limits = { ...DIARY_LIMITS, maxEntriesTotal: 2 };
+    const amount = { mode: "grams", grams: 10 } as const;
+    const add = (date: string) =>
+      addEntry(testDb, alice, { date, meal: "lunch", foodId, amount }, limits);
+    expect(await add("2026-10-01")).toBe("ok");
+    expect(await add("2026-10-02")).toBe("ok");
+    expect(await add("2026-10-03")).toBe("total_limit");
+    expect(await getDayEntries(testDb, alice, "2026-10-03")).toEqual([]);
+  });
+});
+
 describe("getDayEntries and getEntry", () => {
   it("orders a day by meal, then by when entries were added", async () => {
     const alice = await newUserId("alice@mail.com");
@@ -202,6 +224,19 @@ describe("getDayEntries and getEntry", () => {
       ["dinner", 1],
       ["dinner", 3],
     ]);
+  });
+
+  it("counts only the user's entries of that day", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const bob = await newUserId("bob@mail.com");
+    const foodId = await insertSharedFood(buckwheat);
+    const amount = { mode: "grams", grams: 10 } as const;
+    await addEntry(testDb, alice, { date: DAY, meal: "lunch", foodId, amount });
+    await addEntry(testDb, alice, { date: DAY, meal: "dinner", foodId, amount });
+    await addEntry(testDb, alice, { date: "2026-10-10", meal: "lunch", foodId, amount });
+    await addEntry(testDb, bob, { date: DAY, meal: "lunch", foodId, amount });
+    expect(await countDayEntries(testDb, alice, DAY)).toBe(2);
+    expect(await countDayEntries(testDb, alice, "2026-10-09")).toBe(0);
   });
 
   it("never shows another user's day or entry", async () => {

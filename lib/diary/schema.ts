@@ -57,11 +57,15 @@ export function toUpdateAmount(form: UpdateEntryForm): UpdateAmount {
     : { mode: "portion", count: form.count };
 }
 
+const isoDateSchema = z.string().refine((value) => parseIsoDate(value) !== null);
+
 // Dates arrive from URLs and hidden fields; the future is not a diary day.
 export function parseDiaryDate(value: unknown, today: IsoDate): IsoDate | null {
-  if (typeof value !== "string" || !parseIsoDate(value)) return null;
-  // ISO dates compare correctly as plain strings.
-  return value >= DIARY_LIMITS.minDate && value <= today ? value : null;
+  const parsed = isoDateSchema
+    // ISO dates compare correctly as plain strings.
+    .refine((date) => date >= DIARY_LIMITS.minDate && date <= today)
+    .safeParse(value);
+  return parsed.success ? parsed.data : null;
 }
 
 export function parseMeal(value: unknown): Meal | null {
