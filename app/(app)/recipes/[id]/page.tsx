@@ -52,18 +52,22 @@ async function RecipeContent({ params }: Pick<PageProps<"/recipes/[id]">, "param
         }
         weightRaised={result.weightRaised}
       />
-      <Link
-        href={addFoodHref(recipe.foodId, today, DIARY_DEFAULT_MEAL)}
-        className="flex min-h-11 items-center justify-center rounded-lg bg-foreground px-4 font-medium text-background"
-      >
-        {ru.recipes.toDiary}
-      </Link>
+      {/* An empty dish is 0 kcal: there is nothing to log until it has ingredients. */}
+      {recipe.items.length > 0 ? (
+        <Link
+          href={addFoodHref(recipe.foodId, today, DIARY_DEFAULT_MEAL)}
+          className="flex min-h-11 items-center justify-center rounded-lg bg-foreground px-4 font-medium text-background"
+        >
+          {ru.recipes.toDiary}
+        </Link>
+      ) : null}
       <IngredientList
         recipeId={recipe.id}
         items={items}
         canAdd={recipe.items.length < RECIPE_LIMITS.maxItems}
       />
-      <div className="flex flex-wrap gap-2">
+      {/* Stacked, so the two confirm buttons replace "Delete" in place instead of wrapping below. */}
+      <div className="flex flex-col items-start gap-2">
         <Link href={recipeEditHref(recipe.id)} className={action}>
           {ru.recipes.edit}
         </Link>

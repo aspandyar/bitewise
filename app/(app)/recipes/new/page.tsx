@@ -3,6 +3,7 @@ import { db } from "@/db/client";
 import { createRecipeAction } from "@/app/(app)/recipes/actions";
 import { RecipeForm } from "@/components/recipes/recipe-form";
 import { BackLink } from "@/components/ui/back-link";
+import { ResetOnHide } from "@/components/ui/reset-on-hide";
 import { PageLoading } from "@/components/ui/page-loading";
 import { requireUserId } from "@/lib/auth/session";
 import { ru } from "@/lib/i18n/ru";
@@ -18,7 +19,9 @@ async function NewRecipeContent() {
       <h1 className="text-2xl font-semibold">{ru.recipes.newTitle}</h1>
       {/* cacheComponents keeps this screen alive; a new key after every created, edited or deleted
           recipe opens an empty form instead of the previous dish's name. */}
-      <RecipeForm key={lastChange?.getTime() ?? 0} action={createRecipeAction} />
+      <ResetOnHide>
+        <RecipeForm key={lastChange?.getTime() ?? 0} action={createRecipeAction} />
+      </ResetOnHide>
     </main>
   );
 }

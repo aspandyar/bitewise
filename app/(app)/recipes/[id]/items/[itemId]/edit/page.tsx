@@ -6,6 +6,7 @@ import type { AmountInitial, PortionOption } from "@/components/diary/amount-fie
 import { ItemAmountForm } from "@/components/recipes/item-amount-form";
 import { BackLink } from "@/components/ui/back-link";
 import { ConfirmDeleteButton } from "@/components/ui/confirm-delete-button";
+import { ResetOnHide } from "@/components/ui/reset-on-hide";
 import { PageLoading } from "@/components/ui/page-loading";
 import { requireUserId } from "@/lib/auth/session";
 import { DIARY_LIMITS } from "@/lib/config";
@@ -51,13 +52,15 @@ async function EditIngredientContent({
         <h1 className="text-2xl font-semibold [overflow-wrap:anywhere]">{item.foodName}</h1>
       </div>
       {/* Keyed by the stored values so a revisit after saving never re-saves the old amount. */}
-      <ItemAmountForm
-        key={`${item.id}:${item.grams}:${item.portionCount}`}
-        action={updateItemAction.bind(null, recipe.id, item.id)}
-        portions={portion ? [portion] : []}
-        initial={initial}
-        submitLabel={ru.common.save}
-      />
+      <ResetOnHide>
+        <ItemAmountForm
+          key={`${item.id}:${item.grams}:${item.portionCount}`}
+          action={updateItemAction.bind(null, recipe.id, item.id)}
+          portions={portion ? [portion] : []}
+          initial={initial}
+          submitLabel={ru.common.save}
+        />
+      </ResetOnHide>
       <ConfirmDeleteButton action={deleteItemAction.bind(null, recipe.id, item.id)} />
     </main>
   );

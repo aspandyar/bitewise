@@ -5,6 +5,7 @@ import { addItemAction } from "@/app/(app)/recipes/actions";
 import type { PortionOption } from "@/components/diary/amount-fields";
 import { ItemAmountForm } from "@/components/recipes/item-amount-form";
 import { BackLink } from "@/components/ui/back-link";
+import { ResetOnHide } from "@/components/ui/reset-on-hide";
 import { PageLoading } from "@/components/ui/page-loading";
 import { requireUserId } from "@/lib/auth/session";
 import { DIARY_LIMITS } from "@/lib/config";
@@ -45,18 +46,20 @@ async function IngredientAmountContent({
         <h1 className="text-2xl font-semibold [overflow-wrap:anywhere]">{food.name}</h1>
         <p className="text-foreground/60">{ru.diary.kcalPer100g(formatKcal(food.kcal100))}</p>
       </div>
-      <ItemAmountForm
-        key={`${recipe.id}:${food.id}:${recipe.updatedAt.getTime()}`}
-        action={addItemAction.bind(null, recipe.id, food.id)}
-        portions={options}
-        initial={{
-          mode: options.length > 0 ? "portion" : "grams",
-          portionIndex: 0,
-          count: DIARY_LIMITS.portionCount.default,
-          grams: null,
-        }}
-        submitLabel={ru.recipes.submitAddIngredient}
-      />
+      <ResetOnHide>
+        <ItemAmountForm
+          key={`${recipe.id}:${food.id}:${recipe.updatedAt.getTime()}`}
+          action={addItemAction.bind(null, recipe.id, food.id)}
+          portions={options}
+          initial={{
+            mode: options.length > 0 ? "portion" : "grams",
+            portionIndex: 0,
+            count: DIARY_LIMITS.portionCount.default,
+            grams: null,
+          }}
+          submitLabel={ru.recipes.submitAddIngredient}
+        />
+      </ResetOnHide>
     </main>
   );
 }

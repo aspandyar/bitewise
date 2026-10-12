@@ -4,6 +4,7 @@ import { db } from "@/db/client";
 import { updateRecipeAction } from "@/app/(app)/recipes/actions";
 import { RecipeForm } from "@/components/recipes/recipe-form";
 import { BackLink } from "@/components/ui/back-link";
+import { ResetOnHide } from "@/components/ui/reset-on-hide";
 import { PageLoading } from "@/components/ui/page-loading";
 import { requireUserId } from "@/lib/auth/session";
 import { ru } from "@/lib/i18n/ru";
@@ -27,11 +28,13 @@ async function EditRecipeContent({ params }: Pick<PageProps<"/recipes/[id]/edit"
       <BackLink href={recipeHref(recipe.id)} />
       <h1 className="text-2xl font-semibold">{ru.recipes.editTitle}</h1>
       {/* Keyed by the stored values so a revisit after saving never shows the old ones. */}
-      <RecipeForm
-        key={`${recipe.id}:${recipe.name}:${recipe.cookedWeightG}:${recipe.servings}`}
-        action={updateRecipeAction.bind(null, recipe.id)}
-        initial={initial}
-      />
+      <ResetOnHide>
+        <RecipeForm
+          key={`${recipe.id}:${recipe.name}:${recipe.cookedWeightG}:${recipe.servings}`}
+          action={updateRecipeAction.bind(null, recipe.id)}
+          initial={initial}
+        />
+      </ResetOnHide>
     </main>
   );
 }

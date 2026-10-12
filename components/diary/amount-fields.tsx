@@ -85,6 +85,7 @@ export function AmountFields({
           name="grams"
           inputMode="decimal"
           autoFocus
+          selectOnFocus
           defaultValue={gramsDefault}
           error={errors.grams}
         />
