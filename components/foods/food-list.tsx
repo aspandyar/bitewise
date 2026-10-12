@@ -20,7 +20,7 @@ export function FoodList({
             <span className="flex items-start justify-between gap-2">
               <span className="min-w-0 font-medium [overflow-wrap:anywhere]">{food.name}</span>
               <span className="shrink-0 rounded-full bg-foreground/5 px-2 py-0.5 text-xs">
-                {ru.foods.sources[food.source]}
+                {food.isRecipe ? ru.recipes.badge : ru.foods.sources[food.source]}
               </span>
             </span>
             <span className="text-sm text-foreground/60">

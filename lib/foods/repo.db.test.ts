@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { foods } from "@/db/schema";
+import { foodPortions, foods } from "@/db/schema";
 import { FOOD_LIMITS, PORTION_LIMITS } from "@/lib/config";
 import { closeTestDb, resetDb, testDb } from "@/tests/db";
 import { createOwnFood, insertSharedFood, insertSharedPortion, newUserId } from "@/tests/foods";
+import { insertRecipeFood } from "@/tests/recipes";
+import { addItem, createRecipe, getRecipe } from "@/lib/recipes/repo";
 import type { FoodValues } from "./types";
 import {
   addPortion,
@@ -45,7 +47,14 @@ describe("food visibility", () => {
     const alice = await newUserId("alice@mail.com");
     const { id } = await createOwnFood(alice, oats);
     const food = await getVisibleFood(testDb, alice, id);
-    expect(food).toEqual({ id, ...oats, source: "user", sourceUrl: null, isOwn: true });
+    expect(food).toEqual({
+      id,
+      ...oats,
+      source: "user",
+      sourceUrl: null,
+      isOwn: true,
+      isRecipe: false,
+    });
     expect(food).not.toHaveProperty("ownerId");
   });
 
@@ -213,5 +222,76 @@ describe("own food cap", () => {
     await softDeleteOwnFood(testDb, alice, created.id);
 
     expect(await createFood(testDb, alice, oats)).not.toBe("limit");
+  });
+});
+
+describe("recipe foods", () => {
+  const values = {
+    name: "Каша",
+    kcal100: 1,
+    protein100: 1,
+    fat100: 1,
+    carbs100: 1,
+    fiber100: null,
+  };
+
+  it("refuses food-level edits of a recipe's food row", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const { foodId } = await insertRecipeFood(alice, "Борщ");
+    expect(await updateOwnFood(testDb, alice, foodId, values)).toBe(false);
+    expect(await softDeleteOwnFood(testDb, alice, foodId)).toBe(false);
+    expect(await copyFood(testDb, alice, foodId)).toBeNull();
+    expect(await addPortion(testDb, alice, foodId, { label: "1 тарелка", grams: 300 })).toBe(
+      "not_found",
+    );
+  });
+
+  it("refuses to delete a recipe's serving portion as an own portion", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const { foodId } = await insertRecipeFood(alice, "Борщ");
+    await testDb
+      .insert(foodPortions)
+      .values({ foodId, userId: alice, label: "1 порция", grams: 300 });
+    const [portion] = await listVisiblePortions(testDb, alice, foodId);
+    if (!portion) throw new Error("no portion");
+    expect(await deleteOwnPortion(testDb, alice, portion.id)).toBe(false);
+  });
+
+  it("leaves recipes out of own foods when asked", async () => {
+    const alice = await newUserId("alice@mail.com");
+    await createOwnFood(alice, values);
+    await insertRecipeFood(alice, "Борщ");
+    const all = await listOwnFoods(testDb, alice, 20);
+    expect(all.map((food) => [food.name, food.isRecipe])).toEqual(
+      expect.arrayContaining([
+        ["Каша", false],
+        ["Борщ", true],
+      ]),
+    );
+    const plain = await listOwnFoods(testDb, alice, 20, { excludeRecipes: true });
+    expect(plain.map((food) => food.name)).toEqual(["Каша"]);
+  });
+});
+
+describe("updateOwnFood and recipes", () => {
+  it("recomputes recipes that use the food", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const beet = { name: "Моя свёкла", kcal100: 40, protein100: 1, fat100: 0, carbs100: 9 };
+    const own = await createOwnFood(alice, { ...beet, fiber100: null });
+    const created = await createRecipe(testDb, alice, {
+      name: "Салат",
+      cookedWeightG: null,
+      servings: null,
+    });
+    if (created === "limit") throw new Error("cap");
+    await addItem(testDb, alice, created.id, {
+      foodId: own.id,
+      amount: { mode: "grams", grams: 200 },
+    });
+
+    await updateOwnFood(testDb, alice, own.id, { ...beet, kcal100: 50, fiber100: null });
+    const recipe = await getRecipe(testDb, alice, created.id);
+    const food = recipe && (await getVisibleFood(testDb, alice, recipe.foodId));
+    expect(food?.kcal100).toBe(50);
   });
 });

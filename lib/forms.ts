@@ -34,3 +34,20 @@ export function optionalDecimalField(limits: { min: number; max: number }, messa
     decimalField(limits, message).nullable(),
   );
 }
+
+// Whole counts (servings): an empty field means "not set" (null); "4,5" is an error, not 4.
+export function optionalIntegerField(limits: { min: number; max: number }, message: string) {
+  return z.preprocess(
+    (value) => {
+      if (typeof value !== "string") return value;
+      const trimmed = value.trim();
+      return trimmed === "" ? null : trimmed;
+    },
+    z.coerce
+      .number({ error: message })
+      .int({ error: message })
+      .min(limits.min, { error: message })
+      .max(limits.max, { error: message })
+      .nullable(),
+  );
+}

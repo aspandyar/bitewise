@@ -28,12 +28,14 @@ type TextFieldProps = {
   label: string;
   name: string;
   type?: HTMLInputTypeAttribute;
-  inputMode?: "text" | "decimal" | "email";
+  inputMode?: "text" | "decimal" | "numeric" | "email";
   autoComplete?: string;
   defaultValue?: string | number;
   placeholder?: string;
   error?: string;
   autoFocus?: boolean;
+  // A prefilled value gets replaced by typing rather than appended to.
+  selectOnFocus?: boolean;
 };
 
 export function TextField({
@@ -46,6 +48,7 @@ export function TextField({
   placeholder,
   error,
   autoFocus,
+  selectOnFocus,
 }: TextFieldProps) {
   const id = useId();
   const errorId = `${id}-error`;
@@ -63,6 +66,7 @@ export function TextField({
         defaultValue={defaultValue}
         placeholder={placeholder}
         autoFocus={autoFocus}
+        onFocus={selectOnFocus ? (event) => event.currentTarget.select() : undefined}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errorId : undefined}
         className="min-h-11 rounded-lg border border-foreground/40 bg-background px-3 text-base aria-[invalid=true]:border-red-500"

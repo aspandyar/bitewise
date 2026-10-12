@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { ru } from "@/lib/i18n/ru";
 
@@ -23,6 +23,9 @@ function ConfirmButton() {
 // Two steps instead of window.confirm: the native dialog looks out of place in an installed PWA.
 export function ConfirmDeleteButton({ action }: { action: () => Promise<void> }) {
   const [confirming, setConfirming] = useState(false);
+  // A hidden screen (cacheComponents) keeps its state; disarm on leaving so every visit takes
+  // two taps again.
+  useEffect(() => () => setConfirming(false), []);
   if (!confirming) {
     return (
       <button type="button" onClick={() => setConfirming(true)} className={outlined}>

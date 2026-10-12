@@ -4,6 +4,7 @@ import {
   check,
   date,
   index,
+  integer,
   numeric,
   pgEnum,
   pgTable,
@@ -197,6 +198,74 @@ export const diaryEntries = pgTable(
     ),
     check(
       "diary_entries_portion_positive",
+      sql`(${t.portionGrams} IS NULL OR ${t.portionGrams} > 0) AND (${t.portionCount} IS NULL OR ${t.portionCount} > 0)`,
+    ),
+  ],
+);
+
+export const recipes = pgTable(
+  "recipes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // The dish is a food row too, so search, portions and the diary treat it like any food;
+    // its name, per-100 g numbers and soft delete live there.
+    foodId: uuid("food_id")
+      .notNull()
+      .references(() => foods.id, { onDelete: "cascade" }),
+    // Null: not weighed, the raw weight of the ingredients is used.
+    cookedWeightG: optionalNutrient("cooked_weight_g"),
+    // Null: no "1 serving" portion. The 1–100 range is checked by the form schema.
+    servings: integer("servings"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("recipes_user_id_idx").on(t.userId),
+    uniqueIndex("recipes_food_id_unique").on(t.foodId),
+    check(
+      "recipes_cooked_weight_positive",
+      sql`${t.cookedWeightG} IS NULL OR ${t.cookedWeightG} > 0`,
+    ),
+    check("recipes_servings_positive", sql`${t.servings} IS NULL OR ${t.servings} > 0`),
+  ],
+);
+
+export const recipeItems = pgTable(
+  "recipe_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    recipeId: uuid("recipe_id")
+      .notNull()
+      .references(() => recipes.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // No cascade: foods are only soft-deleted, and a deleted ingredient keeps counting.
+    foodId: uuid("food_id")
+      .notNull()
+      .references(() => foods.id),
+    grams: nutrient("grams"),
+    // Snapshot of the portion used, as in diary_entries.
+    portionLabel: text("portion_label"),
+    portionGrams: optionalNutrient("portion_grams"),
+    portionCount: optionalNutrient("portion_count"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("recipe_items_recipe_id_idx").on(t.recipeId),
+    index("recipe_items_user_id_idx").on(t.userId),
+    // Finds the recipes to recompute when a food changes, and serves the FK check on deletes.
+    index("recipe_items_food_id_idx").on(t.foodId),
+    check("recipe_items_grams_positive", sql`${t.grams} > 0`),
+    check(
+      "recipe_items_portion_all_or_none",
+      sql`(${t.portionLabel} IS NULL) = (${t.portionGrams} IS NULL) AND (${t.portionGrams} IS NULL) = (${t.portionCount} IS NULL)`,
+    ),
+    check(
+      "recipe_items_portion_positive",
       sql`(${t.portionGrams} IS NULL OR ${t.portionGrams} > 0) AND (${t.portionCount} IS NULL OR ${t.portionCount} > 0)`,
     ),
   ],

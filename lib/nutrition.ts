@@ -1,10 +1,13 @@
 import {
   ACTIVITY_FACTORS,
+  FOOD_LIMITS,
   GOAL_ADJUSTMENTS,
   KCAL_PER_GRAM,
   MACRO_TARGETS,
   MIFFLIN_ST_JEOR,
   NUTRIENT_BASE_GRAMS,
+  NUTRIENT_STORAGE_DECIMALS,
+  PORTION_LIMITS,
   TARGET_LIMITS,
   type ActivityLevel,
   type Goal,
@@ -184,4 +187,73 @@ export function calcDayProgress(target: Nutrients, eaten: Nutrients): DayProgres
     fatG: calcNutrientProgress(target.fatG, eaten.fatG),
     carbsG: calcNutrientProgress(target.carbsG, eaten.carbsG),
   };
+}
+
+export type RecipeItemValues = { per100g: Per100g; grams: number };
+
+export type RecipeTotals = {
+  rawWeightG: number;
+  // What the totals are divided by: the cooked (or raw) weight, never below what is plausible.
+  weightG: number;
+  totals: Nutrients;
+  per100g: Per100g;
+  weightRaised: boolean;
+};
+
+const ZERO_PER_100G: Per100g = { kcal100: 0, protein100: 0, fat100: 0, carbs100: 0 };
+const STORAGE_SCALE = 10 ** NUTRIENT_STORAGE_DECIMALS;
+
+// A dish cannot weigh less than its protein, fat and carbs, nor hold more kcal per 100 g than any
+// food may. Rounded to stored precision so float noise (33.3 + 33.3 + 33.4) never flags an honest
+// raw weight.
+function minPlausibleWeightG(totals: Nutrients): number {
+  const byNutrients =
+    ((totals.proteinG + totals.fatG + totals.carbsG) * NUTRIENT_BASE_GRAMS) /
+    FOOD_LIMITS.maxTotalGramsPer100G;
+  const byKcal = (totals.kcal * NUTRIENT_BASE_GRAMS) / FOOD_LIMITS.kcal100.max;
+  return Math.round(Math.max(byNutrients, byKcal) * STORAGE_SCALE) / STORAGE_SCALE;
+}
+
+// Water boils off, so a dish is divided by its cooked weight; without one, by the raw weight.
+export function calcRecipe(
+  items: readonly RecipeItemValues[],
+  cookedWeightG: number | null,
+): RecipeTotals {
+  if (cookedWeightG !== null) assertPositive("cookedWeightG", cookedWeightG);
+  const totals = sumNutrients(items.map((item) => calcEntryNutrients(item.per100g, item.grams)));
+  const rawWeightG = items.reduce((sum, item) => sum + item.grams, 0);
+  const statedWeightG = cookedWeightG ?? rawWeightG;
+  // A typo ("10 g" for a pot) or a later edit of an ingredient must not yield 4000 kcal per 100 g
+  // or overflow numeric(8,2); forms reject such weights, this keeps stored numbers possible.
+  const weightG = Math.max(statedWeightG, minPlausibleWeightG(totals));
+  const per100 = (value: number) => (value * NUTRIENT_BASE_GRAMS) / weightG;
+  return {
+    rawWeightG,
+    weightG,
+    totals,
+    per100g:
+      weightG > 0
+        ? {
+            kcal100: per100(totals.kcal),
+            protein100: per100(totals.proteinG),
+            fat100: per100(totals.fatG),
+            carbs100: per100(totals.carbsG),
+          }
+        : ZERO_PER_100G,
+    weightRaised: weightG > statedWeightG,
+  };
+}
+
+export function calcServingGrams(weightG: number, servings: number): number {
+  assertNonNegative("weightG", weightG);
+  assertPositive("servings", servings);
+  return weightG / servings;
+}
+
+// The serving becomes a food portion, so it must fit one: below the minimum it would round to 0 g
+// in numeric(8,2), above the maximum 50 servings in the diary would overflow it.
+export function calcServingPortionGrams(weightG: number, servings: number | null): number | null {
+  if (servings === null) return null;
+  const grams = calcServingGrams(weightG, servings);
+  return grams >= PORTION_LIMITS.grams.min && grams <= PORTION_LIMITS.grams.max ? grams : null;
 }

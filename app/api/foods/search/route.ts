@@ -10,9 +10,13 @@ export async function GET(request: NextRequest) {
     {
       userId: await getSessionUserId(),
       rawQuery: request.nextUrl.searchParams.get("q"),
+      rawExclude: request.nextUrl.searchParams.get("exclude"),
       nowMs: Date.now(),
     },
-    { limiter: foodSearchLimiter, search: (userId, query) => searchFoods(db, userId, query) },
+    {
+      limiter: foodSearchLimiter,
+      search: (userId, query, options) => searchFoods(db, userId, query, options),
+    },
   );
   // Results depend on the user and change as they add foods, so nothing may cache them.
   return NextResponse.json(result.body, {

@@ -1,12 +1,13 @@
 import { and, asc, count, eq, sql } from "drizzle-orm";
 import { diaryEntries, foods } from "@/db/schema";
 import type { Db } from "@/db/types";
+import { NO_PORTION, toAmountColumns } from "@/lib/amount";
 import { DIARY_LIMITS } from "@/lib/config";
 import type { IsoDate } from "@/lib/date";
 import { getVisiblePortion, visibleTo } from "@/lib/foods/repo";
 import type { PortionValues } from "@/lib/foods/types";
 import { calcPortionGrams } from "@/lib/nutrition";
-import type { AddAmount, AddEntryInput, DiaryEntry, UpdateEntryInput } from "./types";
+import type { AddEntryInput, DiaryEntry, UpdateEntryInput } from "./types";
 
 const entryColumns = {
   id: diaryEntries.id,
@@ -26,8 +27,6 @@ const entryColumns = {
 function ownEntry(userId: string, entryId: string) {
   return and(eq(diaryEntries.id, entryId), eq(diaryEntries.userId, userId));
 }
-
-const NO_PORTION = { portionLabel: null, portionGrams: null, portionCount: null };
 
 export async function getDayEntries(db: Db, userId: string, date: IsoDate): Promise<DiaryEntry[]> {
   return (
@@ -59,18 +58,6 @@ export async function getEntry(
     .where(ownEntry(userId, entryId))
     .limit(1);
   return row ?? null;
-}
-
-function amountColumns(amount: AddAmount, portion: PortionValues | null) {
-  if (amount.mode === "grams") return { grams: amount.grams, ...NO_PORTION };
-  // addEntry returns "not_found" before calling this without a portion.
-  if (!portion) throw new Error("portion amount without a portion");
-  return {
-    grams: calcPortionGrams(portion.grams, amount.count),
-    portionLabel: portion.label,
-    portionGrams: portion.grams,
-    portionCount: amount.count,
-  };
 }
 
 export async function addEntry(
@@ -122,7 +109,7 @@ export async function addEntry(
       protein100: food.protein100,
       fat100: food.fat100,
       carbs100: food.carbs100,
-      ...amountColumns(amount, portion),
+      ...toAmountColumns(amount, portion),
     });
     return "ok";
   });

@@ -17,3 +17,7 @@ export function addHref(date: IsoDate, meal: Meal): string {
 export function editHref(entryId: string): string {
   return `/diary/entries/${entryId}/edit`;
 }
+
+export function addFoodHref(foodId: string, date: IsoDate, meal: Meal): string {
+  return `/diary/add/${foodId}?${diarySearch(date, meal)}`;
+}

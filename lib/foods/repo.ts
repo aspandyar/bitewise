@@ -2,6 +2,7 @@ import { and, asc, count, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { foodPortions, foods } from "@/db/schema";
 import type { Db } from "@/db/types";
 import { FOOD_LIMITS, FOOD_SEARCH, PORTION_LIMITS } from "@/lib/config";
+import { recomputeRecipesUsingFoods } from "@/lib/recipes/recompute";
 import { escapeLike } from "./search";
 import type { FoodDetails, FoodListItem, FoodValues, PortionItem, PortionValues } from "./types";
 
@@ -17,6 +18,14 @@ function ownedBy(userId: string, foodId: string) {
 // A visible food with an owner can only be the caller's, so this never reveals other users.
 const isOwnColumn = sql<boolean>`${foods.ownerId} IS NOT NULL`;
 
+// Qualified by hand: Drizzle leaves columns unqualified in single-table queries, and inside the
+// subquery an unqualified "id" would silently mean recipes.id.
+const isRecipeColumn = sql<boolean>`EXISTS (SELECT 1 FROM "recipes" WHERE "recipes"."food_id" = "foods"."id")`;
+
+// Recipes are foods so search and the diary need no special case, but their numbers and portions
+// belong to the recipe: every food-level write skips them.
+export const notRecipe = sql`NOT ${isRecipeColumn}`;
+
 export const listColumns = {
   id: foods.id,
   name: foods.name,
@@ -26,6 +35,7 @@ export const listColumns = {
   carbs100: foods.carbs100,
   source: foods.source,
   isOwn: isOwnColumn,
+  isRecipe: isRecipeColumn,
 };
 
 export async function getVisibleFood(
@@ -41,11 +51,22 @@ export async function getVisibleFood(
   return row ?? null;
 }
 
-export async function listOwnFoods(db: Db, userId: string, limit: number): Promise<FoodListItem[]> {
+export async function listOwnFoods(
+  db: Db,
+  userId: string,
+  limit: number,
+  { excludeRecipes = false }: { excludeRecipes?: boolean } = {},
+): Promise<FoodListItem[]> {
   return db
     .select(listColumns)
     .from(foods)
-    .where(and(eq(foods.ownerId, userId), isNull(foods.deletedAt)))
+    .where(
+      and(
+        eq(foods.ownerId, userId),
+        isNull(foods.deletedAt),
+        excludeRecipes ? notRecipe : undefined,
+      ),
+    )
     .orderBy(desc(foods.createdAt), desc(foods.id))
     .limit(limit);
 }
@@ -75,19 +96,24 @@ export async function updateOwnFood(
   foodId: string,
   values: FoodValues,
 ): Promise<boolean> {
-  const rows = await db
-    .update(foods)
-    .set({ ...values, updatedAt: sql`now()` })
-    .where(ownedBy(userId, foodId))
-    .returning({ id: foods.id });
-  return rows.length > 0;
+  return db.transaction(async (tx) => {
+    const rows = await tx
+      .update(foods)
+      .set({ ...values, updatedAt: sql`now()` })
+      .where(and(ownedBy(userId, foodId), notRecipe))
+      .returning({ id: foods.id });
+    if (rows.length === 0) return false;
+    // Recipes always show their ingredients' current numbers; diary entries keep their snapshot.
+    await recomputeRecipesUsingFoods(tx, [foodId]);
+    return true;
+  });
 }
 
 export async function softDeleteOwnFood(db: Db, userId: string, foodId: string): Promise<boolean> {
   const rows = await db
     .update(foods)
     .set({ deletedAt: sql`now()`, updatedAt: sql`now()` })
-    .where(ownedBy(userId, foodId))
+    .where(and(ownedBy(userId, foodId), notRecipe))
     .returning({ id: foods.id });
   return rows.length > 0;
 }
@@ -164,7 +190,7 @@ export async function copyFood(
         fiber100: foods.fiber100,
       })
       .from(foods)
-      .where(and(eq(foods.id, foodId), visibleTo(userId)))
+      .where(and(eq(foods.id, foodId), visibleTo(userId), notRecipe))
       .limit(1);
     if (!source) return null;
     const copy = await createFood(tx, userId, source);
@@ -189,7 +215,7 @@ export async function addPortion(
     const [food] = await tx
       .select({ id: foods.id })
       .from(foods)
-      .where(and(eq(foods.id, foodId), visibleTo(userId)))
+      .where(and(eq(foods.id, foodId), visibleTo(userId), notRecipe))
       .limit(1);
     if (!food) return "not_found";
     // Two simultaneous submits can overshoot by one; the cap is a UX limit, not a security one.
@@ -210,13 +236,25 @@ export async function deleteOwnPortion(
 ): Promise<boolean> {
   const rows = await db
     .delete(foodPortions)
-    .where(and(eq(foodPortions.id, portionId), eq(foodPortions.userId, userId)))
+    .where(
+      and(
+        eq(foodPortions.id, portionId),
+        eq(foodPortions.userId, userId),
+        // The serving portion is kept in sync by the recipe and is not the user's to delete.
+        sql`NOT EXISTS (SELECT 1 FROM "recipes" WHERE "recipes"."food_id" = "food_portions"."food_id")`,
+      ),
+    )
     .returning({ id: foodPortions.id });
   return rows.length > 0;
 }
 
 // `query` must come from normalizeFoodQuery: it already matches search_name's lower/ё→е form.
-export async function searchFoods(db: Db, userId: string, query: string): Promise<FoodListItem[]> {
+export async function searchFoods(
+  db: Db,
+  userId: string,
+  query: string,
+  { excludeRecipes = false }: { excludeRecipes?: boolean } = {},
+): Promise<FoodListItem[]> {
   const escaped = escapeLike(query);
   const namePrefix = `${escaped}%`;
   const wordPrefix = `% ${escaped}%`;
@@ -234,7 +272,7 @@ export async function searchFoods(db: Db, userId: string, query: string): Promis
     return tx
       .select(listColumns)
       .from(foods)
-      .where(and(visibleTo(userId), match))
+      .where(and(visibleTo(userId), match, excludeRecipes ? notRecipe : undefined))
       .orderBy(
         sql`${foods.ownerId} IS NULL`,
         sql`${foods.searchName} LIKE ${namePrefix} DESC`,

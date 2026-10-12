@@ -11,13 +11,16 @@ const nameMessage = ru.errors.nameLength(nameLength.min, nameLength.max);
 // Integer hundredths: 33.3 + 33.3 + 33.4 is 100.00000000000001 in floats.
 const toHundredths = (value: number) => Math.round(value * 100);
 
+// Shared with recipes, whose names live in foods too.
+export const foodNameSchema = z
+  .string()
+  .trim()
+  .min(nameLength.min, { error: nameMessage })
+  .max(nameLength.max, { error: nameMessage });
+
 export const foodSchema = z
   .object({
-    name: z
-      .string()
-      .trim()
-      .min(nameLength.min, { error: nameMessage })
-      .max(nameLength.max, { error: nameMessage }),
+    name: foodNameSchema,
     kcal100: decimalField(kcal100, ru.errors.kcalRange(kcal100.min, kcal100.max)),
     protein100: grams(),
     fat100: grams(),

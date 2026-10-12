@@ -4,6 +4,9 @@ import {
   calcDayProgress,
   calcEntryNutrients,
   calcPortionGrams,
+  calcRecipe,
+  calcServingGrams,
+  calcServingPortionGrams,
   sumNutrients,
   calcAutoTargets,
   calcBmrKcal,
@@ -310,5 +313,133 @@ describe("calcDayProgress", () => {
     expect(() => calcDayProgress(target, { kcal: -1, proteinG: 0, fatG: 0, carbsG: 0 })).toThrow(
       RangeError,
     );
+  });
+});
+
+// Hand-computed: buckwheat 200 g → 686 kcal, P 26, F 6.8, C 124; oil 10 g → 89.9 kcal, F 9.99.
+// Totals: 775.9 kcal, P 26, F 16.79, C 124; raw weight 210 g.
+const buckwheat = { kcal100: 343, protein100: 13, fat100: 3.4, carbs100: 62 };
+const oil = { kcal100: 899, protein100: 0, fat100: 99.9, carbs100: 0 };
+const water = { kcal100: 0, protein100: 0, fat100: 0, carbs100: 0 };
+const pot = [
+  { per100g: buckwheat, grams: 200 },
+  { per100g: oil, grams: 10 },
+];
+
+describe("calcRecipe", () => {
+  it("divides the totals by the cooked weight", () => {
+    const result = calcRecipe(pot, 500);
+    expect(result.rawWeightG).toBe(210);
+    expect(result.weightG).toBe(500);
+    expect(result.weightRaised).toBe(false);
+    expect(result.totals.kcal).toBeCloseTo(775.9, 6);
+    expect(result.per100g.kcal100).toBeCloseTo(155.18, 6);
+    expect(result.per100g.protein100).toBeCloseTo(5.2, 6);
+    expect(result.per100g.fat100).toBeCloseTo(3.358, 6);
+    expect(result.per100g.carbs100).toBeCloseTo(24.8, 6);
+  });
+
+  it("uses the raw weight when the dish was not weighed", () => {
+    const result = calcRecipe(pot, null);
+    expect(result.weightG).toBe(210);
+    expect(result.weightRaised).toBe(false);
+    expect(result.per100g.kcal100).toBeCloseTo(369.476, 3);
+    expect(result.per100g.protein100).toBeCloseTo(12.381, 3);
+    expect(result.per100g.carbs100).toBeCloseTo(59.048, 3);
+  });
+
+  it("returns zeros for an empty recipe with or without a cooked weight", () => {
+    const zero = { kcal100: 0, protein100: 0, fat100: 0, carbs100: 0 };
+    expect(calcRecipe([], null)).toEqual({
+      rawWeightG: 0,
+      weightG: 0,
+      totals: { kcal: 0, proteinG: 0, fatG: 0, carbsG: 0 },
+      per100g: zero,
+      weightRaised: false,
+    });
+    expect(calcRecipe([], 300).per100g).toEqual(zero);
+    expect(calcRecipe([], 300).weightG).toBe(300);
+  });
+
+  it("lets a 0 kcal ingredient only add weight", () => {
+    const result = calcRecipe(
+      [
+        { per100g: water, grams: 200 },
+        { per100g: buckwheat, grams: 200 },
+      ],
+      null,
+    );
+    expect(result.weightG).toBe(400);
+    expect(result.per100g.kcal100).toBeCloseTo(171.5, 6);
+  });
+
+  it("raises a cooked weight below the grams of protein, fat and carbs", () => {
+    const result = calcRecipe(pot, 100);
+    expect(result.weightRaised).toBe(true);
+    expect(result.weightG).toBeCloseTo(166.79, 6);
+    const { protein100, fat100, carbs100 } = result.per100g;
+    expect(protein100 + fat100 + carbs100).toBeCloseTo(100, 6);
+  });
+
+  it("raises a cooked weight that would put more kcal in 100 g than any food has", () => {
+    // 900 kcal, no macros: 100 g of it cannot weigh less than 100 g once cooked.
+    const result = calcRecipe([{ per100g: { ...water, kcal100: 900 }, grams: 100 }], 1);
+    expect(result.weightRaised).toBe(true);
+    expect(result.weightG).toBe(100);
+    expect(result.per100g.kcal100).toBeCloseTo(900, 6);
+  });
+
+  it("raises oil boiled down to half to its nutrient weight", () => {
+    // Fat 9.99 g vs kcal floor 89.9 × 100 / 900 = 9.989 g → 9.99 g.
+    const result = calcRecipe([{ per100g: oil, grams: 10 }], 5);
+    expect(result.weightG).toBeCloseTo(9.99, 6);
+    expect(result.per100g.fat100).toBeCloseTo(100, 6);
+    expect(result.per100g.kcal100).toBeCloseTo(899.9, 1);
+  });
+
+  it("does not flag an honest raw weight because of float noise", () => {
+    // 33.3 + 33.3 + 33.4 is 100.00000000000001 in floats.
+    const dense = { kcal100: 0, protein100: 33.3, fat100: 33.3, carbs100: 33.4 };
+    const result = calcRecipe([{ per100g: dense, grams: 100 }], null);
+    expect(result.weightRaised).toBe(false);
+    expect(result.weightG).toBe(100);
+  });
+
+  it.each([0, -1, Number.NaN])("throws on a cooked weight of %s", (weight) => {
+    expect(() => calcRecipe(pot, weight)).toThrow(RangeError);
+  });
+});
+
+describe("calcServingGrams", () => {
+  it("splits the weight into servings", () => {
+    expect(calcServingGrams(500, 4)).toBe(125);
+  });
+
+  it("returns 0 g for an empty dish", () => {
+    expect(calcServingGrams(0, 4)).toBe(0);
+  });
+
+  it.each([0, -1, Number.NaN])("throws on %s servings", (servings) => {
+    expect(() => calcServingGrams(500, servings)).toThrow(RangeError);
+  });
+});
+
+describe("calcServingPortionGrams", () => {
+  it("returns the serving when it fits a portion", () => {
+    expect(calcServingPortionGrams(500, 4)).toBe(125);
+  });
+
+  it("returns null without servings", () => {
+    expect(calcServingPortionGrams(500, null)).toBeNull();
+  });
+
+  it("returns null for a serving too small to store", () => {
+    // 0.1 g / 100 = 0.001 g would be stored as 0 in numeric(8,2).
+    expect(calcServingPortionGrams(0.1, 100)).toBeNull();
+  });
+
+  it("returns null for a serving heavier than any portion", () => {
+    // 20 kg in one serving × 50 in the diary would overflow numeric(8,2).
+    expect(calcServingPortionGrams(20_000, 1)).toBeNull();
   });
 });

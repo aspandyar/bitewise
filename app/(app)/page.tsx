@@ -13,11 +13,13 @@ import { getDayEntries } from "@/lib/diary/repo";
 import { parseDiaryDate } from "@/lib/diary/schema";
 import { getUserToday } from "@/lib/diary/today";
 import { ru } from "@/lib/i18n/ru";
+import { RECIPES_HREF } from "@/lib/recipes/paths";
 import { calcDayProgress, calcEntryNutrients, sumNutrients } from "@/lib/nutrition";
 import { getDefaultTarget } from "@/lib/targets/repo";
 
 const navLinks = [
   { href: "/foods", label: ru.foods.title },
+  { href: RECIPES_HREF, label: ru.recipes.title },
   { href: "/targets", label: ru.targets.editTargets },
   { href: "/profile", label: ru.targets.editProfile },
 ] as const;
