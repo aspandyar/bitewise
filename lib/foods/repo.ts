@@ -2,6 +2,7 @@ import { and, asc, count, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { foodPortions, foods } from "@/db/schema";
 import type { Db } from "@/db/types";
 import { FOOD_LIMITS, FOOD_SEARCH, PORTION_LIMITS } from "@/lib/config";
+import { recomputeRecipesUsingFoods } from "@/lib/recipes/recompute";
 import { escapeLike } from "./search";
 import type { FoodDetails, FoodListItem, FoodValues, PortionItem, PortionValues } from "./types";
 
@@ -95,12 +96,17 @@ export async function updateOwnFood(
   foodId: string,
   values: FoodValues,
 ): Promise<boolean> {
-  const rows = await db
-    .update(foods)
-    .set({ ...values, updatedAt: sql`now()` })
-    .where(and(ownedBy(userId, foodId), notRecipe))
-    .returning({ id: foods.id });
-  return rows.length > 0;
+  return db.transaction(async (tx) => {
+    const rows = await tx
+      .update(foods)
+      .set({ ...values, updatedAt: sql`now()` })
+      .where(and(ownedBy(userId, foodId), notRecipe))
+      .returning({ id: foods.id });
+    if (rows.length === 0) return false;
+    // Recipes always show their ingredients' current numbers; diary entries keep their snapshot.
+    await recomputeRecipesUsingFoods(tx, [foodId]);
+    return true;
+  });
 }
 
 export async function softDeleteOwnFood(db: Db, userId: string, foodId: string): Promise<boolean> {

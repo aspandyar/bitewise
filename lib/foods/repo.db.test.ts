@@ -5,6 +5,7 @@ import { FOOD_LIMITS, PORTION_LIMITS } from "@/lib/config";
 import { closeTestDb, resetDb, testDb } from "@/tests/db";
 import { createOwnFood, insertSharedFood, insertSharedPortion, newUserId } from "@/tests/foods";
 import { insertRecipeFood } from "@/tests/recipes";
+import { addItem, createRecipe, getRecipe } from "@/lib/recipes/repo";
 import type { FoodValues } from "./types";
 import {
   addPortion,
@@ -269,5 +270,28 @@ describe("recipe foods", () => {
     );
     const plain = await listOwnFoods(testDb, alice, 20, { excludeRecipes: true });
     expect(plain.map((food) => food.name)).toEqual(["Каша"]);
+  });
+});
+
+describe("updateOwnFood and recipes", () => {
+  it("recomputes recipes that use the food", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const beet = { name: "Моя свёкла", kcal100: 40, protein100: 1, fat100: 0, carbs100: 9 };
+    const own = await createOwnFood(alice, { ...beet, fiber100: null });
+    const created = await createRecipe(testDb, alice, {
+      name: "Салат",
+      cookedWeightG: null,
+      servings: null,
+    });
+    if (created === "limit") throw new Error("cap");
+    await addItem(testDb, alice, created.id, {
+      foodId: own.id,
+      amount: { mode: "grams", grams: 200 },
+    });
+
+    await updateOwnFood(testDb, alice, own.id, { ...beet, kcal100: 50, fiber100: null });
+    const recipe = await getRecipe(testDb, alice, created.id);
+    const food = recipe && (await getVisibleFood(testDb, alice, recipe.foodId));
+    expect(food?.kcal100).toBe(50);
   });
 });

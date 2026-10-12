@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { foodPortions, foods } from "@/db/schema";
 import { closeTestDb, resetDb, testDb } from "@/tests/db";
+import { addItem, createRecipe, getRecipe } from "@/lib/recipes/repo";
 import { newUserId } from "@/tests/foods";
 import { addPortion, copyFood, getVisibleFood, listVisiblePortions } from "./repo";
 import { loadFoodSeed } from "./seed";
@@ -149,5 +150,27 @@ describe("loadFoodSeed", () => {
     if (!copy || copy === "limit") throw new Error("no copy");
     expect((await loadFoodSeed(testDb, [])).retired).toBe(1);
     expect(await getVisibleFood(testDb, alice, copy.id)).not.toBeNull();
+  });
+});
+
+describe("loadFoodSeed and recipes", () => {
+  it("recomputes a user's recipe when a shared ingredient changes", async () => {
+    const alice = await newUserId("alice@mail.com");
+    await loadFoodSeed(testDb, [buckwheat]);
+    const created = await createRecipe(testDb, alice, {
+      name: "Каша",
+      cookedWeightG: null,
+      servings: null,
+    });
+    if (created === "limit") throw new Error("cap");
+    await addItem(testDb, alice, created.id, {
+      foodId: await idOf(buckwheat.key),
+      amount: { mode: "grams", grams: 100 },
+    });
+
+    await loadFoodSeed(testDb, [{ ...buckwheat, kcal100: 350 }]);
+    const recipe = await getRecipe(testDb, alice, created.id);
+    const food = recipe && (await getVisibleFood(testDb, alice, recipe.foodId));
+    expect(food?.kcal100).toBe(350);
   });
 });
