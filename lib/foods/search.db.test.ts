@@ -2,6 +2,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { FOOD_SEARCH } from "@/lib/config";
 import { closeTestDb, resetDb, testDb } from "@/tests/db";
 import { createOwnFood, insertSharedFood, newUserId } from "@/tests/foods";
+import { insertRecipeFood } from "@/tests/recipes";
 import { createFood, searchFoods, softDeleteOwnFood } from "./repo";
 import { normalizeFoodQuery } from "./search";
 
@@ -100,7 +101,37 @@ describe("searchFoods", () => {
   it("returns list fields only, without owner ids", async () => {
     const [item] = await searchFoods(testDb, alice, "грейпфрут");
     expect(Object.keys(item ?? {}).sort()).toEqual(
-      ["carbs100", "fat100", "id", "isOwn", "kcal100", "name", "protein100", "source"].sort(),
+      [
+        "carbs100",
+        "fat100",
+        "id",
+        "isOwn",
+        "isRecipe",
+        "kcal100",
+        "name",
+        "protein100",
+        "source",
+      ].sort(),
     );
+  });
+});
+
+describe("searchFoods and recipes", () => {
+  it("marks only recipes as recipes", async () => {
+    await insertRecipeFood(alice, "Гречневая каша с маслом");
+    const items = await searchFoods(testDb, alice, "греч");
+    const byName = Object.fromEntries(items.map((food) => [food.name, food.isRecipe]));
+    expect(byName).toMatchObject({
+      "Гречневая каша с маслом": true,
+      "Гречка варёная": false,
+      "Гречка, крупа сухая": false,
+    });
+  });
+
+  it("hides recipes when asked", async () => {
+    await insertRecipeFood(alice, "Гречневая каша с маслом");
+    const items = await searchFoods(testDb, alice, "греч", { excludeRecipes: true });
+    expect(items.map((food) => food.name)).not.toContain("Гречневая каша с маслом");
+    expect(items.length).toBeGreaterThan(0);
   });
 });

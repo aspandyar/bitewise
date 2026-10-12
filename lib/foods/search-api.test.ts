@@ -12,9 +12,14 @@ const item: FoodListItem = {
   carbs100: 57.1,
   source: "usda",
   isOwn: false,
+  isRecipe: false,
 };
 
-type Search = (userId: string, query: string) => Promise<FoodListItem[]>;
+type Search = (
+  userId: string,
+  query: string,
+  options: { excludeRecipes: boolean },
+) => Promise<FoodListItem[]>;
 
 function deps(search = vi.fn<Search>(async () => [item])) {
   return { limiter: createRateLimiter({ max: 2, windowMs: 1000, maxKeys: 10 }), search };
@@ -38,7 +43,7 @@ describe("handleFoodSearch", () => {
   it("searches with the normalized query and returns items", async () => {
     const d = deps();
     const result = await handleFoodSearch({ userId: "u", rawQuery: " ГРЁ ", nowMs: 0 }, d);
-    expect(d.search).toHaveBeenCalledWith("u", "гре");
+    expect(d.search).toHaveBeenCalledWith("u", "гре", { excludeRecipes: false });
     expect(result).toEqual({ status: 200, body: { items: [item] } });
   });
 
@@ -59,5 +64,23 @@ describe("handleFoodSearch", () => {
     expect(result).toEqual({ status: 500, body: { error: "server_error" } });
     expect(JSON.stringify(result)).not.toContain("secret");
     error.mockRestore();
+  });
+
+  it("passes excludeRecipes only for exclude=recipes", async () => {
+    const d = deps();
+    await handleFoodSearch({ userId: "u", rawQuery: "гр", rawExclude: "recipes", nowMs: 0 }, d);
+    await handleFoodSearch({ userId: "u", rawQuery: "гр", nowMs: 0 }, d);
+    expect(d.search).toHaveBeenNthCalledWith(1, "u", "гр", { excludeRecipes: true });
+    expect(d.search).toHaveBeenNthCalledWith(2, "u", "гр", { excludeRecipes: false });
+  });
+
+  it("answers 400 for an unknown exclude value", async () => {
+    const d = deps();
+    const result = await handleFoodSearch(
+      { userId: "u", rawQuery: "гр", rawExclude: "foods", nowMs: 0 },
+      d,
+    );
+    expect(result).toEqual({ status: 400, body: { error: "bad_query" } });
+    expect(d.search).not.toHaveBeenCalled();
   });
 });

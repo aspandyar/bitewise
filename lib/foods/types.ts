@@ -20,6 +20,8 @@ export type FoodListItem = {
   source: FoodSource;
   // Computed on the server so owner ids never leave it.
   isOwn: boolean;
+  // A recipe's food row: its numbers come from the ingredients, so it is edited as a recipe.
+  isRecipe: boolean;
 };
 
 export type FoodDetails = FoodListItem & { fiber100: number | null; sourceUrl: string | null };
