@@ -7,6 +7,7 @@ import {
   MIFFLIN_ST_JEOR,
   NUTRIENT_BASE_GRAMS,
   NUTRIENT_STORAGE_DECIMALS,
+  PORTION_LIMITS,
   TARGET_LIMITS,
   type ActivityLevel,
   type Goal,
@@ -247,4 +248,12 @@ export function calcServingGrams(weightG: number, servings: number): number {
   assertNonNegative("weightG", weightG);
   assertPositive("servings", servings);
   return weightG / servings;
+}
+
+// The serving becomes a food portion, so it must fit one: below the minimum it would round to 0 g
+// in numeric(8,2), above the maximum 50 servings in the diary would overflow it.
+export function calcServingPortionGrams(weightG: number, servings: number | null): number | null {
+  if (servings === null) return null;
+  const grams = calcServingGrams(weightG, servings);
+  return grams >= PORTION_LIMITS.grams.min && grams <= PORTION_LIMITS.grams.max ? grams : null;
 }

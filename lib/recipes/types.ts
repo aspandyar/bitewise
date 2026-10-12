@@ -26,6 +26,8 @@ export type RecipeDetails = {
   name: string;
   cookedWeightG: number | null;
   servings: number | null;
+  // Changes with every edit of the recipe or its ingredients; keys its forms.
+  updatedAt: Date;
   items: RecipeItemRow[];
 };
 

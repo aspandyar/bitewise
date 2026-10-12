@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, max, sql } from "drizzle-orm";
 import { foodPortions, foods, recipeItems, recipes } from "@/db/schema";
 import type { Db } from "@/db/types";
 import { NO_PORTION, toAmountColumns, type AddAmount, type UpdateAmount } from "@/lib/amount";
@@ -14,31 +14,41 @@ function ownLiveRecipe(userId: string, recipeId: string) {
   return and(eq(recipes.id, recipeId), eq(recipes.userId, userId), isNull(foods.deletedAt));
 }
 
+function ownItem(userId: string, recipeId: string, itemId: string) {
+  return and(
+    eq(recipeItems.id, itemId),
+    eq(recipeItems.recipeId, recipeId),
+    eq(recipeItems.userId, userId),
+  );
+}
+
 // A stated weight must stay plausible for the composition; without one the raw weight always is.
 function weightTooLow(items: readonly RecipeItemValues[], cookedWeightG: number | null): boolean {
   return cookedWeightG !== null && calcRecipe(items, cookedWeightG).weightRaised;
 }
 
-// Serializes writes to one recipe, so parallel adds cannot pass the item cap or store numbers
-// computed from a composition another request has just changed.
+// Locks the recipe row, and only an own one: parallel writes cannot pass the item cap or store
+// numbers computed from a composition another request has just changed.
 async function lockOwnRecipe(tx: Db, userId: string, recipeId: string) {
-  await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${recipeId}))`);
   const [recipe] = await tx
     .select({ foodId: recipes.foodId, cookedWeightG: recipes.cookedWeightG })
     .from(recipes)
     .innerJoin(foods, eq(foods.id, recipes.foodId))
     .where(ownLiveRecipe(userId, recipeId))
-    .limit(1);
+    .limit(1)
+    .for("update", { of: recipes });
   return recipe ?? null;
 }
 
-export async function countRecipes(db: Db, userId: string): Promise<number> {
+// Grows on every create, edit and delete of the user's recipes, so a form keyed by it never comes
+// back with what was typed into it before.
+export async function lastRecipeChange(db: Db, userId: string): Promise<Date | null> {
   const [row] = await db
-    .select({ total: count() })
+    .select({ at: max(foods.updatedAt) })
     .from(recipes)
     .innerJoin(foods, eq(foods.id, recipes.foodId))
-    .where(and(eq(recipes.userId, userId), isNull(foods.deletedAt)));
-  return row?.total ?? 0;
+    .where(eq(recipes.userId, userId));
+  return row?.at ?? null;
 }
 
 // Bounded by FOOD_LIMITS.maxOwnFoods, since every recipe is an own food.
@@ -69,6 +79,7 @@ export async function getRecipe(
       name: foods.name,
       cookedWeightG: recipes.cookedWeightG,
       servings: recipes.servings,
+      updatedAt: foods.updatedAt,
     })
     .from(recipes)
     .innerJoin(foods, eq(foods.id, recipes.foodId))
@@ -89,7 +100,7 @@ export async function getRecipe(
     })
     .from(recipeItems)
     .innerJoin(foods, eq(foods.id, recipeItems.foodId))
-    .where(eq(recipeItems.recipeId, recipeId))
+    .where(and(eq(recipeItems.recipeId, recipeId), eq(recipeItems.userId, userId)))
     .orderBy(asc(recipeItems.createdAt), asc(recipeItems.id));
   return { ...recipe, items };
 }
@@ -146,7 +157,7 @@ export async function updateRecipe(
   return db.transaction(async (tx) => {
     const recipe = await lockOwnRecipe(tx, userId, recipeId);
     if (!recipe) return "not_found";
-    if (weightTooLow(await loadRecipeItemValues(tx, recipeId), values.cookedWeightG)) {
+    if (weightTooLow(await loadRecipeItemValues(tx, userId, recipeId), values.cookedWeightG)) {
       return "weight_too_low";
     }
     await tx
@@ -170,11 +181,15 @@ export async function deleteRecipe(db: Db, userId: string, recipeId: string): Pr
   return db.transaction(async (tx) => {
     const recipe = await lockOwnRecipe(tx, userId, recipeId);
     if (!recipe) return false;
-    // Soft delete: diary entries keep pointing at the recipe's food.
+    // Soft delete: diary entries keep pointing at the recipe's food. They hold their own snapshot,
+    // so the composition goes away and nothing is left to recompute.
     await tx
       .update(foods)
       .set({ deletedAt: sql`now()`, updatedAt: sql`now()` })
       .where(eq(foods.id, recipe.foodId));
+    await tx
+      .delete(recipeItems)
+      .where(and(eq(recipeItems.recipeId, recipeId), eq(recipeItems.userId, userId)));
     return true;
   });
 }
@@ -202,7 +217,7 @@ export async function addItem(
       portion = await getVisiblePortion(tx, userId, input.foodId, input.amount.portionId);
       if (!portion) return "not_found";
     }
-    const items = await loadRecipeItemValues(tx, recipeId);
+    const items = await loadRecipeItemValues(tx, userId, recipeId);
     if (items.length >= limits.maxItems) return "limit";
     const columns = toAmountColumns(input.amount, portion);
     if (weightTooLow([...items, { per100g: food, grams: columns.grams }], recipe.cookedWeightG)) {
@@ -227,7 +242,7 @@ export async function updateItem(
     const [item] = await tx
       .select({ portionGrams: recipeItems.portionGrams })
       .from(recipeItems)
-      .where(and(eq(recipeItems.id, itemId), eq(recipeItems.recipeId, recipeId)))
+      .where(ownItem(userId, recipeId, itemId))
       .limit(1);
     if (!item) return "not_found";
     let grams: number;
@@ -238,7 +253,7 @@ export async function updateItem(
       if (item.portionGrams === null) return "not_found";
       grams = calcPortionGrams(item.portionGrams, amount.count);
     }
-    const items = (await loadRecipeItemValues(tx, recipeId)).map((current) =>
+    const items = (await loadRecipeItemValues(tx, userId, recipeId)).map((current) =>
       current.id === itemId ? { ...current, grams } : current,
     );
     if (weightTooLow(items, recipe.cookedWeightG)) return "weight_too_low";
@@ -247,7 +262,7 @@ export async function updateItem(
       .set(
         amount.mode === "grams" ? { grams, ...NO_PORTION } : { grams, portionCount: amount.count },
       )
-      .where(eq(recipeItems.id, itemId));
+      .where(ownItem(userId, recipeId, itemId));
     await recomputeRecipe(tx, recipeId);
     return "ok";
   });
@@ -264,7 +279,7 @@ export async function deleteItem(
     if (!recipe) return false;
     const rows = await tx
       .delete(recipeItems)
-      .where(and(eq(recipeItems.id, itemId), eq(recipeItems.recipeId, recipeId)))
+      .where(ownItem(userId, recipeId, itemId))
       .returning({ id: recipeItems.id });
     if (rows.length === 0) return false;
     await recomputeRecipe(tx, recipeId);

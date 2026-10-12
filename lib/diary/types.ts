@@ -3,8 +3,6 @@ import type { Meal } from "@/lib/config";
 import type { IsoDate } from "@/lib/date";
 
 // Kept free of DB imports so client components can use these types.
-export type { AddAmount, GramsAmount, UpdateAmount } from "@/lib/amount";
-
 export type AddEntryInput = { date: IsoDate; meal: Meal; foodId: string; amount: AddAmount };
 
 export type UpdateEntryInput = { meal: Meal; amount: UpdateAmount };

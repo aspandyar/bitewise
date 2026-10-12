@@ -14,7 +14,7 @@ import { addFoodHref } from "@/lib/diary/paths";
 import { getUserToday } from "@/lib/diary/today";
 import { ru } from "@/lib/i18n/ru";
 import { parseId } from "@/lib/ids";
-import { calcEntryNutrients, calcRecipe, calcServingGrams } from "@/lib/nutrition";
+import { calcEntryNutrients, calcRecipe, calcServingPortionGrams } from "@/lib/nutrition";
 import { RECIPES_HREF, recipeEditHref } from "@/lib/recipes/paths";
 import { getRecipe } from "@/lib/recipes/repo";
 
@@ -31,8 +31,7 @@ async function RecipeContent({ params }: Pick<PageProps<"/recipes/[id]">, "param
   if (!recipe) notFound();
 
   const result = calcRecipe(recipe.items, recipe.cookedWeightG);
-  const servingGrams =
-    recipe.servings === null ? 0 : calcServingGrams(result.weightG, recipe.servings);
+  const servingGrams = calcServingPortionGrams(result.weightG, recipe.servings);
   const items = recipe.items.map((item) => ({
     ...item,
     kcal: calcEntryNutrients(item.per100g, item.grams).kcal,
@@ -47,9 +46,9 @@ async function RecipeContent({ params }: Pick<PageProps<"/recipes/[id]">, "param
         totals={result.totals}
         weightG={result.weightG}
         serving={
-          servingGrams > 0
-            ? { grams: servingGrams, kcal: calcEntryNutrients(result.per100g, servingGrams).kcal }
-            : null
+          servingGrams === null
+            ? null
+            : { grams: servingGrams, kcal: calcEntryNutrients(result.per100g, servingGrams).kcal }
         }
         weightRaised={result.weightRaised}
       />

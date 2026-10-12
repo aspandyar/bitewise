@@ -6,6 +6,7 @@ import {
   calcPortionGrams,
   calcRecipe,
   calcServingGrams,
+  calcServingPortionGrams,
   sumNutrients,
   calcAutoTargets,
   calcBmrKcal,
@@ -420,5 +421,25 @@ describe("calcServingGrams", () => {
 
   it.each([0, -1, Number.NaN])("throws on %s servings", (servings) => {
     expect(() => calcServingGrams(500, servings)).toThrow(RangeError);
+  });
+});
+
+describe("calcServingPortionGrams", () => {
+  it("returns the serving when it fits a portion", () => {
+    expect(calcServingPortionGrams(500, 4)).toBe(125);
+  });
+
+  it("returns null without servings", () => {
+    expect(calcServingPortionGrams(500, null)).toBeNull();
+  });
+
+  it("returns null for a serving too small to store", () => {
+    // 0.1 g / 100 = 0.001 g would be stored as 0 in numeric(8,2).
+    expect(calcServingPortionGrams(0.1, 100)).toBeNull();
+  });
+
+  it("returns null for a serving heavier than any portion", () => {
+    // 20 kg in one serving × 50 in the diary would overflow numeric(8,2).
+    expect(calcServingPortionGrams(20_000, 1)).toBeNull();
   });
 });

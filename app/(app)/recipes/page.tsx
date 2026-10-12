@@ -37,9 +37,9 @@ async function RecipesContent() {
                   {ru.diary.kcalPer100g(formatKcal(recipe.per100g.kcal100))}
                   {recipe.servingGrams === null
                     ? null
-                    : ` · ${ru.recipes.listServing(
+                    : ru.recipes.listServing(
                         formatKcal(calcEntryNutrients(recipe.per100g, recipe.servingGrams).kcal),
-                      )}`}
+                      )}
                 </span>
               </Link>
             </li>

@@ -211,7 +211,7 @@ export const ru = {
     badge: "блюдо",
     serving: (grams: string, kcal: string) => `1 порция · ${grams} г · ${kcal} ккал`,
     whole: (grams: string, kcal: string) => `Всё блюдо · ${grams} г · ${kcal} ккал`,
-    listServing: (kcal: string) => `порция ${kcal} ккал`,
+    listServing: (kcal: string) => ` · порция ${kcal} ккал`,
     weightRaised:
       "Вес готового блюда меньше, чем позволяет состав, — цифры посчитаны по минимально возможному весу. Проверьте вес",
     weightTooLow: "Меньше, чем весят белки, жиры и углеводы состава. Проверьте вес",

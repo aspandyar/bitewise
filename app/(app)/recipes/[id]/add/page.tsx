@@ -30,7 +30,7 @@ async function IngredientSearchContent({ params }: Pick<PageProps<"/recipes/[id]
       {/* A new key after every added ingredient starts a fresh search; Back from the amount
           step keeps the results. */}
       <FoodSearch
-        key={`${recipe.id}:${recipe.items.length}`}
+        key={`${recipe.id}:${recipe.updatedAt.getTime()}`}
         ownFoods={ownFoods}
         link={{ prefix: ingredientAmountPrefix(recipe.id) }}
         excludeRecipes

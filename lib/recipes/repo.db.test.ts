@@ -3,18 +3,23 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { foods, recipeItems, recipes, users } from "@/db/schema";
 import { FOOD_LIMITS } from "@/lib/config";
 import { addEntry, getDayEntries } from "@/lib/diary/repo";
-import { getVisibleFood, listVisiblePortions, softDeleteOwnFood } from "@/lib/foods/repo";
+import {
+  getVisibleFood,
+  listVisiblePortions,
+  softDeleteOwnFood,
+  updateOwnFood,
+} from "@/lib/foods/repo";
 import { calcEntryNutrients } from "@/lib/nutrition";
 import { closeTestDb, resetDb, testDb } from "@/tests/db";
 import { createOwnFood, insertSharedFood, insertSharedPortion, newUserId } from "@/tests/foods";
 import {
   addItem,
-  countRecipes,
   createRecipe,
   deleteItem,
   deleteRecipe,
   getRecipe,
   getRecipeIdByFoodId,
+  lastRecipeChange,
   listRecipes,
   updateItem,
   updateRecipe,
@@ -60,7 +65,7 @@ describe("createRecipe", () => {
       source: "user",
     });
     expect(await getRecipeIdByFoodId(testDb, alice, recipe.foodId)).toBe(id);
-    expect(await countRecipes(testDb, alice)).toBe(1);
+    expect(await lastRecipeChange(testDb, alice)).toBeInstanceOf(Date);
   });
 
   it("counts toward the own food cap", async () => {
@@ -164,6 +169,12 @@ describe("recipe numbers", () => {
     const alice = await newUserId("alice@mail.com");
     // 0.1 g / 100 servings = 0.001 g, which numeric(8,2) would store as 0.
     const id = await newRecipe(alice, { name: "Щепотка", cookedWeightG: 0.1, servings: 100 });
+    expect((await recipeFood(alice, id)).portions).toEqual([]);
+  });
+
+  it("skips a serving heavier than any portion", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const id = await newRecipe(alice, { name: "Кастрюля", cookedWeightG: 20_000, servings: 1 });
     expect((await recipeFood(alice, id)).portions).toEqual([]);
   });
 
@@ -277,7 +288,24 @@ describe("listRecipes and deleteRecipe", () => {
     expect(await deleteRecipe(testDb, alice, second)).toBe(true);
     expect((await listRecipes(testDb, alice)).map((r) => r.name)).toEqual(["Первое"]);
     expect(await getRecipe(testDb, alice, second)).toBeNull();
-    expect(await countRecipes(testDb, alice)).toBe(1);
+  });
+
+  it("drops a deleted recipe's ingredients and stops recomputing it", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const id = await newRecipe(alice, { name: "Суп", cookedWeightG: null, servings: null });
+    const beet = { name: "Моя свёкла", kcal100: 40, protein100: 1, fat100: 0, carbs100: 9 };
+    const own = await createOwnFood(alice, { ...beet, fiber100: null });
+    await grams(alice, id, own.id, 100);
+    const { foodId } = (await recipeFood(alice, id)).recipe;
+    expect(await deleteRecipe(testDb, alice, id)).toBe(true);
+    expect(await testDb.select().from(recipeItems)).toEqual([]);
+
+    await updateOwnFood(testDb, alice, own.id, { ...beet, kcal100: 90, fiber100: null });
+    const [food] = await testDb
+      .select({ kcal100: foods.kcal100 })
+      .from(foods)
+      .where(eq(foods.id, foodId));
+    expect(food?.kcal100).toBe(40);
   });
 
   it("keeps diary entries of a deleted recipe", async () => {

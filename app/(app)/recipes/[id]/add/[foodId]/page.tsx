@@ -46,7 +46,7 @@ async function IngredientAmountContent({
         <p className="text-foreground/60">{ru.diary.kcalPer100g(formatKcal(food.kcal100))}</p>
       </div>
       <ItemAmountForm
-        key={`${recipe.id}:${food.id}:${recipe.items.length}`}
+        key={`${recipe.id}:${food.id}:${recipe.updatedAt.getTime()}`}
         action={addItemAction.bind(null, recipe.id, food.id)}
         portions={options}
         initial={{
