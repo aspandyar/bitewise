@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { db } from "@/db/client";
 import { CopyFoodButton, DeleteFoodButton } from "@/components/foods/food-actions";
@@ -11,6 +11,8 @@ import { formatGrams, formatKcal } from "@/lib/format";
 import { getVisibleFood, listVisiblePortions } from "@/lib/foods/repo";
 import { parseFoodId } from "@/lib/foods/schema";
 import { ru } from "@/lib/i18n/ru";
+import { recipeHref } from "@/lib/recipes/paths";
+import { getRecipeIdByFoodId } from "@/lib/recipes/repo";
 
 async function FoodContent({ params }: { params: Promise<{ id: string }> }) {
   const userId = await requireUserId();
@@ -21,6 +23,12 @@ async function FoodContent({ params }: { params: Promise<{ id: string }> }) {
     listVisiblePortions(db, userId, foodId),
   ]);
   if (!food) notFound();
+  // A dish found in search opens as a recipe: its numbers are edited through the ingredients.
+  if (food.isRecipe) {
+    const recipeId = await getRecipeIdByFoodId(db, userId, food.id);
+    if (!recipeId) notFound();
+    redirect(recipeHref(recipeId));
+  }
 
   const rows = [
     { label: ru.targets.protein, grams: food.protein100 },

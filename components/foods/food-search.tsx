@@ -16,7 +16,15 @@ type SearchState =
 // A plain object rather than a function: server pages pass it, and functions cannot cross to the client.
 type FoodLink = { prefix: string; search?: string };
 
-export function FoodSearch({ ownFoods, link }: { ownFoods: FoodListItem[]; link?: FoodLink }) {
+export function FoodSearch({
+  ownFoods,
+  link,
+  excludeRecipes = false,
+}: {
+  ownFoods: FoodListItem[];
+  link?: FoodLink;
+  excludeRecipes?: boolean;
+}) {
   const router = useRouter();
   const [input, setInput] = useState("");
   const [state, setState] = useState<SearchState | null>(null);
@@ -32,9 +40,10 @@ export function FoodSearch({ ownFoods, link }: { ownFoods: FoodListItem[]; link?
     const timer = setTimeout(async () => {
       setState({ kind: "loading", query });
       try {
-        const response = await fetch(`/api/foods/search?q=${encodeURIComponent(query)}`, {
-          signal: controller.signal,
-        });
+        const params = new URLSearchParams({ q: query });
+        // Ingredient pickers ask the server to leave dishes out.
+        if (excludeRecipes) params.set("exclude", "recipes");
+        const response = await fetch(`/api/foods/search?${params}`, { signal: controller.signal });
         if (response.status === 401) {
           router.push("/login");
           return;
@@ -57,7 +66,7 @@ export function FoodSearch({ ownFoods, link }: { ownFoods: FoodListItem[]; link?
       clearTimeout(timer);
       controller.abort();
     };
-  }, [query, router]);
+  }, [query, router, excludeRecipes]);
 
   const hrefFor = link
     ? (food: FoodListItem) => `${link.prefix}${food.id}${link.search ? `?${link.search}` : ""}`
