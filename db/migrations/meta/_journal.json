@@ -36,6 +36,13 @@
       "when": 1791727811349,
       "tag": "0004_first_penance",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791776735953,
+      "tag": "0005_bitter_the_initiative",
+      "breakpoints": true
     }
   ]
 }

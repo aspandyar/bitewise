@@ -132,6 +132,8 @@ export const ru = {
     portionGrams: (min: number, max: number) => `Граммы — от ${min} до ${max}`,
     portionCount: (min: number, max: number) => `Количество — от ${min} до ${max}`,
     choosePortion: "Выберите порцию",
+    cookedWeight: (min: number, max: number) => `Вес — от ${min} до ${max} г`,
+    servings: (min: number, max: number) => `Порций — целое число от ${min} до ${max}`,
   },
   diary: {
     today: "Сегодня",
@@ -191,5 +193,39 @@ export const ru = {
     editTitle: "Изменить запись",
     entryLimit: (max: number) => `Не больше ${max} записей за день`,
     entryTotalLimit: (max: number) => `Не больше ${max} записей в дневнике`,
+  },
+  recipes: {
+    title: "Блюда",
+    add: "+ Новое блюдо",
+    empty:
+      "Соберите блюдо из продуктов — борщ, салат, каша. В дневник оно добавляется как обычный продукт.",
+    newTitle: "Новое блюдо",
+    editTitle: "Изменить блюдо",
+    name: "Название",
+    namePlaceholder: "Например, борщ",
+    cookedWeight: "Вес готового блюда, г (необязательно)",
+    cookedWeightHint: "Не взвешивали — посчитаем по сырому весу ингредиентов",
+    servings: "Порций (необязательно)",
+    // Stored as the dish's portion label, shown in the diary like any portion.
+    servingLabel: "1 порция",
+    badge: "блюдо",
+    serving: (grams: string, kcal: string) => `1 порция · ${grams} г · ${kcal} ккал`,
+    whole: (grams: string, kcal: string) => `Всё блюдо · ${grams} г · ${kcal} ккал`,
+    listServing: (kcal: string) => `порция ${kcal} ккал`,
+    weightRaised:
+      "Вес готового блюда меньше, чем позволяет состав, — цифры посчитаны по минимально возможному весу. Проверьте вес",
+    weightTooLow: "Меньше, чем весят белки, жиры и углеводы состава. Проверьте вес",
+    weightTooLowForItem:
+      "С этим ингредиентом вес готового блюда меньше, чем позволяет состав. Сначала увеличьте вес блюда",
+    ingredientsTitle: "Состав",
+    noIngredients: "Ингредиентов пока нет — добавьте первый",
+    addIngredient: "+ Ингредиент",
+    addIngredientTitle: (name: string) => `Ингредиент · ${name}`,
+    submitAddIngredient: "Добавить",
+    editIngredientTitle: "Изменить ингредиент",
+    deletedFood: "удалён",
+    edit: "Изменить",
+    toDiary: "В дневник",
+    itemLimit: (max: number) => `Не больше ${max} ингредиентов в блюде`,
   },
 } as const;
