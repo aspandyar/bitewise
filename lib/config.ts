@@ -166,6 +166,18 @@ export const DIARY_LIMITS = {
   minDate: "2000-01-01",
 } as const;
 
+// The diary's amount screen needs a meal; links from outside the day view (a recipe) open on lunch,
+// and the meal can still be changed on that screen.
+export const DIARY_DEFAULT_MEAL: Meal = "lunch";
+
+export const RECIPE_LIMITS = {
+  // Keeps the ingredient list scannable on a phone; real dishes rarely pass 20.
+  maxItems: 50,
+  // A big soup pot is ~10 kg; 20 kg leaves room without letting typos like 300 000 through.
+  cookedWeightG: { min: 0.1, max: 20_000 },
+  servings: { min: 1, max: 100 },
+} as const;
+
 // FoodData Central nutrient ids (nutrient.csv), all per 100 g.
 export const USDA_NUTRIENT_IDS = {
   kcal: 1008,
