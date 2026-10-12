@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { decimalField, firstFieldErrors, optionalDecimalField } from "./forms";
+import {
+  decimalField,
+  firstFieldErrors,
+  optionalDecimalField,
+  optionalIntegerField,
+} from "./forms";
 
 describe("decimalField", () => {
   const field = decimalField({ min: 30, max: 300 }, "bad");
@@ -54,5 +59,23 @@ describe("optionalDecimalField", () => {
   it("rejects out-of-range and non-numeric input", () => {
     expect(field.safeParse("101").success).toBe(false);
     expect(field.safeParse("abc").success).toBe(false);
+  });
+});
+
+describe("optionalIntegerField", () => {
+  const field = optionalIntegerField({ min: 1, max: 100 }, "bad");
+
+  it("turns an empty or blank field into null", () => {
+    expect(field.parse("")).toBeNull();
+    expect(field.parse("  ")).toBeNull();
+  });
+
+  it("accepts whole numbers inside the limits", () => {
+    expect(field.parse("4")).toBe(4);
+    expect(field.parse(" 100 ")).toBe(100);
+  });
+
+  it.each(["4,5", "0", "101", "abc", "-1"])("rejects %s", (value) => {
+    expect(field.safeParse(value).success).toBe(false);
   });
 });
