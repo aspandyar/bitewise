@@ -40,13 +40,13 @@ tags:
 | `targets` | id, user_id (→ users, cascade, индекс), name («По умолчанию»), mode (`auto/manual`), kcal, protein_g, fat_g, carbs_g — numeric(8,2), is_default (частичный уникальный индекс: одна норма по умолчанию на пользователя), created_at, updated_at |
 | `foods` | id, owner_id (→ users, cascade, индекс; null = общий из сида), name, search_name (generated: `replace(lower(name), 'ё', 'е')`, GIN `gin_trgm_ops`), kcal_100, protein_100, fat_100, carbs_100 (без клетчатки), fiber_100? — numeric(8,2), source (`user/usda/label`; позже `off/ai_estimate`), seed_key (уникальный: `usda:<fdcId>` / `label:<slug>`), source_url?, deleted_at (мягкое удаление), created_at, updated_at. CHECK: `source = user` ⇔ есть владелец ⇔ нет seed_key; нутриенты ≥ 0. Штрихкод — этап 7 |
 | `food_portions` | id, food_id (→ foods, cascade, индекс), user_id (→ users, cascade, индекс; null = общая из сида), label («1 шт»), grams numeric(8,2) > 0, created_at |
-| `recipes` | id, owner_id, name, cooked_weight_g, servings |
-| `recipe_items` | recipe_id, food_id, grams |
-| `diary_entries` | id, user_id (→ users, cascade), date (локальная дата пользователя), meal (`breakfast/lunch/dinner/snack`), food_id (→ foods, без каскада: продукты удаляются мягко), снимок: food_name, kcal_100, protein_100, fat_100, carbs_100 — numeric(8,2); grams > 0; снимок порции portion_label, portion_grams, portion_count (все null или все заданы); created_at, updated_at. Индексы `(user_id, date)` и `food_id`. Итоги считает `lib/nutrition.ts`; `source` и `recipe_id` — на своих этапах |
+| `recipes` | id, user_id (→ users, cascade, индекс), food_id (→ foods, cascade, unique — блюдо само строка `foods`: название, цифры на 100 г, мягкое удаление), cooked_weight_g numeric(8,2)? > 0 (null — по сырому весу), servings integer? > 0 (1–100 в форме), created_at, updated_at. Цифры на 100 г считает `calcRecipe` и пишет `lib/recipes/recompute.ts` в строку `foods` — при каждом изменении блюда, правке своего продукта-ингредиента и сиде; порция «1 порция» — единственная `food_portion` строки-блюда (0,1–5000 г, иначе нет). Блюдо в блюде нельзя |
+| `recipe_items` | id, recipe_id (→ recipes, cascade, индекс), user_id (→ users, cascade, индекс), food_id (→ foods, без каскада, индекс — поиск блюд для пересчёта), grams numeric(8,2) > 0, снимок порции portion_label, portion_grams, portion_count (все null или все заданы), created_at. Удаление блюда удаляет состав |
+| `diary_entries` | id, user_id (→ users, cascade), date (локальная дата пользователя), meal (`breakfast/lunch/dinner/snack`), food_id (→ foods, без каскада: продукты удаляются мягко), снимок: food_name, kcal_100, protein_100, fat_100, carbs_100 — numeric(8,2); grams > 0; снимок порции portion_label, portion_grams, portion_count (все null или все заданы); created_at, updated_at. Индексы `(user_id, date)` и `food_id`. Итоги считает `lib/nutrition.ts`; блюдо попадает сюда как обычный продукт (`food_id` строки-блюда); `source` — на своём этапе |
 | `day_settings` | user_id, date, target_id |
 | `water_entries` | id, user_id, ts, ml |
 | `weight_entries` | id, user_id, date, kg |
-| `favorites` | user_id, food_id / recipe_id |
+| `favorites` | user_id, food_id (блюда — тоже строки `foods`) |
 | `ai_requests` | id, user_id, kind (`text/photo/chat`), provider, model, tokens_in, tokens_out, cost_usd, status, created_at |
 
 ## Расчёт нормы
