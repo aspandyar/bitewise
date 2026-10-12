@@ -28,7 +28,7 @@ type TextFieldProps = {
   label: string;
   name: string;
   type?: HTMLInputTypeAttribute;
-  inputMode?: "text" | "decimal" | "email";
+  inputMode?: "text" | "decimal" | "numeric" | "email";
   autoComplete?: string;
   defaultValue?: string | number;
   placeholder?: string;
