@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { TimeZoneCookie } from "@/components/time-zone-cookie";
 import { ru } from "@/lib/i18n/ru";
 import "./globals.css";
 
@@ -15,7 +16,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ru" className="h-full antialiased">
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        <TimeZoneCookie />
+        {children}
+      </body>
     </html>
   );
 }

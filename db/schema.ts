@@ -17,6 +17,7 @@ import {
   ACTIVITY_LEVELS,
   FOOD_SOURCES,
   GOALS,
+  MEALS,
   SEXES,
   TARGET_MODES,
   USER_ROLES,
@@ -147,5 +148,56 @@ export const foodPortions = pgTable(
     index("food_portions_food_id_idx").on(t.foodId),
     index("food_portions_user_id_idx").on(t.userId),
     check("food_portions_grams_positive", sql`${t.grams} > 0`),
+  ],
+);
+
+export const mealEnum = pgEnum("meal", MEALS);
+
+export const diaryEntries = pgTable(
+  "diary_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // The user's local calendar date, computed from their time zone when the entry was added.
+    date: date("date").notNull(),
+    meal: mealEnum("meal").notNull(),
+    // No cascade: foods are only soft-deleted, so history keeps pointing at them.
+    foodId: uuid("food_id")
+      .notNull()
+      .references(() => foods.id),
+    // Snapshot: renaming or editing the food later never rewrites past days.
+    foodName: text("food_name").notNull(),
+    kcal100: nutrient("kcal_100"),
+    protein100: nutrient("protein_100"),
+    fat100: nutrient("fat_100"),
+    carbs100: nutrient("carbs_100"),
+    grams: nutrient("grams"),
+    // Snapshot of the portion used, if any; grams = count × portion grams is kept by the app,
+    // since a CHECK would break on rounding to hundredths.
+    portionLabel: text("portion_label"),
+    portionGrams: optionalNutrient("portion_grams"),
+    portionCount: optionalNutrient("portion_count"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("diary_entries_user_id_date_idx").on(t.userId, t.date),
+    // Lets the FK check on cascaded food deletes use an index instead of a full scan.
+    index("diary_entries_food_id_idx").on(t.foodId),
+    check("diary_entries_grams_positive", sql`${t.grams} > 0`),
+    check(
+      "diary_entries_nutrients_non_negative",
+      sql`${t.kcal100} >= 0 AND ${t.protein100} >= 0 AND ${t.fat100} >= 0 AND ${t.carbs100} >= 0`,
+    ),
+    check(
+      "diary_entries_portion_all_or_none",
+      sql`(${t.portionLabel} IS NULL) = (${t.portionGrams} IS NULL) AND (${t.portionGrams} IS NULL) = (${t.portionCount} IS NULL)`,
+    ),
+    check(
+      "diary_entries_portion_positive",
+      sql`(${t.portionGrams} IS NULL OR ${t.portionGrams} > 0) AND (${t.portionCount} IS NULL OR ${t.portionCount} > 0)`,
+    ),
   ],
 );

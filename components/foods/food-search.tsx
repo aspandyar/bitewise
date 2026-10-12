@@ -13,7 +13,10 @@ type SearchState =
   | { kind: "results"; query: string; items: FoodListItem[] }
   | { kind: "error"; query: string; message: string };
 
-export function FoodSearch({ ownFoods }: { ownFoods: FoodListItem[] }) {
+// A plain object rather than a function: server pages pass it, and functions cannot cross to the client.
+type FoodLink = { prefix: string; search?: string };
+
+export function FoodSearch({ ownFoods, link }: { ownFoods: FoodListItem[]; link?: FoodLink }) {
   const router = useRouter();
   const [input, setInput] = useState("");
   const [state, setState] = useState<SearchState | null>(null);
@@ -56,6 +59,10 @@ export function FoodSearch({ ownFoods }: { ownFoods: FoodListItem[] }) {
     };
   }, [query, router]);
 
+  const hrefFor = link
+    ? (food: FoodListItem) => `${link.prefix}${food.id}${link.search ? `?${link.search}` : ""}`
+    : undefined;
+
   // A state for an older query is stale until the debounce for the current one fires.
   const current = state?.query === query ? state : null;
 
@@ -81,7 +88,7 @@ export function FoodSearch({ ownFoods }: { ownFoods: FoodListItem[] }) {
         ownFoods.length > 0 ? (
           <section className="flex flex-col gap-2">
             <h2 className="text-sm font-medium text-foreground/60">{ru.foods.ownTitle}</h2>
-            <FoodList items={ownFoods} />
+            <FoodList items={ownFoods} hrefFor={hrefFor} />
           </section>
         ) : (
           <p className="text-foreground/60">{ru.foods.startTyping}</p>
@@ -89,7 +96,7 @@ export function FoodSearch({ ownFoods }: { ownFoods: FoodListItem[] }) {
       ) : !current || current.kind === "loading" ? (
         lastItems.length > 0 ? (
           <div aria-busy="true" className="opacity-60">
-            <FoodList items={lastItems} />
+            <FoodList items={lastItems} hrefFor={hrefFor} />
           </div>
         ) : (
           <p className="text-foreground/60" aria-live="polite">
@@ -108,7 +115,7 @@ export function FoodSearch({ ownFoods }: { ownFoods: FoodListItem[] }) {
           </Link>
         </div>
       ) : (
-        <FoodList items={current.items} />
+        <FoodList items={current.items} hrefFor={hrefFor} />
       )}
     </div>
   );

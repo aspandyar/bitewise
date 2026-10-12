@@ -29,7 +29,7 @@ tags:
 > **Калории и БЖУ считает только код в `lib/nutrition.ts`** — чистые функции с тестами. AI возвращает лишь структуру «что и сколько граммов».
 
 - Все константы (коэффициенты активности, % жиров, лимиты AI, модели) — в одном `lib/config.ts`.
-- **Снимок нутриентов в записи дневника:** при добавлении копируем ккал/БЖУ в запись. Исправил продукт — история прошлых дней не поменялась.
+- **Снимок нутриентов в записи дневника:** при добавлении копируем название и значения продукта на 100 г, итоги записи считает код. Исправил продукт — история прошлых дней не поменялась.
 - Источник каждой записи хранится: `manual | barcode | ai_text | ai_photo | quick`.
 
 ## Модель данных (черновик)
@@ -42,7 +42,7 @@ tags:
 | `food_portions` | id, food_id (→ foods, cascade, индекс), user_id (→ users, cascade, индекс; null = общая из сида), label («1 шт»), grams numeric(8,2) > 0, created_at |
 | `recipes` | id, owner_id, name, cooked_weight_g, servings |
 | `recipe_items` | recipe_id, food_id, grams |
-| `diary_entries` | id, user_id, date, slot (`breakfast/lunch/dinner/snack`), food_id?, recipe_id?, grams, kcal, protein_g, fat_g, carbs_g (снимок), source, ai_confidence?, created_at |
+| `diary_entries` | id, user_id (→ users, cascade), date (локальная дата пользователя), meal (`breakfast/lunch/dinner/snack`), food_id (→ foods, без каскада: продукты удаляются мягко), снимок: food_name, kcal_100, protein_100, fat_100, carbs_100 — numeric(8,2); grams > 0; снимок порции portion_label, portion_grams, portion_count (все null или все заданы); created_at, updated_at. Индексы `(user_id, date)` и `food_id`. Итоги считает `lib/nutrition.ts`; `source` и `recipe_id` — на своих этапах |
 | `day_settings` | user_id, date, target_id |
 | `water_entries` | id, user_id, ts, ml |
 | `weight_entries` | id, user_id, date, kg |

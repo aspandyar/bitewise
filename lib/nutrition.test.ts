@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   calcAgeYears,
+  calcDayProgress,
+  calcEntryNutrients,
+  calcPortionGrams,
+  sumNutrients,
   calcAutoTargets,
   calcBmrKcal,
   calcMacroTargets,
@@ -217,5 +221,94 @@ describe("calcNetCarbsPer100g", () => {
     expect(() => calcNetCarbsPer100g(10, -1)).toThrow(RangeError);
     expect(() => calcNetCarbsPer100g(Number.NaN, 0)).toThrow(RangeError);
     expect(() => calcNetCarbsPer100g(10, Number.NaN)).toThrow(RangeError);
+  });
+});
+
+describe("calcEntryNutrients", () => {
+  const buckwheat = { kcal100: 343, protein100: 13.3, fat100: 3.4, carbs100: 62.1 };
+
+  it("scales per-100 g values to 150 g", () => {
+    // 343 × 150 / 100 = 514.5; 13.3 × 1.5 = 19.95; 3.4 × 1.5 = 5.1; 62.1 × 1.5 = 93.15
+    const result = calcEntryNutrients(buckwheat, 150);
+    expect(result.kcal).toBe(514.5);
+    expect(result.proteinG).toBeCloseTo(19.95, 10);
+    expect(result.fatG).toBeCloseTo(5.1, 10);
+    expect(result.carbsG).toBeCloseTo(93.15, 10);
+  });
+
+  it("returns zeros for 0 g", () => {
+    expect(calcEntryNutrients(buckwheat, 0)).toEqual({ kcal: 0, proteinG: 0, fatG: 0, carbsG: 0 });
+  });
+
+  it.each([-1, Number.NaN])("throws RangeError for %d g", (grams) => {
+    expect(() => calcEntryNutrients(buckwheat, grams)).toThrow(RangeError);
+  });
+});
+
+describe("calcPortionGrams", () => {
+  it("multiplies portion grams by the count", () => {
+    // 60 g × 1.5 = 90 g
+    expect(calcPortionGrams(60, 1.5)).toBe(90);
+  });
+
+  it.each([
+    { portionGrams: 0, count: 1 },
+    { portionGrams: 60, count: 0 },
+    { portionGrams: 60, count: -1 },
+    { portionGrams: Number.NaN, count: 1 },
+  ])("throws RangeError for $portionGrams g × $count", ({ portionGrams, count }) => {
+    expect(() => calcPortionGrams(portionGrams, count)).toThrow(RangeError);
+  });
+});
+
+describe("sumNutrients", () => {
+  it("returns zeros for an empty list", () => {
+    expect(sumNutrients([])).toEqual({ kcal: 0, proteinG: 0, fatG: 0, carbsG: 0 });
+  });
+
+  it("adds up three entries", () => {
+    // kcal 514.5 + 157 + 52 = 723.5; protein 20 + 12.7 + 0.3 = 33; fat 5 + 10.9 + 0.2 = 16.1;
+    // carbs 93 + 0.7 + 13.8 = 107.5
+    const total = sumNutrients([
+      { kcal: 514.5, proteinG: 20, fatG: 5, carbsG: 93 },
+      { kcal: 157, proteinG: 12.7, fatG: 10.9, carbsG: 0.7 },
+      { kcal: 52, proteinG: 0.3, fatG: 0.2, carbsG: 13.8 },
+    ]);
+    expect(total.kcal).toBe(723.5);
+    expect(total.proteinG).toBeCloseTo(33, 10);
+    expect(total.fatG).toBeCloseTo(16.1, 10);
+    expect(total.carbsG).toBeCloseTo(107.5, 10);
+  });
+});
+
+describe("calcDayProgress", () => {
+  const target = { kcal: 2000, proteinG: 150, fatG: 60, carbsG: 200 };
+
+  it("reports remaining and share per nutrient, including overshoot", () => {
+    const progress = calcDayProgress(target, { kcal: 1500, proteinG: 160, fatG: 60, carbsG: 0 });
+    expect(progress.kcal).toEqual({ eaten: 1500, target: 2000, remaining: 500, share: 0.75 });
+    // 150 − 160 = −10 (over); 160 / 150 is not clamped
+    expect(progress.proteinG).toEqual({
+      eaten: 160,
+      target: 150,
+      remaining: -10,
+      share: 160 / 150,
+    });
+    expect(progress.fatG).toEqual({ eaten: 60, target: 60, remaining: 0, share: 1 });
+    expect(progress.carbsG).toEqual({ eaten: 0, target: 200, remaining: 200, share: 0 });
+  });
+
+  it("handles a zero target without NaN", () => {
+    const zeroCarbs = { ...target, carbsG: 0 };
+    const none = calcDayProgress(zeroCarbs, { kcal: 0, proteinG: 0, fatG: 0, carbsG: 0 });
+    expect(none.carbsG).toEqual({ eaten: 0, target: 0, remaining: 0, share: 0 });
+    const some = calcDayProgress(zeroCarbs, { kcal: 40, proteinG: 0, fatG: 0, carbsG: 10 });
+    expect(some.carbsG).toEqual({ eaten: 10, target: 0, remaining: -10, share: Infinity });
+  });
+
+  it("throws RangeError for a negative value", () => {
+    expect(() => calcDayProgress(target, { kcal: -1, proteinG: 0, fatG: 0, carbsG: 0 })).toThrow(
+      RangeError,
+    );
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatGrams, formatKcal } from "./format";
+import { formatAmount, formatDayLabel, formatEntryAmount, formatGrams, formatKcal } from "./format";
 
 describe("formatKcal", () => {
   it("hides floating-point noise", () => {
@@ -18,5 +18,56 @@ describe("formatGrams", () => {
 
   it("shows 0 for 0 g", () => {
     expect(formatGrams(0)).toBe("0");
+  });
+});
+
+describe("formatAmount", () => {
+  it.each([
+    { count: 1, expected: "1" },
+    { count: 1.5, expected: "1,5" },
+    { count: 0.25, expected: "0,25" },
+    { count: 2.0, expected: "2" },
+  ])("formats $count as $expected", ({ count, expected }) => {
+    expect(formatAmount(count)).toBe(expected);
+  });
+});
+
+describe("formatDayLabel", () => {
+  const today = "2026-10-11";
+
+  it("names today and yesterday", () => {
+    expect(formatDayLabel(today, today)).toBe("Сегодня");
+    expect(formatDayLabel("2026-10-10", today)).toBe("Вчера");
+  });
+
+  it("shows day, month and weekday within the current year", () => {
+    // 2026-10-09 is a Friday
+    expect(formatDayLabel("2026-10-09", today)).toBe("9 окт, пт");
+    expect(formatDayLabel("2026-05-09", today)).toBe("9 мая, сб");
+  });
+
+  it("adds the year for another year", () => {
+    // 2025-12-31 is a Wednesday
+    expect(formatDayLabel("2025-12-31", today)).toBe("31 дек 2025, ср");
+  });
+});
+
+describe("formatEntryAmount", () => {
+  it("shows grams for a grams entry", () => {
+    expect(formatEntryAmount({ grams: 150.4, portionLabel: null, portionCount: null })).toBe(
+      "150 г",
+    );
+  });
+
+  it("shows a single portion without a multiplier", () => {
+    expect(formatEntryAmount({ grams: 60, portionLabel: "1 шт", portionCount: 1 })).toBe(
+      "1 шт (60 г)",
+    );
+  });
+
+  it("shows a fractional count with its grams", () => {
+    expect(formatEntryAmount({ grams: 90, portionLabel: "1 шт", portionCount: 1.5 })).toBe(
+      "1,5 × 1 шт (90 г)",
+    );
   });
 });

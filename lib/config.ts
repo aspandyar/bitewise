@@ -81,6 +81,16 @@ export const AUTH = {
   sessionMaxAgeSec: 30 * SECONDS_PER_DAY,
 } as const;
 
+// Used until the browser reports its own zone through the cookie (first visit, JS off).
+export const DEFAULT_TIME_ZONE = "Asia/Almaty";
+
+export const TIME_ZONE_COOKIE = {
+  name: "tz",
+  maxAgeSec: 365 * SECONDS_PER_DAY,
+  // IANA names are at most ~30 characters; longer values are garbage, not a zone.
+  maxLength: 64,
+} as const;
+
 // OWASP scrypt profile (N=2^15, r=8, p=3): ~32 MB per hash keeps a small VPS responsive.
 export const PASSWORD_HASH = {
   N: 2 ** 15,
@@ -134,6 +144,26 @@ export const FOOD_SEARCH = {
   // "гречко" 0.71, while the unrelated "гречко" → "молоко" scores 0.14.
   wordSimilarityThreshold: 0.4,
   debounceMs: 250,
+} as const;
+
+// Foods store nutrients per this many grams; every entry scales from it.
+export const NUTRIENT_BASE_GRAMS = 100;
+
+// Order here is the order on the day screen and in the Postgres enum (ORDER BY follows it).
+export const MEALS = ["breakfast", "lunch", "dinner", "snack"] as const;
+export type Meal = (typeof MEALS)[number];
+
+export const DIARY_LIMITS = {
+  // Same bounds as a food portion: from a pinch of salt to a big pot.
+  grams: { min: 0.1, max: 5000 },
+  // Quarter portions are the finest split people use; the stepper moves in halves.
+  portionCount: { min: 0.25, max: 50, step: 0.5, default: 1 },
+  // Far above any real day; bounds what a script can write into one day.
+  maxEntriesPerDay: 100,
+  // ~27 years at 10 entries a day; stops a script sweeping every allowed date to fill the disk.
+  maxEntriesTotal: 100_000,
+  // Older dates are typos, not history kept in this app.
+  minDate: "2000-01-01",
 } as const;
 
 // FoodData Central nutrient ids (nutrient.csv), all per 100 g.

@@ -124,6 +124,29 @@ export async function listVisiblePortions(
   );
 }
 
+// A portion is usable only through a food the user sees and only if it belongs to that food.
+export async function getVisiblePortion(
+  db: Db,
+  userId: string,
+  foodId: string,
+  portionId: string,
+): Promise<PortionValues | null> {
+  const [row] = await db
+    .select({ label: foodPortions.label, grams: foodPortions.grams })
+    .from(foodPortions)
+    .innerJoin(foods, eq(foods.id, foodPortions.foodId))
+    .where(
+      and(
+        eq(foodPortions.id, portionId),
+        eq(foodPortions.foodId, foodId),
+        visibleTo(userId),
+        or(isNull(foodPortions.userId), eq(foodPortions.userId, userId)),
+      ),
+    )
+    .limit(1);
+  return row ?? null;
+}
+
 // Copies keep the numbers and every portion the user could see, so nothing is lost by copying.
 export async function copyFood(
   db: Db,
