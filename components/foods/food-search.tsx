@@ -97,7 +97,9 @@ export function FoodSearch({
         ownFoods.length > 0 ? (
           <section className="flex flex-col gap-2">
             <h2 className="text-sm font-medium text-foreground/60">
-              {excludeRecipes ? ru.foods.ownTitle : ru.foods.ownTitleWithRecipes}
+              {ownFoods.some((food) => food.isRecipe)
+                ? ru.foods.ownTitleWithRecipes
+                : ru.foods.ownTitle}
             </h2>
             <FoodList items={ownFoods} hrefFor={hrefFor} />
           </section>
