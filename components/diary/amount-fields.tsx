@@ -43,6 +43,7 @@ export function AmountFields({
   errors: Record<string, string>;
 }) {
   const countId = useId();
+  const portionErrorId = `${countId}-portion-error`;
   const [mode, setMode] = useState<AmountMode>(portions.length > 0 ? initial.mode : "grams");
   const [portionIndex, setPortionIndex] = useState(initial.portionIndex);
   const [count, setCount] = useState(formatAmount(initial.count));
@@ -72,6 +73,7 @@ export function AmountFields({
               type="button"
               aria-pressed={mode === option}
               onClick={() => selectMode(option)}
+              data-edits="grams count portionId"
               className={segment}
             >
               {option === "portion" ? ru.diary.modePortions : ru.diary.modeGrams}
@@ -91,14 +93,20 @@ export function AmountFields({
         />
       ) : (
         <>
-          <div role="radiogroup" aria-label={ru.diary.portion} className="flex flex-col gap-2">
+          <div
+            role="radiogroup"
+            aria-label={ru.diary.portion}
+            aria-invalid={errors.portionId ? true : undefined}
+            aria-describedby={errors.portionId ? portionErrorId : undefined}
+            className="flex flex-col gap-2"
+          >
             {portions.map((portion, index) => {
               const text = ru.diary.portionOption(
                 portion.label,
                 formatGrams(portion.grams),
                 formatKcal(portion.kcal),
               );
-              // Editing has only the snapshotted portion, which has no id to submit.
+              // A snapshotted portion has no id: its count is edited, the portion is not re-picked.
               return portion.id === null ? (
                 <p key={index} className="flex min-h-11 items-center">
                   {text}
@@ -122,7 +130,9 @@ export function AmountFields({
             })}
           </div>
           {errors.portionId ? (
-            <p className="text-sm text-red-600 dark:text-red-400">{errors.portionId}</p>
+            <p id={portionErrorId} className="text-sm text-red-600 dark:text-red-400">
+              {errors.portionId}
+            </p>
           ) : null}
           <div className="flex flex-col gap-1">
             <label htmlFor={countId} className="text-sm font-medium">
@@ -134,6 +144,7 @@ export function AmountFields({
                 aria-label={ru.diary.decrease}
                 disabled={current === null || current - step < min}
                 onClick={() => current !== null && setCount(formatAmount(current - step))}
+                data-edits="count"
                 className={stepper}
               >
                 {ru.diary.minus}
@@ -153,6 +164,7 @@ export function AmountFields({
                 aria-label={ru.diary.increase}
                 disabled={current === null || current + step > max}
                 onClick={() => current !== null && setCount(formatAmount(current + step))}
+                data-edits="count"
                 className={stepper}
               >
                 {ru.diary.plus}

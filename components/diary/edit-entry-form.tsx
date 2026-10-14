@@ -10,19 +10,18 @@ import { MealPicker } from "./meal-picker";
 export function EditEntryForm({
   action,
   meal,
-  portion,
+  portions,
   initial,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   meal: Meal;
-  portion: PortionOption | null;
+  portions: PortionOption[];
   initial: AmountInitial;
 }) {
-  const { state, pending, onSubmit } = usePreservingFormAction(action);
-  const errors = state.fieldErrors ?? {};
+  const { state, pending, fieldErrors: errors, formProps } = usePreservingFormAction(action);
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-5">
-      <AmountFields portions={portion ? [portion] : []} initial={initial} errors={errors} />
+    <form {...formProps} className="flex flex-col gap-5">
+      <AmountFields portions={portions} initial={initial} errors={errors} />
       <MealPicker defaultValue={meal} error={errors.meal} />
       <FormError message={state.formError} />
       <SubmitButton pending={pending}>{ru.common.save}</SubmitButton>

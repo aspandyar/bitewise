@@ -12,6 +12,7 @@ import { requireUserId } from "@/lib/auth/session";
 import { DIARY_LIMITS } from "@/lib/config";
 import { ru } from "@/lib/i18n/ru";
 import { parseId } from "@/lib/ids";
+import { listVisiblePortions } from "@/lib/foods/repo";
 import { calcEntryNutrients } from "@/lib/nutrition";
 import { recipeHref } from "@/lib/recipes/paths";
 import { getRecipe } from "@/lib/recipes/repo";
@@ -28,17 +29,25 @@ async function EditIngredientContent({
   const item = recipe?.items.find((candidate) => candidate.id === itemId);
   if (!recipe || !item) notFound();
 
-  const portion: PortionOption | null =
+  // A portion ingredient counts its snapshot; a grams one may switch to a portion of its food.
+  const portions: PortionOption[] =
     item.portionLabel !== null && item.portionGrams !== null
-      ? {
-          id: null,
-          label: item.portionLabel,
-          grams: item.portionGrams,
-          kcal: calcEntryNutrients(item.per100g, item.portionGrams).kcal,
-        }
-      : null;
+      ? [
+          {
+            id: null,
+            label: item.portionLabel,
+            grams: item.portionGrams,
+            kcal: calcEntryNutrients(item.per100g, item.portionGrams).kcal,
+          },
+        ]
+      : (await listVisiblePortions(db, userId, item.foodId)).map((portion) => ({
+          id: portion.id,
+          label: portion.label,
+          grams: portion.grams,
+          kcal: calcEntryNutrients(item.per100g, portion.grams).kcal,
+        }));
   const initial: AmountInitial = {
-    mode: portion && item.portionCount !== null ? "portion" : "grams",
+    mode: item.portionCount !== null ? "portion" : "grams",
     portionIndex: 0,
     count: item.portionCount ?? DIARY_LIMITS.portionCount.default,
     grams: item.grams,
@@ -56,7 +65,7 @@ async function EditIngredientContent({
         <ItemAmountForm
           key={`${item.id}:${item.grams}:${item.portionCount}`}
           action={updateItemAction.bind(null, recipe.id, item.id)}
-          portions={portion ? [portion] : []}
+          portions={portions}
           initial={initial}
           submitLabel={ru.common.save}
         />

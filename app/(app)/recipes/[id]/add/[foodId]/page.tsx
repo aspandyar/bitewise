@@ -55,7 +55,7 @@ async function IngredientAmountContent({
             mode: options.length > 0 ? "portion" : "grams",
             portionIndex: 0,
             count: DIARY_LIMITS.portionCount.default,
-            grams: null,
+            grams: DIARY_LIMITS.grams.default,
           }}
           submitLabel={ru.recipes.submitAddIngredient}
         />

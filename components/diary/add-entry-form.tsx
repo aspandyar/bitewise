@@ -19,10 +19,14 @@ export function AddEntryForm({
   meal: Meal;
   portions: PortionOption[];
 }) {
-  const { state, pending, onSubmit } = usePreservingFormAction(addEntryAction);
-  const errors = state.fieldErrors ?? {};
+  const {
+    state,
+    pending,
+    fieldErrors: errors,
+    formProps,
+  } = usePreservingFormAction(addEntryAction);
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-5">
+    <form {...formProps} className="flex flex-col gap-5">
       <input type="hidden" name="date" value={date} />
       <input type="hidden" name="foodId" value={foodId} />
       {/* A food with portions opens on them: one tap on "1 шт" beats typing grams. */}
@@ -32,7 +36,7 @@ export function AddEntryForm({
           mode: portions.length > 0 ? "portion" : "grams",
           portionIndex: 0,
           count: DIARY_LIMITS.portionCount.default,
-          grams: null,
+          grams: DIARY_LIMITS.grams.default,
         }}
         errors={errors}
       />

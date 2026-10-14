@@ -154,10 +154,12 @@ export const MEALS = ["breakfast", "lunch", "dinner", "snack"] as const;
 export type Meal = (typeof MEALS)[number];
 
 export const DIARY_LIMITS = {
-  // Same bounds as a food portion: from a pinch of salt to a big pot.
-  grams: { min: 0.1, max: 5000 },
-  // Quarter portions are the finest split people use; the stepper moves in halves.
-  portionCount: { min: 0.25, max: 50, step: 0.5, default: 1 },
+  // Same bounds as a food portion: from a pinch of salt to a big pot. A food without portions
+  // opens on the default, selected: one tap adds it, typing replaces it.
+  grams: { min: 0.1, max: 5000, default: 100 },
+  // Quarter portions are the finest split people use; the stepper moves in whole portions
+  // ("2 шт", "3 шт"), and fractions are typed.
+  portionCount: { min: 0.25, max: 50, step: 1, default: 1 },
   // Far above any real day; bounds what a script can write into one day.
   maxEntriesPerDay: 100,
   // ~27 years at 10 entries a day; stops a script sweeping every allowed date to fill the disk.

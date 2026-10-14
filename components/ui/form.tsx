@@ -3,25 +3,73 @@
 import {
   startTransition,
   useActionState,
+  useEffect,
   useId,
+  useRef,
+  useState,
   type FormEvent,
+  type MouseEvent,
   type HTMLInputTypeAttribute,
   type ReactNode,
 } from "react";
-import type { FormState } from "@/lib/forms";
+import { visibleFieldErrors, type FormState } from "@/lib/forms";
 
 // React 19 resets a form after a `form action` runs, wiping input on validation errors;
 // submitting through onSubmit + startTransition keeps what the user typed.
+// Spread `formProps` onto the <form>: it also hides an error once its field is edited and moves
+// focus to the first invalid field after a failed submit.
 export function usePreservingFormAction(
   action: (prev: FormState, formData: FormData) => Promise<FormState>,
 ) {
   const [state, formAction, pending] = useActionState(action, {});
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const [edited, setEdited] = useState<ReadonlySet<string>>(() => new Set());
+
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    formRef.current = event.currentTarget;
+    setEdited(new Set());
     const formData = new FormData(event.currentTarget);
     startTransition(() => formAction(formData));
   }
-  return { state, pending, onSubmit };
+
+  function markEdited(names: readonly string[]) {
+    const fresh = names.filter((name) => name && !edited.has(name));
+    if (fresh.length > 0) setEdited((current) => new Set([...current, ...fresh]));
+  }
+
+  function onInput(event: FormEvent<HTMLFormElement>) {
+    const { target } = event;
+    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+      markEdited([target.name]);
+    }
+  }
+
+  // Buttons that change a value without typing (a stepper, a mode toggle) fire no input event;
+  // they name the fields they change in data-edits instead.
+  function onClick(event: MouseEvent<HTMLFormElement>) {
+    if (!(event.target instanceof Element)) return;
+    const names = event.target.closest("[data-edits]")?.getAttribute("data-edits");
+    if (names) markEdited(names.split(" "));
+  }
+
+  // Runs after the error render, when aria-invalid is already on the fields. A radio group is
+  // marked as a whole, so focus goes to its first option.
+  useEffect(() => {
+    if (!state.fieldErrors) return;
+    const invalid = formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]');
+    const target = invalid?.matches("input, textarea, select")
+      ? invalid
+      : invalid?.querySelector<HTMLElement>("input");
+    target?.focus();
+  }, [state]);
+
+  return {
+    state,
+    pending,
+    fieldErrors: visibleFieldErrors(state.fieldErrors, edited),
+    formProps: { onSubmit, onInput, onClick },
+  };
 }
 
 type TextFieldProps = {
@@ -104,10 +152,17 @@ export function ChoiceGroup<T extends string>({
   error?: string;
   layout?: keyof typeof choiceLayouts;
 }) {
+  const errorId = `${useId()}-error`;
   return (
     <fieldset className="flex flex-col gap-1">
       <legend className="mb-1 text-sm font-medium">{legend}</legend>
-      <div className={choiceLayouts[layout]}>
+      {/* The group carries the error: aria-invalid is not allowed on a single radio. */}
+      <div
+        role="radiogroup"
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
+        className={choiceLayouts[layout]}
+      >
         {options.map((option) => (
           <label
             key={option.value}
@@ -125,7 +180,11 @@ export function ChoiceGroup<T extends string>({
           </label>
         ))}
       </div>
-      {error ? <p className="text-sm text-red-600 dark:text-red-400">{error}</p> : null}
+      {error ? (
+        <p id={errorId} className="text-sm text-red-600 dark:text-red-400">
+          {error}
+        </p>
+      ) : null}
     </fieldset>
   );
 }
