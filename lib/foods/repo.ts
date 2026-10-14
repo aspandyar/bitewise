@@ -73,23 +73,26 @@ export async function listOwnFoods(
     .limit(limit);
 }
 
-// Two simultaneous creates can overshoot by one; the cap bounds abuse, it is not exact accounting.
+// Copies and recipes create through here too, inside their own transaction (a savepoint then).
 export async function createFood(
   db: Db,
   userId: string,
   values: FoodValues,
 ): Promise<{ id: string } | "limit"> {
-  const [owned] = await db
-    .select({ total: count() })
-    .from(foods)
-    .where(and(eq(foods.ownerId, userId), isNull(foods.deletedAt)));
-  if ((owned?.total ?? 0) >= FOOD_LIMITS.maxOwnFoods) return "limit";
-  const [row] = await db
-    .insert(foods)
-    .values({ ...values, ownerId: userId, source: "user" })
-    .returning({ id: foods.id });
-  if (!row) throw new Error("food insert returned no row");
-  return row;
+  return db.transaction(async (tx) => {
+    await lockUserWrites(tx, userId);
+    const [owned] = await tx
+      .select({ total: count() })
+      .from(foods)
+      .where(and(eq(foods.ownerId, userId), isNull(foods.deletedAt)));
+    if ((owned?.total ?? 0) >= FOOD_LIMITS.maxOwnFoods) return "limit";
+    const [row] = await tx
+      .insert(foods)
+      .values({ ...values, ownerId: userId, source: "user" })
+      .returning({ id: foods.id });
+    if (!row) throw new Error("food insert returned no row");
+    return row;
+  });
 }
 
 export async function updateOwnFood(

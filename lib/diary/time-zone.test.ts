@@ -7,9 +7,12 @@ describe("resolveTimeZone", () => {
     expect(resolveTimeZone("Europe/Moscow")).toBe("Europe/Moscow");
   });
 
-  it.each([undefined, "", "garbage", "Mars/Base"])("falls back to the default for %j", (raw) => {
-    expect(resolveTimeZone(raw)).toBe(DEFAULT_TIME_ZONE);
-  });
+  it.each([undefined, "", "garbage", "Mars/Base", "+23:59", "-23:59", "+05:00"])(
+    "falls back to the default for %j",
+    (raw) => {
+      expect(resolveTimeZone(raw)).toBe(DEFAULT_TIME_ZONE);
+    },
+  );
 
   it("falls back for an overly long value without asking Intl", () => {
     expect(resolveTimeZone("A".repeat(TIME_ZONE_COOKIE.maxLength + 1))).toBe(DEFAULT_TIME_ZONE);

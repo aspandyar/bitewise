@@ -303,6 +303,21 @@ describe("own food cap", () => {
     expect(await copyFood(testDb, alice, shared)).toBe("limit");
   });
 
+  it("keeps the cap under simultaneous creates", async () => {
+    const alice = await newUserId("alice@mail.com");
+    await fillOwnFoods(alice, FOOD_LIMITS.maxOwnFoods - 1);
+    const parallelCount = 5;
+    const pool = createTestPool(parallelCount);
+    try {
+      const results = await Promise.all(
+        Array.from({ length: parallelCount }, () => createFood(pool.db, alice, oats)),
+      );
+      expect(results.filter((result) => result !== "limit")).toHaveLength(1);
+    } finally {
+      await pool.close();
+    }
+  });
+
   it("does not count deleted foods or other users' foods", async () => {
     const alice = await newUserId("alice@mail.com");
     const bob = await newUserId("bob@mail.com");

@@ -1,9 +1,15 @@
 import { DEFAULT_TIME_ZONE, TIME_ZONE_COOKIE } from "@/lib/config";
 import { isValidTimeZone } from "@/lib/date";
 
+const OFFSET = /^[+-]/;
+
 // The cookie is client-controlled: anything that is not a real IANA zone gets the default.
+// Intl also accepts raw offsets up to ±23:59, which would let "today" run almost two days ahead;
+// browsers always report IANA names, so offsets only come from a hand-edited cookie.
 export function resolveTimeZone(raw: string | undefined): string {
-  if (!raw || raw.length > TIME_ZONE_COOKIE.maxLength) return DEFAULT_TIME_ZONE;
+  if (!raw || raw.length > TIME_ZONE_COOKIE.maxLength || OFFSET.test(raw)) {
+    return DEFAULT_TIME_ZONE;
+  }
   return isValidTimeZone(raw) ? raw : DEFAULT_TIME_ZONE;
 }
 
