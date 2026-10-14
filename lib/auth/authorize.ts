@@ -1,4 +1,5 @@
 import type { UserRole } from "@/lib/config";
+import { loggableError } from "@/lib/log";
 import type { RateLimiter } from "./rate-limit";
 import { UNKNOWN_IP } from "./request";
 import { credentialsSchema } from "./schema";
@@ -38,7 +39,7 @@ export async function authorizeCredentials(
     return user && accountAllowed && passwordOk ? { id: user.id, email, role: user.role } : null;
   } catch (error) {
     // Auth.js would put a thrown message (DB host, port, user) into the client redirect URL.
-    console.error("authorize failed", error);
+    console.error("authorize failed", loggableError(error));
     return null;
   }
 }

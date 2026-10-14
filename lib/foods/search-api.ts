@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { RateLimiter } from "@/lib/auth/rate-limit";
+import { loggableError } from "@/lib/log";
 import { normalizeFoodQuery } from "./search";
 import type { FoodListItem } from "./types";
 
@@ -44,7 +45,7 @@ export async function handleFoodSearch(
     return { status: 200, body: { items } };
   } catch (error) {
     // Details stay in server logs; the client only learns that the search failed.
-    console.error("food search failed", error);
+    console.error("food search failed", loggableError(error));
     return { status: 500, body: { error: "server_error" } };
   }
 }
