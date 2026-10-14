@@ -1,7 +1,13 @@
 import { and, asc, desc, eq, isNull, max, sql } from "drizzle-orm";
 import { foodPortions, foods, recipeItems, recipes } from "@/db/schema";
 import type { Db } from "@/db/types";
-import { NO_PORTION, toAmountColumns, type AddAmount, type UpdateAmount } from "@/lib/amount";
+import {
+  isStorableGrams,
+  NO_PORTION,
+  toAmountColumns,
+  type AddAmount,
+  type UpdateAmount,
+} from "@/lib/amount";
 import { RECIPE_LIMITS } from "@/lib/config";
 import { createFood, getVisiblePortion, notRecipe, visibleTo } from "@/lib/foods/repo";
 import type { PortionValues } from "@/lib/foods/types";
@@ -201,7 +207,7 @@ export async function addItem(
   input: { foodId: string; amount: AddAmount },
   // Injectable so tests can reach the cap without inserting fifty rows.
   limits: { maxItems: number } = RECIPE_LIMITS,
-): Promise<RecipeWriteResult> {
+): Promise<RecipeWriteResult | "grams_out_of_range"> {
   return db.transaction(async (tx) => {
     const recipe = await lockOwnRecipe(tx, userId, recipeId);
     if (!recipe) return "not_found";
@@ -220,6 +226,7 @@ export async function addItem(
     const items = await loadRecipeItemValues(tx, userId, recipeId);
     if (items.length >= limits.maxItems) return "limit";
     const columns = toAmountColumns(input.amount, portion);
+    if (!isStorableGrams(columns.grams)) return "grams_out_of_range";
     if (weightTooLow([...items, { per100g: food, grams: columns.grams }], recipe.cookedWeightG)) {
       return "weight_too_low";
     }
@@ -235,7 +242,7 @@ export async function updateItem(
   recipeId: string,
   itemId: string,
   amount: UpdateAmount,
-): Promise<"ok" | "not_found" | "weight_too_low"> {
+): Promise<"ok" | "not_found" | "weight_too_low" | "grams_out_of_range"> {
   return db.transaction(async (tx) => {
     const recipe = await lockOwnRecipe(tx, userId, recipeId);
     if (!recipe) return "not_found";
@@ -252,6 +259,7 @@ export async function updateItem(
       // Only the snapshotted portion can be counted; a grams ingredient has none to count.
       if (item.portionGrams === null) return "not_found";
       grams = calcPortionGrams(item.portionGrams, amount.count);
+      if (!isStorableGrams(grams)) return "grams_out_of_range";
     }
     const items = (await loadRecipeItemValues(tx, userId, recipeId)).map((current) =>
       current.id === itemId ? { ...current, grams } : current,

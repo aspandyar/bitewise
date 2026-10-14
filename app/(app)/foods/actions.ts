@@ -48,7 +48,11 @@ export async function updateFoodAction(
 
 export async function deleteFoodAction(foodId: string): Promise<void> {
   const userId = await requireUserId();
-  if (!(await softDeleteOwnFood(db, userId, requireId(foodId)))) notFound();
+  const id = requireId(foodId);
+  if (!(await softDeleteOwnFood(db, userId, id))) notFound();
+  // Drops the client's cached food screen, so browser Back renders "not found" instead of a food
+  // that still looks editable.
+  revalidatePath(`/foods/${id}`);
   redirect("/foods");
 }
 
@@ -81,6 +85,6 @@ export async function addPortionAction(
 export async function deletePortionAction(foodId: string, portionId: string): Promise<void> {
   const userId = await requireUserId();
   const id = requireId(foodId);
-  if (!(await deleteOwnPortion(db, userId, requireId(portionId)))) notFound();
+  if (!(await deleteOwnPortion(db, userId, id, requireId(portionId)))) notFound();
   revalidatePath(`/foods/${id}`);
 }

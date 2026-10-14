@@ -1,3 +1,4 @@
+import { DrizzleQueryError } from "drizzle-orm/errors";
 import { describe, expect, it, vi } from "vitest";
 import { createRateLimiter } from "@/lib/auth/rate-limit";
 import { handleFoodSearch } from "./search-api";
@@ -63,6 +64,17 @@ describe("handleFoodSearch", () => {
     const result = await handleFoodSearch({ userId: "u", rawQuery: "a", nowMs: 0 }, d);
     expect(result).toEqual({ status: 500, body: { error: "server_error" } });
     expect(JSON.stringify(result)).not.toContain("secret");
+    error.mockRestore();
+  });
+
+  it("keeps the query and user id out of the error log", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const failed = new DrizzleQueryError("select $1, $2", ["гречка", "user-123"], new Error("x"));
+    const d = deps(vi.fn<Search>(async () => Promise.reject(failed)));
+    await handleFoodSearch({ userId: "user-123", rawQuery: "гречка", nowMs: 0 }, d);
+    const logged = JSON.stringify(error.mock.calls);
+    expect(logged).not.toContain("гречка");
+    expect(logged).not.toContain("user-123");
     error.mockRestore();
   });
 

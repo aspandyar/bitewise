@@ -1,17 +1,42 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_TIME_ZONE, TIME_ZONE_COOKIE } from "@/lib/config";
-import { resolveTimeZone } from "./time-zone";
+import { resolveTimeZone, timeZoneCookieToSet } from "./time-zone";
 
 describe("resolveTimeZone", () => {
   it("uses a valid zone from the cookie", () => {
     expect(resolveTimeZone("Europe/Moscow")).toBe("Europe/Moscow");
   });
 
-  it.each([undefined, "", "garbage", "Mars/Base"])("falls back to the default for %j", (raw) => {
-    expect(resolveTimeZone(raw)).toBe(DEFAULT_TIME_ZONE);
-  });
+  it.each([undefined, "", "garbage", "Mars/Base", "+23:59", "-23:59", "+05:00"])(
+    "falls back to the default for %j",
+    (raw) => {
+      expect(resolveTimeZone(raw)).toBe(DEFAULT_TIME_ZONE);
+    },
+  );
 
   it("falls back for an overly long value without asking Intl", () => {
     expect(resolveTimeZone("A".repeat(TIME_ZONE_COOKIE.maxLength + 1))).toBe(DEFAULT_TIME_ZONE);
+  });
+});
+
+describe("timeZoneCookieToSet", () => {
+  const options = { https: false };
+
+  it.each([undefined, ""])("sets nothing when the browser reports %j", (zone) => {
+    expect(timeZoneCookieToSet(zone, "", options)).toBeNull();
+  });
+
+  it("sets nothing when the cookie already holds the zone", () => {
+    expect(timeZoneCookieToSet("Asia/Almaty", "a=1; tz=Asia/Almaty", options)).toBeNull();
+  });
+
+  it("sets the zone when the cookie differs", () => {
+    expect(timeZoneCookieToSet("Europe/Moscow", "tz=Asia/Almaty", options)).toBe(
+      `tz=Europe/Moscow; path=/; max-age=${TIME_ZONE_COOKIE.maxAgeSec}; samesite=lax`,
+    );
+  });
+
+  it("marks the cookie secure over https", () => {
+    expect(timeZoneCookieToSet("Europe/Moscow", "", { https: true })).toMatch(/; secure$/);
   });
 });

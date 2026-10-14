@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
+import { DIARY_LIMITS, PORTION_LIMITS } from "@/lib/config";
 import {
   addAmountSchema,
+  isStorableGrams,
   toAddAmount,
   toAmountColumns,
   toUpdateAmount,
@@ -55,5 +57,19 @@ describe("toAmountColumns", () => {
 
   it("throws on a portion amount without a portion", () => {
     expect(() => toAmountColumns({ mode: "portion", portionId, count: 1 }, null)).toThrow();
+  });
+});
+
+describe("isStorableGrams", () => {
+  it.each([DIARY_LIMITS.grams.min, 150, DIARY_LIMITS.grams.max])("accepts %d g", (grams) => {
+    expect(isStorableGrams(grams)).toBe(true);
+  });
+
+  it("rejects a big portion times many, which a grams entry could not hold", () => {
+    expect(isStorableGrams(PORTION_LIMITS.grams.max * 2)).toBe(false);
+  });
+
+  it("rejects a tiny portion split in quarters", () => {
+    expect(isStorableGrams(PORTION_LIMITS.grams.min * DIARY_LIMITS.portionCount.min)).toBe(false);
   });
 });

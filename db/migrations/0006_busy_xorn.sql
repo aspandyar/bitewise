@@ -1,0 +1,1 @@
+ALTER TABLE "foods" ADD CONSTRAINT "foods_source_url_https" CHECK ("foods"."source_url" IS NULL OR "foods"."source_url" LIKE 'https://%');

@@ -7,6 +7,7 @@ import { EditEntryForm } from "@/components/diary/edit-entry-form";
 import { BackLink } from "@/components/ui/back-link";
 import { ConfirmDeleteButton } from "@/components/ui/confirm-delete-button";
 import { PageLoading } from "@/components/ui/page-loading";
+import { ResetOnHide } from "@/components/ui/reset-on-hide";
 import { requireUserId } from "@/lib/auth/session";
 import { DIARY_LIMITS } from "@/lib/config";
 import { dayHref } from "@/lib/diary/paths";
@@ -51,13 +52,15 @@ async function EditEntryContent({ params }: Pick<PageProps<"/diary/entries/[id]/
       </div>
       {/* cacheComponents keeps hidden screens alive; keyed by the stored values so a revisit
           after saving never shows (and re-saves) the previous amount. */}
-      <EditEntryForm
-        key={`${entry.id}:${entry.meal}:${entry.grams}:${entry.portionCount}`}
-        action={updateEntryAction.bind(null, entry.id)}
-        meal={entry.meal}
-        portion={portion}
-        initial={initial}
-      />
+      <ResetOnHide>
+        <EditEntryForm
+          key={`${entry.id}:${entry.meal}:${entry.grams}:${entry.portionCount}`}
+          action={updateEntryAction.bind(null, entry.id)}
+          meal={entry.meal}
+          portion={portion}
+          initial={initial}
+        />
+      </ResetOnHide>
       <ConfirmDeleteButton action={deleteEntryAction.bind(null, entry.id)} />
     </main>
   );

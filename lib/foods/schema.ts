@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { FOOD_LIMITS, PORTION_LIMITS } from "@/lib/config";
+import { FOOD_LIMITS, NUTRIENT_STORAGE_SCALE, PORTION_LIMITS } from "@/lib/config";
 import { decimalField, optionalDecimalField } from "@/lib/forms";
 import { ru } from "@/lib/i18n/ru";
 
@@ -8,8 +8,8 @@ const gramsMessage = ru.errors.gramsRange(nutrient100G.min, nutrient100G.max);
 const grams = () => decimalField(nutrient100G, gramsMessage);
 const nameMessage = ru.errors.nameLength(nameLength.min, nameLength.max);
 
-// Integer hundredths: 33.3 + 33.3 + 33.4 is 100.00000000000001 in floats.
-const toHundredths = (value: number) => Math.round(value * 100);
+// Integer storage units (hundredths): 33.3 + 33.3 + 33.4 is 100.00000000000001 in floats.
+const toHundredths = (value: number) => Math.round(value * NUTRIENT_STORAGE_SCALE);
 
 // Shared with recipes, whose names live in foods too.
 export const foodNameSchema = z

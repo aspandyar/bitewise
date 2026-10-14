@@ -6,7 +6,7 @@ import {
   MACRO_TARGETS,
   MIFFLIN_ST_JEOR,
   NUTRIENT_BASE_GRAMS,
-  NUTRIENT_STORAGE_DECIMALS,
+  NUTRIENT_STORAGE_SCALE,
   PORTION_LIMITS,
   TARGET_LIMITS,
   type ActivityLevel,
@@ -201,7 +201,6 @@ export type RecipeTotals = {
 };
 
 const ZERO_PER_100G: Per100g = { kcal100: 0, protein100: 0, fat100: 0, carbs100: 0 };
-const STORAGE_SCALE = 10 ** NUTRIENT_STORAGE_DECIMALS;
 
 // A dish cannot weigh less than its protein, fat and carbs, nor hold more kcal per 100 g than any
 // food may. Rounded to stored precision so float noise (33.3 + 33.3 + 33.4) never flags an honest
@@ -211,7 +210,9 @@ function minPlausibleWeightG(totals: Nutrients): number {
     ((totals.proteinG + totals.fatG + totals.carbsG) * NUTRIENT_BASE_GRAMS) /
     FOOD_LIMITS.maxTotalGramsPer100G;
   const byKcal = (totals.kcal * NUTRIENT_BASE_GRAMS) / FOOD_LIMITS.kcal100.max;
-  return Math.round(Math.max(byNutrients, byKcal) * STORAGE_SCALE) / STORAGE_SCALE;
+  return (
+    Math.round(Math.max(byNutrients, byKcal) * NUTRIENT_STORAGE_SCALE) / NUTRIENT_STORAGE_SCALE
+  );
 }
 
 // Water boils off, so a dish is divided by its cooked weight; without one, by the raw weight.

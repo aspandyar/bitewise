@@ -11,6 +11,12 @@ export function formatGrams(grams: number): string {
   return String(Math.round(grams));
 }
 
+// Decided on the shown number, not the raw one: −0.3 kcal left must not read "over by 0".
+// formatKcal and formatGrams round the same way, so this serves both.
+export function isOverTarget(remaining: number): boolean {
+  return Math.round(remaining) < 0;
+}
+
 const amountFormat = new Intl.NumberFormat(ru.locale, {
   maximumFractionDigits: NUTRIENT_STORAGE_DECIMALS,
   useGrouping: false,

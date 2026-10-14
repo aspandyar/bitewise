@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { foods, recipeItems, recipes, users } from "@/db/schema";
-import { FOOD_LIMITS } from "@/lib/config";
+import { FOOD_LIMITS, PORTION_LIMITS } from "@/lib/config";
 import { addEntry, getDayEntries } from "@/lib/diary/repo";
 import {
   getVisibleFood,
@@ -213,6 +213,28 @@ describe("recipe guards", () => {
         amount: { mode: "portion", portionId: milkPortion, count: 1 },
       }),
     ).toBe("not_found");
+  });
+
+  it("refuses an ingredient whose portion amount leaves the grams range", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const id = await newRecipe(alice, { name: "Суп", cookedWeightG: null, servings: null });
+    const eggId = await insertSharedFood({ name: "Яйцо" });
+    const pot = await insertSharedPortion(eggId, "кастрюля", PORTION_LIMITS.grams.max);
+    expect(
+      await addItem(testDb, alice, id, {
+        foodId: eggId,
+        amount: { mode: "portion", portionId: pot, count: 2 },
+      }),
+    ).toBe("grams_out_of_range");
+
+    await addItem(testDb, alice, id, {
+      foodId: eggId,
+      amount: { mode: "portion", portionId: pot, count: 1 },
+    });
+    const itemId = (await recipeFood(alice, id)).recipe.items[0]?.id ?? "";
+    expect(await updateItem(testDb, alice, id, itemId, { mode: "portion", count: 2 })).toBe(
+      "grams_out_of_range",
+    );
   });
 
   it("hides a recipe from another user", async () => {

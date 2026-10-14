@@ -1,7 +1,8 @@
 import { and, asc, count, eq, sql } from "drizzle-orm";
+import { lockUserWrites } from "@/db/locks";
 import { diaryEntries, foods } from "@/db/schema";
 import type { Db } from "@/db/types";
-import { NO_PORTION, toAmountColumns } from "@/lib/amount";
+import { isStorableGrams, NO_PORTION, toAmountColumns } from "@/lib/amount";
 import { DIARY_LIMITS } from "@/lib/config";
 import type { IsoDate } from "@/lib/date";
 import { getVisiblePortion, visibleTo } from "@/lib/foods/repo";
@@ -66,10 +67,9 @@ export async function addEntry(
   input: AddEntryInput,
   // Injectable so tests can reach the caps without inserting a hundred thousand rows.
   limits: { maxEntriesPerDay: number; maxEntriesTotal: number } = DIARY_LIMITS,
-): Promise<"ok" | "not_found" | "limit" | "total_limit"> {
+): Promise<"ok" | "not_found" | "limit" | "total_limit" | "grams_out_of_range"> {
   return db.transaction(async (tx) => {
-    // Serializes one user's adds so parallel submits cannot all pass the cap checks below.
-    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${userId}))`);
+    await lockUserWrites(tx, userId);
     const [food] = await tx
       .select({
         name: foods.name,
@@ -88,6 +88,8 @@ export async function addEntry(
       portion = await getVisiblePortion(tx, userId, input.foodId, amount.portionId);
       if (!portion) return "not_found";
     }
+    const columns = toAmountColumns(amount, portion);
+    if (!isStorableGrams(columns.grams)) return "grams_out_of_range";
     const [counts] = await tx
       .select({
         total: count(),
@@ -109,7 +111,7 @@ export async function addEntry(
       protein100: food.protein100,
       fat100: food.fat100,
       carbs100: food.carbs100,
-      ...toAmountColumns(amount, portion),
+      ...columns,
     });
     return "ok";
   });
@@ -120,7 +122,7 @@ export async function updateEntry(
   userId: string,
   entryId: string,
   input: UpdateEntryInput,
-): Promise<{ date: IsoDate } | null> {
+): Promise<{ date: IsoDate } | null | "grams_out_of_range"> {
   return db.transaction(async (tx) => {
     const [entry] = await tx
       .select({ date: diaryEntries.date, portionGrams: diaryEntries.portionGrams })
@@ -135,10 +137,9 @@ export async function updateEntry(
     } else {
       // Only the snapshotted portion can be counted; a grams entry has none to count.
       if (entry.portionGrams === null) return null;
-      columns = {
-        grams: calcPortionGrams(entry.portionGrams, amount.count),
-        portionCount: amount.count,
-      };
+      const grams = calcPortionGrams(entry.portionGrams, amount.count);
+      if (!isStorableGrams(grams)) return "grams_out_of_range";
+      columns = { grams, portionCount: amount.count };
     }
     await tx
       .update(diaryEntries)

@@ -5,6 +5,7 @@ import { updateFoodAction } from "@/app/(app)/foods/actions";
 import { FoodForm } from "@/components/foods/food-form";
 import { BackLink } from "@/components/ui/back-link";
 import { PageLoading } from "@/components/ui/page-loading";
+import { ResetOnHide } from "@/components/ui/reset-on-hide";
 import { requireUserId } from "@/lib/auth/session";
 import { getVisibleFood } from "@/lib/foods/repo";
 import { parseFoodId } from "@/lib/foods/schema";
@@ -29,7 +30,9 @@ async function EditFoodContent({ params }: { params: Promise<{ id: string }> }) 
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
       <BackLink href={`/foods/${food.id}`} />
       <h1 className="text-2xl font-semibold">{ru.foods.editTitle}</h1>
-      <FoodForm action={updateFoodAction.bind(null, food.id)} initial={food} />
+      <ResetOnHide>
+        <FoodForm action={updateFoodAction.bind(null, food.id)} initial={food} />
+      </ResetOnHide>
     </main>
   );
 }

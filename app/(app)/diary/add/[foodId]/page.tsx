@@ -5,6 +5,7 @@ import { AddEntryForm } from "@/components/diary/add-entry-form";
 import type { PortionOption } from "@/components/diary/amount-fields";
 import { BackLink } from "@/components/ui/back-link";
 import { PageLoading } from "@/components/ui/page-loading";
+import { ResetOnHide } from "@/components/ui/reset-on-hide";
 import { requireUserId } from "@/lib/auth/session";
 import { addHref } from "@/lib/diary/paths";
 import { countDayEntries } from "@/lib/diary/repo";
@@ -47,13 +48,15 @@ async function AmountContent({
       </div>
       {/* cacheComponents keeps hidden screens alive; without this key a revisit would keep the
           meal and amount picked last time instead of the ones in the URL. */}
-      <AddEntryForm
-        key={`${food.id}:${date}:${meal}:${dayCount}`}
-        date={date}
-        foodId={food.id}
-        meal={meal}
-        portions={options}
-      />
+      <ResetOnHide>
+        <AddEntryForm
+          key={`${food.id}:${date}:${meal}:${dayCount}`}
+          date={date}
+          foodId={food.id}
+          meal={meal}
+          portions={options}
+        />
+      </ResetOnHide>
     </main>
   );
 }

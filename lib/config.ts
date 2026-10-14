@@ -189,3 +189,4 @@ export const USDA_NUTRIENT_IDS = {
 
 // Matches numeric(8,2): seed values are rounded to what the column stores, so diffs stay stable.
 export const NUTRIENT_STORAGE_DECIMALS = 2;
+export const NUTRIENT_STORAGE_SCALE = 10 ** NUTRIENT_STORAGE_DECIMALS;

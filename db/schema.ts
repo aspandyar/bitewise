@@ -125,6 +125,8 @@ export const foods = pgTable(
     // A user's own food is never seed data, and every shared food comes from the seed.
     check("foods_user_source_has_owner", sql`(${t.source} = 'user') = (${t.ownerId} IS NOT NULL)`),
     check("foods_seed_key_iff_shared", sql`(${t.ownerId} IS NULL) = (${t.seedKey} IS NOT NULL)`),
+    // Rendered as a link on the food card; the seed validates it, the database guarantees it.
+    check("foods_source_url_https", sql`${t.sourceUrl} IS NULL OR ${t.sourceUrl} LIKE 'https://%'`),
     check(
       "foods_nutrients_non_negative",
       sql`${t.kcal100} >= 0 AND ${t.protein100} >= 0 AND ${t.fat100} >= 0 AND ${t.carbs100} >= 0 AND (${t.fiber100} IS NULL OR ${t.fiber100} >= 0)`,
