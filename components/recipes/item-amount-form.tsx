@@ -19,10 +19,9 @@ export function ItemAmountForm({
   initial: AmountInitial;
   submitLabel: string;
 }) {
-  const { state, pending, onSubmit } = usePreservingFormAction(action);
-  const errors = state.fieldErrors ?? {};
+  const { state, pending, fieldErrors: errors, formProps } = usePreservingFormAction(action);
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-5">
+    <form {...formProps} className="flex flex-col gap-5">
       <AmountFields portions={portions} initial={initial} errors={errors} />
       <FormError message={state.formError} />
       <SubmitButton pending={pending}>{submitLabel}</SubmitButton>

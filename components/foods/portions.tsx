@@ -23,13 +23,21 @@ function DeletePortionButton({ label }: { label: string }) {
 }
 
 export function Portions({ foodId, portions }: { foodId: string; portions: PortionItem[] }) {
-  const { state, pending, onSubmit } = usePreservingFormAction(addPortionAction.bind(null, foodId));
+  const {
+    state,
+    pending,
+    fieldErrors: errors,
+    formProps,
+  } = usePreservingFormAction(addPortionAction.bind(null, foodId));
   const formRef = useRef<HTMLFormElement>(null);
-  const errors = state.fieldErrors ?? {};
 
-  // Inputs survive errors (usePreservingFormAction) but must clear once a portion is added.
+  // Inputs survive errors (usePreservingFormAction) but must clear once a portion is added, and
+  // the label takes focus again: portions are usually added several in a row.
   useEffect(() => {
-    if (state.ok) formRef.current?.reset();
+    if (!state.ok) return;
+    formRef.current?.reset();
+    const label = formRef.current?.elements.namedItem("label");
+    if (label instanceof HTMLInputElement) label.focus();
   }, [state]);
 
   return (
@@ -53,7 +61,7 @@ export function Portions({ foodId, portions }: { foodId: string; portions: Porti
           ))}
         </ul>
       )}
-      <form ref={formRef} onSubmit={onSubmit} className="flex flex-col gap-3">
+      <form ref={formRef} {...formProps} className="flex flex-col gap-3">
         <TextField
           label={ru.foods.portionLabel}
           name="label"

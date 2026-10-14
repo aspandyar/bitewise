@@ -25,10 +25,9 @@ export function FoodForm({
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   initial?: FoodValues;
 }) {
-  const { state, pending, onSubmit } = usePreservingFormAction(action);
-  const errors = state.fieldErrors ?? {};
+  const { state, pending, fieldErrors: errors, formProps } = usePreservingFormAction(action);
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4">
+    <form {...formProps} className="flex flex-col gap-4">
       <TextField
         label={ru.foods.name}
         name="name"

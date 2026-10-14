@@ -56,3 +56,14 @@ export function optionalIntegerField(limits: { min: number; max: number }, messa
       .nullable(),
   );
 }
+
+// An error describes what was submitted; once the user changes that field it no longer applies,
+// and keeping it red while they fix it reads as if the fix were wrong too.
+export function visibleFieldErrors(
+  fieldErrors: Record<string, string> | undefined,
+  editedSinceSubmit: ReadonlySet<string>,
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(fieldErrors ?? {}).filter(([field]) => !editedSinceSubmit.has(field)),
+  );
+}

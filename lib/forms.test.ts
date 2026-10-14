@@ -5,6 +5,7 @@ import {
   firstFieldErrors,
   optionalDecimalField,
   optionalIntegerField,
+  visibleFieldErrors,
 } from "./forms";
 
 describe("decimalField", () => {
@@ -85,5 +86,21 @@ describe("optionalIntegerField", () => {
 
   it.each(["4,5", "0", "101", "abc", "-1"])("rejects %s", (value) => {
     expect(field.safeParse(value).success).toBe(false);
+  });
+});
+
+describe("visibleFieldErrors", () => {
+  const errors = { name: "Введите название", grams: "Введите граммы" };
+
+  it("shows every error before anything is edited", () => {
+    expect(visibleFieldErrors(errors, new Set())).toEqual(errors);
+  });
+
+  it("hides the error of a field edited after the submit", () => {
+    expect(visibleFieldErrors(errors, new Set(["grams"]))).toEqual({ name: "Введите название" });
+  });
+
+  it("handles a state without field errors", () => {
+    expect(visibleFieldErrors(undefined, new Set(["grams"]))).toEqual({});
   });
 });

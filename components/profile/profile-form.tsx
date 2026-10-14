@@ -27,10 +27,14 @@ export function ProfileForm({
   defaults?: ProfileData;
   submitLabel: string;
 }) {
-  const { state, pending, onSubmit } = usePreservingFormAction(saveProfileAction);
-  const errors = state.fieldErrors ?? {};
+  const {
+    state,
+    pending,
+    fieldErrors: errors,
+    formProps,
+  } = usePreservingFormAction(saveProfileAction);
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-5">
+    <form {...formProps} className="flex flex-col gap-5">
       <ChoiceGroup
         legend={ru.profile.sex}
         name="sex"

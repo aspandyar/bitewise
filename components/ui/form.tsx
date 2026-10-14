@@ -3,25 +3,56 @@
 import {
   startTransition,
   useActionState,
+  useEffect,
   useId,
+  useRef,
+  useState,
   type FormEvent,
   type HTMLInputTypeAttribute,
   type ReactNode,
 } from "react";
-import type { FormState } from "@/lib/forms";
+import { visibleFieldErrors, type FormState } from "@/lib/forms";
 
 // React 19 resets a form after a `form action` runs, wiping input on validation errors;
 // submitting through onSubmit + startTransition keeps what the user typed.
+// Spread `formProps` onto the <form>: it also hides an error once its field is edited and moves
+// focus to the first invalid field after a failed submit.
 export function usePreservingFormAction(
   action: (prev: FormState, formData: FormData) => Promise<FormState>,
 ) {
   const [state, formAction, pending] = useActionState(action, {});
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const [edited, setEdited] = useState<ReadonlySet<string>>(() => new Set());
+
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    formRef.current = event.currentTarget;
+    setEdited(new Set());
     const formData = new FormData(event.currentTarget);
     startTransition(() => formAction(formData));
   }
-  return { state, pending, onSubmit };
+
+  function onInput(event: FormEvent<HTMLFormElement>) {
+    const { target } = event;
+    const name =
+      target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement
+        ? target.name
+        : "";
+    if (name && !edited.has(name)) setEdited((current) => new Set(current).add(name));
+  }
+
+  // Runs after the error render, when aria-invalid is already on the fields.
+  useEffect(() => {
+    if (!state.fieldErrors) return;
+    formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  }, [state]);
+
+  return {
+    state,
+    pending,
+    fieldErrors: visibleFieldErrors(state.fieldErrors, edited),
+    formProps: { onSubmit, onInput },
+  };
 }
 
 type TextFieldProps = {

@@ -38,11 +38,15 @@ export function TargetsForm({
   calculated: MacroTargets;
   mode: TargetMode;
 }) {
-  const { state, pending, onSubmit } = usePreservingFormAction(saveManualTargetAction);
-  const errors = state.fieldErrors ?? {};
+  const {
+    state,
+    pending,
+    fieldErrors: errors,
+    formProps,
+  } = usePreservingFormAction(saveManualTargetAction);
   return (
     <div className="flex flex-col gap-4">
-      <form onSubmit={onSubmit} className="flex flex-col gap-4">
+      <form {...formProps} className="flex flex-col gap-4">
         {fields.map((field) => (
           <div key={field.name} className="flex flex-col gap-1">
             <TextField
