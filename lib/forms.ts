@@ -12,26 +12,31 @@ export function firstFieldErrors(error: z.ZodError): Record<string, string> {
   );
 }
 
-// Russian phone keyboards type "80,5"; an empty field must fail rather than coerce to 0.
-export function decimalField(limits: { min: number; max: number }, message: string) {
+// Russian phone keyboards type "80,5"; an empty field must fail rather than coerce to 0, and
+// it gets its own message: "enter grams" says more than a range when nothing was typed.
+export function decimalField(
+  limits: { min: number; max: number },
+  message: string,
+  emptyMessage: string,
+) {
   return z.preprocess(
     (value) => {
       if (typeof value !== "string") return value;
       const trimmed = value.trim();
-      return trimmed === "" ? undefined : trimmed.replace(",", ".");
+      return trimmed === "" ? undefined : Number(trimmed.replace(",", "."));
     },
-    z.coerce
-      .number({ error: message })
+    z
+      .number({ error: (issue) => (issue.input === undefined ? emptyMessage : message) })
       .min(limits.min, { error: message })
       .max(limits.max, { error: message }),
   );
 }
 
-// For optional numbers an empty field means "unknown" (null), never 0.
+// For optional numbers an empty field means "unknown" (null), never 0, so it is never "empty".
 export function optionalDecimalField(limits: { min: number; max: number }, message: string) {
   return z.preprocess(
     (value) => (typeof value === "string" && value.trim() === "" ? null : value),
-    decimalField(limits, message).nullable(),
+    decimalField(limits, message, message).nullable(),
   );
 }
 

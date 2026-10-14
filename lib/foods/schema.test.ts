@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { FOOD_LIMITS, PORTION_LIMITS } from "@/lib/config";
+import { firstFieldErrors } from "@/lib/forms";
+import { ru } from "@/lib/i18n/ru";
 import { foodSchema, parseFoodId, portionSchema } from "./schema";
 
 const valid = {
@@ -87,5 +89,24 @@ describe("parseFoodId", () => {
     expect(parseFoodId("abc")).toBeNull();
     expect(parseFoodId("1; drop table foods")).toBeNull();
     expect(parseFoodId(undefined)).toBeNull();
+  });
+});
+
+describe("empty required fields", () => {
+  it("asks to fill in the food's name and numbers", () => {
+    const parsed = foodSchema.safeParse({ ...valid, name: " ", kcal100: "", protein100: "" });
+    expect(parsed.error && firstFieldErrors(parsed.error)).toMatchObject({
+      name: ru.errors.enter.name,
+      kcal100: ru.errors.enter.kcal,
+      protein100: ru.errors.enter.grams,
+    });
+  });
+
+  it("asks to fill in a portion's label and grams", () => {
+    const parsed = portionSchema.safeParse({ label: "", grams: "" });
+    expect(parsed.error && firstFieldErrors(parsed.error)).toEqual({
+      label: ru.errors.enter.portionLabel,
+      grams: ru.errors.enter.grams,
+    });
   });
 });
