@@ -36,7 +36,7 @@ export function AddEntryForm({
           mode: portions.length > 0 ? "portion" : "grams",
           portionIndex: 0,
           count: DIARY_LIMITS.portionCount.default,
-          grams: null,
+          grams: DIARY_LIMITS.grams.default,
         }}
         errors={errors}
       />
