@@ -116,6 +116,10 @@ describe("parseDraftName", () => {
     expect(parseDraftName("  гречка зелёная ")).toBe("Гречка зелёная");
   });
 
+  it("keeps a leading emoji whole", () => {
+    expect(parseDraftName("🍎 яблоко")).toBe("🍎 яблоко");
+  });
+
   it.each([undefined, "", "   ", ["a", "b"]])("gives no name for %j", (value) => {
     expect(parseDraftName(value)).toBeUndefined();
   });

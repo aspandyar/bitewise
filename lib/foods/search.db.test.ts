@@ -74,6 +74,12 @@ describe("searchFoods", () => {
     expect(await names(alice, "рис")).toEqual([]);
   });
 
+  it("keeps the closest passing fuzzy match and drops the closest failing one", async () => {
+    await insertSharedFood({ name: "Куриная грудка, филе сырое" });
+    await insertSharedFood({ name: "Кукуруза консервированная" });
+    expect(await names(alice, "кура")).toEqual(["Куриная грудка, филе сырое"]);
+  });
+
   it("finds a misspelt word but not its look-alikes", async () => {
     await insertSharedFood({ name: "Малина" });
     expect(await names(alice, "малоко")).toEqual(["Молоко 3,2 %"]);

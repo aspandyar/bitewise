@@ -79,11 +79,18 @@ export function FoodSearch({
 
   // Enter (or "search" on a phone keyboard) opens the top result: typing "греч" + Enter is enough.
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key !== "Enter") return;
+    // An IME commits its composition with Enter; that must not open a result.
+    if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
     const first = current?.kind === "results" ? current.items[0] : undefined;
     if (!first) return;
     event.preventDefault();
     router.push(hrefFor(first));
+  }
+
+  // Shows the loading state at once: the rerun still waits out the debounce.
+  function retry() {
+    setState({ kind: "loading", query });
+    setAttempt((count) => count + 1);
   }
 
   function clear() {
@@ -95,24 +102,27 @@ export function FoodSearch({
 
   return (
     <div className="flex flex-col gap-4">
-      <label className="relative flex flex-col gap-1">
-        <span className="sr-only">{ru.foods.searchLabel}</span>
-        <input
-          ref={inputRef}
-          type="search"
-          value={input}
-          onChange={(event) => setInput(event.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder={ru.foods.searchPlaceholder}
-          maxLength={FOOD_SEARCH.maxQueryLength}
-          autoComplete="off"
-          enterKeyHint="search"
-          // Search is the only job of this screen; desktop browsers focus it at once (iOS will
-          // not raise the keyboard without a tap, which is fine).
-          autoFocus
-          // The native clear cross is a few pixels wide; our own button below is 44 px.
-          className="min-h-11 rounded-lg border border-foreground/40 bg-background py-0 pr-11 pl-3 text-base [&::-webkit-search-cancel-button]:appearance-none"
-        />
+      {/* The clear button sits outside the label, so it does not become part of the field's name. */}
+      <div className="relative">
+        <label className="flex flex-col gap-1">
+          <span className="sr-only">{ru.foods.searchLabel}</span>
+          <input
+            ref={inputRef}
+            type="search"
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder={ru.foods.searchPlaceholder}
+            maxLength={FOOD_SEARCH.maxQueryLength}
+            autoComplete="off"
+            enterKeyHint="search"
+            // Search is the only job of this screen; desktop browsers focus it at once (iOS will
+            // not raise the keyboard without a tap, which is fine).
+            autoFocus
+            // The native clear cross is a few pixels wide; our own button below is 44 px.
+            className="min-h-11 rounded-lg border border-foreground/40 bg-background py-0 pr-11 pl-3 text-base [&::-webkit-search-cancel-button]:appearance-none"
+          />
+        </label>
         {input ? (
           <button
             type="button"
@@ -123,7 +133,7 @@ export function FoodSearch({
             {ru.foods.clearSymbol}
           </button>
         ) : null}
-      </label>
+      </div>
       {!query ? (
         ownFoods.length > 0 ? (
           <section className="flex flex-col gap-2">
@@ -154,7 +164,7 @@ export function FoodSearch({
           </p>
           <button
             type="button"
-            onClick={() => setAttempt((count) => count + 1)}
+            onClick={retry}
             className="flex min-h-11 w-fit items-center rounded-lg border border-foreground/40 px-4"
           >
             {ru.common.retry}
