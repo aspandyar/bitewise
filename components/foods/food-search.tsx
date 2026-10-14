@@ -16,6 +16,12 @@ type SearchState =
 // A plain object rather than a function: server pages pass it, and functions cannot cross to the client.
 type FoodLink = { prefix: string; search?: string };
 
+function foodHref(link: FoodLink | undefined, food: FoodListItem): string {
+  return link
+    ? `${link.prefix}${food.id}${link.search ? `?${link.search}` : ""}`
+    : foodCardHref(food);
+}
+
 export function FoodSearch({
   ownFoods,
   link,
@@ -34,6 +40,8 @@ export function FoodSearch({
   // Bumped by "retry": the same query runs again without retyping it.
   const [attempt, setAttempt] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Enter pressed before this query's results arrive: they open the top one when they land.
+  const pendingEnterRef = useRef<string | null>(null);
   const query = input.trim();
 
   useEffect(() => {
@@ -58,6 +66,12 @@ export function FoodSearch({
           return;
         }
         const body = (await response.json()) as { items: FoodListItem[] };
+        const first = body.items[0];
+        if (pendingEnterRef.current === query && first) {
+          pendingEnterRef.current = null;
+          router.push(foodHref(link, first));
+          return;
+        }
         setState({ kind: "results", query, items: body.items });
         setLastItems(body.items);
       } catch {
@@ -69,10 +83,9 @@ export function FoodSearch({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [query, router, excludeRecipes, attempt]);
+  }, [query, router, excludeRecipes, attempt, link]);
 
-  const hrefFor = (food: FoodListItem) =>
-    link ? `${link.prefix}${food.id}${link.search ? `?${link.search}` : ""}` : foodCardHref(food);
+  const hrefFor = (food: FoodListItem) => foodHref(link, food);
 
   // A state for an older query is stale until the debounce for the current one fires.
   const current = state?.query === query ? state : null;
@@ -81,20 +94,27 @@ export function FoodSearch({
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     // An IME commits its composition with Enter; that must not open a result.
     if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
-    const first = current?.kind === "results" ? current.items[0] : undefined;
-    if (!first) return;
     event.preventDefault();
-    router.push(hrefFor(first));
+    if (current?.kind !== "results") {
+      pendingEnterRef.current = query || null;
+      return;
+    }
+    const first = current.items[0];
+    if (first) router.push(hrefFor(first));
   }
 
-  // Shows the loading state at once: the rerun still waits out the debounce.
+  // Shows the loading state at once (the rerun still waits out the debounce) and drops the old
+  // list, so a stale row cannot be tapped while the new search loads.
   function retry() {
     setState({ kind: "loading", query });
+    setLastItems([]);
     setAttempt((count) => count + 1);
+    inputRef.current?.focus();
   }
 
   function clear() {
     setInput("");
+    setLastItems([]);
     inputRef.current?.focus();
   }
 
@@ -149,7 +169,8 @@ export function FoodSearch({
         )
       ) : !current || current.kind === "loading" ? (
         lastItems.length > 0 ? (
-          <div aria-busy="true" className="opacity-60">
+          // inert: the dimmed list belongs to the previous query and must not be tapped.
+          <div aria-busy="true" inert className="opacity-60">
             <FoodList items={lastItems} hrefFor={hrefFor} />
           </div>
         ) : (

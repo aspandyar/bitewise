@@ -46,6 +46,8 @@ export function FoodForm({
           name={field.name}
           inputMode="decimal"
           defaultValue={asInput(initial?.[field.name])}
+          // With the name already taken from the search, the first thing to type is kcal.
+          autoFocus={draftName !== undefined && field.name === "kcal100"}
           error={errors[field.name]}
         />
       ))}
