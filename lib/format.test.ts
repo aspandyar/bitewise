@@ -4,6 +4,7 @@ import {
   formatDayLabel,
   formatEntryAmount,
   formatGrams,
+  formatGramsAtLeast,
   formatKcal,
   isOverTarget,
 } from "./format";
@@ -25,6 +26,20 @@ describe("formatGrams", () => {
 
   it("shows 0 for 0 g", () => {
     expect(formatGrams(0)).toBe("0");
+  });
+});
+
+describe("formatGramsAtLeast", () => {
+  it("rounds a minimum up, so typing the shown number passes the check", () => {
+    expect(formatGramsAtLeast(156.2)).toBe("157");
+  });
+
+  it("keeps a whole minimum as is", () => {
+    expect(formatGramsAtLeast(200)).toBe("200");
+  });
+
+  it("groups thousands like other numbers in messages", () => {
+    expect(formatGramsAtLeast(12_345.6)).toBe("12\u00a0346");
   });
 });
 
@@ -82,13 +97,19 @@ describe("formatEntryAmount", () => {
 
   it("shows a single portion without a multiplier", () => {
     expect(formatEntryAmount({ grams: 60, portionLabel: "1 шт", portionCount: 1 })).toBe(
-      "1 шт (60 г)",
+      "1 шт · 60 г",
     );
   });
 
   it("shows a fractional count with its grams", () => {
     expect(formatEntryAmount({ grams: 90, portionLabel: "1 шт", portionCount: 1.5 })).toBe(
-      "1,5 × 1 шт (90 г)",
+      "1,5 × 1 шт · 90 г",
     );
+  });
+
+  it("keeps a label with its own brackets free of double brackets", () => {
+    expect(
+      formatEntryAmount({ grams: 75, portionLabel: "1 шт (крупное)", portionCount: 1.5 }),
+    ).toBe("1,5 × 1 шт (крупное) · 75 г");
   });
 });

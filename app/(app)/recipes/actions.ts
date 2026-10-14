@@ -6,6 +6,7 @@ import { db } from "@/db/client";
 import { addAmountSchema, toAddAmount, toUpdateAmount, updateAmountSchema } from "@/lib/amount";
 import { requireUserId } from "@/lib/auth/session";
 import { DIARY_LIMITS, FOOD_LIMITS, RECIPE_LIMITS } from "@/lib/config";
+import { formatGramsAtLeast } from "@/lib/format";
 import { firstFieldErrors, type FormState } from "@/lib/forms";
 import { ru } from "@/lib/i18n/ru";
 import { parseId } from "@/lib/ids";
@@ -19,6 +20,7 @@ import {
   updateRecipe,
 } from "@/lib/recipes/repo";
 import { recipeFormSchema } from "@/lib/recipes/schema";
+import type { WeightTooLow } from "@/lib/recipes/types";
 
 // Bound arguments come from the client and can be tampered with.
 function requireId(value: unknown): string {
@@ -30,7 +32,7 @@ function requireId(value: unknown): string {
 // Limit and weight errors concern the dish as a whole; a portion total that leaves the grams
 // range belongs to the count field the user just changed.
 function itemFailure(
-  result: "not_found" | "limit" | "weight_too_low" | "grams_out_of_range",
+  result: "not_found" | "limit" | WeightTooLow | "grams_out_of_range",
 ): FormState {
   if (result === "not_found") notFound();
   if (result === "grams_out_of_range") {
@@ -38,7 +40,7 @@ function itemFailure(
     return { fieldErrors: { count: ru.errors.portionTotalGrams(min, max) } };
   }
   if (result === "limit") return { formError: ru.recipes.itemLimit(RECIPE_LIMITS.maxItems) };
-  return { formError: ru.recipes.weightTooLowForItem };
+  return { formError: ru.recipes.weightTooLowForItem(formatGramsAtLeast(result.minWeightG)) };
 }
 
 export async function createRecipeAction(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -61,8 +63,12 @@ export async function updateRecipeAction(
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
   const result = await updateRecipe(db, userId, id, parsed.data);
   if (result === "not_found") notFound();
-  if (result === "weight_too_low") {
-    return { fieldErrors: { cookedWeightG: ru.recipes.weightTooLow } };
+  if (result !== "ok") {
+    return {
+      fieldErrors: {
+        cookedWeightG: ru.recipes.weightTooLow(formatGramsAtLeast(result.minWeightG)),
+      },
+    };
   }
   redirect(recipeHref(id));
 }

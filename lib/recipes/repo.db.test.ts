@@ -281,20 +281,24 @@ describe("recipe guards", () => {
     const id = await newRecipe(alice, { name: "Каша", cookedWeightG: 100, servings: null });
     const buckwheatId = await insertSharedFood(buckwheat);
     // 200 g of buckwheat hold 156.8 g of protein, fat and carbs: more than 100 g.
-    expect(await grams(alice, id, buckwheatId, 200)).toBe("weight_too_low");
+    expect(await grams(alice, id, buckwheatId, 200)).toEqual({
+      kind: "weight_too_low",
+      minWeightG: 156.8,
+    });
     expect(await grams(alice, id, buckwheatId, 100)).toBe("ok");
     expect(
       await updateRecipe(testDb, alice, id, { name: "Каша", cookedWeightG: 50, servings: null }),
-    ).toBe("weight_too_low");
+    ).toEqual({ kind: "weight_too_low", minWeightG: 78.4 });
     expect(
       await updateRecipe(testDb, alice, id, { name: "Каша", cookedWeightG: null, servings: null }),
     ).toBe("ok");
     const item = (await recipeFood(alice, id)).recipe.items[0];
     if (!item) throw new Error("no item");
     await updateRecipe(testDb, alice, id, { name: "Каша", cookedWeightG: 100, servings: null });
-    expect(await updateItem(testDb, alice, id, item.id, { mode: "grams", grams: 200 })).toBe(
-      "weight_too_low",
-    );
+    expect(await updateItem(testDb, alice, id, item.id, { mode: "grams", grams: 200 })).toEqual({
+      kind: "weight_too_low",
+      minWeightG: 156.8,
+    });
   });
 });
 
