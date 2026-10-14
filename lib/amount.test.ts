@@ -6,9 +6,11 @@ import { ru } from "@/lib/i18n/ru";
 import {
   addAmountSchema,
   isStorableGrams,
+  portionToPick,
   toAddAmount,
   toAmountColumns,
   toUpdateAmount,
+  toUpdatedAmountColumns,
   updateAmountSchema,
 } from "./amount";
 
@@ -95,5 +97,52 @@ describe("empty amount fields", () => {
     expect(parsed.error && firstFieldErrors(parsed.error)).toEqual({
       count: ru.errors.enter.count,
     });
+  });
+});
+
+describe("toUpdatedAmountColumns", () => {
+  const plate = { label: "тарелка", grams: 250 };
+
+  it("drops the portion for a grams amount", () => {
+    expect(toUpdatedAmountColumns({ mode: "grams", grams: 80 }, 60, null)).toEqual({
+      grams: 80,
+      portionLabel: null,
+      portionGrams: null,
+      portionCount: null,
+    });
+  });
+
+  it("multiplies the snapshot by the new count", () => {
+    expect(toUpdatedAmountColumns({ mode: "portion", count: 3 }, 60, null)).toEqual({
+      grams: 180,
+      portionCount: 3,
+    });
+  });
+
+  it("snapshots a portion picked for a grams amount", () => {
+    expect(toUpdatedAmountColumns({ mode: "portion", portionId, count: 2 }, null, plate)).toEqual({
+      grams: 500,
+      portionLabel: "тарелка",
+      portionGrams: 250,
+      portionCount: 2,
+    });
+  });
+
+  it("has nothing to count for a grams amount without a picked portion", () => {
+    expect(toUpdatedAmountColumns({ mode: "portion", count: 2 }, null, null)).toBeNull();
+  });
+});
+
+describe("portionToPick", () => {
+  it("picks only for a grams amount switching to a portion", () => {
+    expect(portionToPick({ mode: "portion", portionId, count: 1 }, null)).toBe(portionId);
+  });
+
+  it("ignores a portion id sent for an amount that already has a snapshot", () => {
+    expect(portionToPick({ mode: "portion", portionId, count: 1 }, 60)).toBeNull();
+  });
+
+  it("has nothing to pick for grams", () => {
+    expect(portionToPick({ mode: "grams", grams: 10 }, null)).toBeNull();
   });
 });

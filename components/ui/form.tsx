@@ -41,10 +41,15 @@ export function usePreservingFormAction(
     if (name && !edited.has(name)) setEdited((current) => new Set(current).add(name));
   }
 
-  // Runs after the error render, when aria-invalid is already on the fields.
+  // Runs after the error render, when aria-invalid is already on the fields. A radio group is
+  // marked as a whole, so focus goes to its first option.
   useEffect(() => {
     if (!state.fieldErrors) return;
-    formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+    const invalid = formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]');
+    const target = invalid?.matches("input, textarea, select")
+      ? invalid
+      : invalid?.querySelector<HTMLElement>("input");
+    target?.focus();
   }, [state]);
 
   return {
@@ -135,10 +140,17 @@ export function ChoiceGroup<T extends string>({
   error?: string;
   layout?: keyof typeof choiceLayouts;
 }) {
+  const errorId = `${useId()}-error`;
   return (
     <fieldset className="flex flex-col gap-1">
       <legend className="mb-1 text-sm font-medium">{legend}</legend>
-      <div className={choiceLayouts[layout]}>
+      {/* The group carries the error: aria-invalid is not allowed on a single radio. */}
+      <div
+        role="radiogroup"
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
+        className={choiceLayouts[layout]}
+      >
         {options.map((option) => (
           <label
             key={option.value}
@@ -156,7 +168,11 @@ export function ChoiceGroup<T extends string>({
           </label>
         ))}
       </div>
-      {error ? <p className="text-sm text-red-600 dark:text-red-400">{error}</p> : null}
+      {error ? (
+        <p id={errorId} className="text-sm text-red-600 dark:text-red-400">
+          {error}
+        </p>
+      ) : null}
     </fieldset>
   );
 }

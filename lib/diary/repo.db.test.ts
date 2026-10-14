@@ -404,6 +404,41 @@ describe("updateEntry", () => {
     expect(await onlyEntry(alice)).toEqual(entry);
   });
 
+  it("keeps the snapshot when a portion id is sent for a portion entry", async () => {
+    const { alice, entry } = await portionEntry();
+    const other = await insertSharedPortion(await insertSharedFood({ name: "Хлеб" }), "ломоть", 30);
+    await updateEntry(testDb, alice, entry.id, {
+      meal: "breakfast",
+      amount: { mode: "portion", portionId: other, count: 2 },
+    });
+    expect(await onlyEntry(alice)).toMatchObject({
+      grams: 120,
+      portionLabel: "1 шт",
+      portionGrams: 60,
+      portionCount: 2,
+    });
+  });
+
+  it("refuses a picked portion whose total leaves the grams range", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const foodId = await insertSharedFood(buckwheat);
+    const pot = await insertSharedPortion(foodId, "кастрюля", DIARY_LIMITS.grams.max);
+    await addEntry(testDb, alice, {
+      date: DAY,
+      meal: "lunch",
+      foodId,
+      amount: { mode: "grams", grams: 100 },
+    });
+    const entry = await onlyEntry(alice);
+    expect(
+      await updateEntry(testDb, alice, entry.id, {
+        meal: "lunch",
+        amount: { mode: "portion", portionId: pot, count: 2 },
+      }),
+    ).toBe("grams_out_of_range");
+    expect(await onlyEntry(alice)).toEqual(entry);
+  });
+
   it("does not touch another user's entry", async () => {
     const { alice, entry } = await portionEntry();
     const bob = await newUserId("bob@mail.com");

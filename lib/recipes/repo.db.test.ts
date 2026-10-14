@@ -172,7 +172,9 @@ describe("recipe numbers", () => {
     const milkId = await insertSharedFood({ name: "Молоко" });
     const piece = await insertSharedPortion(eggId, "1 шт", 60);
     const glass = await insertSharedPortion(milkId, "стакан", 200);
+    const oilId = await insertSharedFood(oil);
     await grams(alice, id, eggId, 100);
+    await grams(alice, id, oilId, 10);
     const [egg] = (await recipeFood(alice, id)).recipe.items;
     if (!egg) throw new Error("item missing");
 
@@ -187,6 +189,8 @@ describe("recipe numbers", () => {
       portionLabel: "1 шт",
       portionCount: 2,
     });
+    // Eggs 120 g (188.4 kcal) + oil 10 g (89.9 kcal) = 278.3 kcal / 130 g.
+    expect((await recipeFood(alice, id)).food.kcal100).toBe(214.08);
   });
 
   it("skips a serving too small to store", async () => {
