@@ -143,6 +143,11 @@ export const FOOD_SEARCH = {
   // pg_trgm word_similarity cut-off, tuned on real typos: "грчка" → "гречка" scores 0.44 and
   // "гречко" 0.71, while the unrelated "гречко" → "молоко" scores 0.14.
   wordSimilarityThreshold: 0.4,
+  // A fuzzy match must also pass strict_word_similarity, which compares whole words: it keeps
+  // typos ("малоко" → "молоко" 0.40, "грчка" 0.44, "кура" → "куриный" 0.30) and drops look-alikes
+  // that word_similarity lets through ("борщ" → "перец" 0.14, "рис" → "рикотта" 0.20,
+  // "малоко" → "малина" 0.27, "кура" → "кукуруза" 0.27).
+  strictWordSimilarityThreshold: 0.28,
   debounceMs: 250,
 } as const;
 
