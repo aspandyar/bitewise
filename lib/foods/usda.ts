@@ -1,4 +1,4 @@
-import { NUTRIENT_STORAGE_DECIMALS, USDA_NUTRIENT_IDS } from "@/lib/config";
+import { NUTRIENT_STORAGE_SCALE, USDA_NUTRIENT_IDS } from "@/lib/config";
 import { calcNetCarbsPer100g } from "@/lib/nutrition";
 import type { LabelSource, SeedFood, UsdaSource } from "./seed-schema";
 
@@ -74,8 +74,8 @@ export function collectUsdaNutrients(
   return result;
 }
 
-const scale = 10 ** NUTRIENT_STORAGE_DECIMALS;
-const toStored = (value: number) => Math.round(value * scale) / scale;
+const toStored = (value: number) =>
+  Math.round(value * NUTRIENT_STORAGE_SCALE) / NUTRIENT_STORAGE_SCALE;
 
 function requireNutrient(key: string, nutrients: UsdaNutrients, name: NutrientKey): number {
   const value = nutrients[name];

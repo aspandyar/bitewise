@@ -15,9 +15,6 @@ function ownedBy(userId: string, foodId: string) {
   return and(eq(foods.id, foodId), eq(foods.ownerId, userId), isNull(foods.deletedAt));
 }
 
-// A visible food with an owner can only be the caller's, so this never reveals other users.
-const isOwnColumn = sql<boolean>`${foods.ownerId} IS NOT NULL`;
-
 // Qualified by hand: Drizzle leaves columns unqualified in single-table queries, and inside the
 // subquery an unqualified "id" would silently mean recipes.id.
 const isRecipeColumn = sql<boolean>`EXISTS (SELECT 1 FROM "recipes" WHERE "recipes"."food_id" = "foods"."id")`;
@@ -26,17 +23,27 @@ const isRecipeColumn = sql<boolean>`EXISTS (SELECT 1 FROM "recipes" WHERE "recip
 // belong to the recipe: every food-level write skips them.
 export const notRecipe = sql`NOT ${isRecipeColumn}`;
 
-export const listColumns = {
-  id: foods.id,
-  name: foods.name,
-  kcal100: foods.kcal100,
-  protein100: foods.protein100,
-  fat100: foods.fat100,
-  carbs100: foods.carbs100,
-  source: foods.source,
-  isOwn: isOwnColumn,
-  isRecipe: isRecipeColumn,
-};
+// "Own" compares with the caller instead of trusting the query to filter by visibleTo, so a
+// future query without that filter cannot mark someone else's food as editable.
+export function listColumnsFor(userId: string) {
+  return {
+    id: foods.id,
+    name: foods.name,
+    kcal100: foods.kcal100,
+    protein100: foods.protein100,
+    fat100: foods.fat100,
+    carbs100: foods.carbs100,
+    source: foods.source,
+    isOwn: sql<boolean>`${foods.ownerId} IS NOT DISTINCT FROM ${userId}::uuid`,
+    isRecipe: isRecipeColumn,
+  };
+}
+
+// Serializes one user's capped writes, so parallel submits cannot all pass a count check.
+// The same key as the diary's: the caps are per user, and contention between them is negligible.
+async function lockUserWrites(tx: Db, userId: string): Promise<void> {
+  await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${userId}))`);
+}
 
 export async function getVisibleFood(
   db: Db,
@@ -44,7 +51,7 @@ export async function getVisibleFood(
   foodId: string,
 ): Promise<FoodDetails | null> {
   const [row] = await db
-    .select({ ...listColumns, fiber100: foods.fiber100, sourceUrl: foods.sourceUrl })
+    .select({ ...listColumnsFor(userId), fiber100: foods.fiber100, sourceUrl: foods.sourceUrl })
     .from(foods)
     .where(and(eq(foods.id, foodId), visibleTo(userId)))
     .limit(1);
@@ -58,7 +65,7 @@ export async function listOwnFoods(
   { excludeRecipes = false }: { excludeRecipes?: boolean } = {},
 ): Promise<FoodListItem[]> {
   return db
-    .select(listColumns)
+    .select(listColumnsFor(userId))
     .from(foods)
     .where(
       and(
@@ -195,7 +202,11 @@ export async function copyFood(
     if (!source) return null;
     const copy = await createFood(tx, userId, source);
     if (copy === "limit") return copy;
-    const portions = await listVisiblePortions(tx, userId, foodId);
+    // Every copied portion becomes the user's own and so counts against the cap. Shared ones come
+    // first in the list, so the slice drops generic portions before the user's.
+    const portions = (await listVisiblePortions(tx, userId, foodId)).slice(
+      -PORTION_LIMITS.maxOwnPerFood,
+    );
     if (portions.length > 0) {
       await tx
         .insert(foodPortions)
@@ -212,13 +223,13 @@ export async function addPortion(
   portion: PortionValues,
 ): Promise<"ok" | "not_found" | "limit"> {
   return db.transaction(async (tx) => {
+    await lockUserWrites(tx, userId);
     const [food] = await tx
       .select({ id: foods.id })
       .from(foods)
       .where(and(eq(foods.id, foodId), visibleTo(userId), notRecipe))
       .limit(1);
     if (!food) return "not_found";
-    // Two simultaneous submits can overshoot by one; the cap is a UX limit, not a security one.
     const [owned] = await tx
       .select({ total: count() })
       .from(foodPortions)
@@ -229,9 +240,12 @@ export async function addPortion(
   });
 }
 
+// The food id comes from the page the user is on: a portion is deleted only through the food it
+// belongs to, and only while the user can still see that food.
 export async function deleteOwnPortion(
   db: Db,
   userId: string,
+  foodId: string,
   portionId: string,
 ): Promise<boolean> {
   const rows = await db
@@ -239,7 +253,10 @@ export async function deleteOwnPortion(
     .where(
       and(
         eq(foodPortions.id, portionId),
+        eq(foodPortions.foodId, foodId),
         eq(foodPortions.userId, userId),
+        // Qualified by hand for the same reason as isRecipeColumn.
+        sql`EXISTS (SELECT 1 FROM "foods" WHERE "foods"."id" = "food_portions"."food_id" AND ${visibleTo(userId)})`,
         // The serving portion is kept in sync by the recipe and is not the user's to delete.
         sql`NOT EXISTS (SELECT 1 FROM "recipes" WHERE "recipes"."food_id" = "food_portions"."food_id")`,
       ),
@@ -270,7 +287,7 @@ export async function searchFoods(
       sql`SELECT set_config('pg_trgm.word_similarity_threshold', ${String(FOOD_SEARCH.wordSimilarityThreshold)}, true)`,
     );
     return tx
-      .select(listColumns)
+      .select(listColumnsFor(userId))
       .from(foods)
       .where(and(visibleTo(userId), match, excludeRecipes ? notRecipe : undefined))
       .orderBy(

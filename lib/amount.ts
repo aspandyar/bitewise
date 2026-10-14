@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DIARY_LIMITS, NUTRIENT_STORAGE_DECIMALS } from "@/lib/config";
+import { DIARY_LIMITS, NUTRIENT_STORAGE_SCALE } from "@/lib/config";
 import type { PortionValues } from "@/lib/foods/types";
 import { decimalField } from "@/lib/forms";
 import { ru } from "@/lib/i18n/ru";
@@ -14,10 +14,9 @@ export type AddAmount = GramsAmount | { mode: "portion"; portionId: string; coun
 // Editing keeps the portion snapshot: only its count changes, or the amount switches to grams.
 export type UpdateAmount = GramsAmount | { mode: "portion"; count: number };
 
-const STORAGE_SCALE = 10 ** NUTRIENT_STORAGE_DECIMALS;
 // Inputs get the precision the columns store, so grams = count × portion grams holds once saved.
 export const toStoragePrecision = (value: number) =>
-  Math.round(value * STORAGE_SCALE) / STORAGE_SCALE;
+  Math.round(value * NUTRIENT_STORAGE_SCALE) / NUTRIENT_STORAGE_SCALE;
 
 const { grams, portionCount } = DIARY_LIMITS;
 const gramsField = () =>
@@ -56,6 +55,12 @@ export function toUpdateAmount(form: UpdateAmountForm): UpdateAmount {
   return form.mode === "grams"
     ? { mode: "grams", grams: form.grams }
     : { mode: "portion", count: form.count };
+}
+
+// A portion can be 5000 g and the count up to 50, or 0.1 g split in quarters: the product must
+// still fit the range a grams amount allows, or the entry could never be edited back in grams.
+export function isStorableGrams(value: number): boolean {
+  return value >= grams.min && value <= grams.max;
 }
 
 export type AmountColumns = {

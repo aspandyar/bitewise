@@ -25,6 +25,12 @@ function requireId(value: unknown): string {
   return id;
 }
 
+const portionTotalError: FormState = {
+  fieldErrors: {
+    count: ru.errors.portionTotalGrams(DIARY_LIMITS.grams.min, DIARY_LIMITS.grams.max),
+  },
+};
+
 export async function addEntryAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const userId = await requireUserId();
   const today = await getUserToday(new Date());
@@ -41,6 +47,7 @@ export async function addEntryAction(_prev: FormState, formData: FormData): Prom
     amount: toAddAmount(parsed.data),
   });
   if (result === "not_found") notFound();
+  if (result === "grams_out_of_range") return portionTotalError;
   if (result === "limit") return { formError: ru.diary.entryLimit(DIARY_LIMITS.maxEntriesPerDay) };
   if (result === "total_limit") {
     return { formError: ru.diary.entryTotalLimit(DIARY_LIMITS.maxEntriesTotal) };
@@ -62,6 +69,7 @@ export async function updateEntryAction(
     amount: toUpdateAmount(parsed.data),
   });
   if (!updated) notFound();
+  if (updated === "grams_out_of_range") return portionTotalError;
   redirect(dayHref(updated.date, await getUserToday(new Date())));
 }
 

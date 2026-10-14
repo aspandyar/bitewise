@@ -6,10 +6,12 @@ import { CopyFoodButton, DeleteFoodButton } from "@/components/foods/food-action
 import { Portions } from "@/components/foods/portions";
 import { BackLink } from "@/components/ui/back-link";
 import { PageLoading } from "@/components/ui/page-loading";
+import { ResetOnHide } from "@/components/ui/reset-on-hide";
 import { requireUserId } from "@/lib/auth/session";
 import { formatGrams, formatKcal } from "@/lib/format";
 import { getVisibleFood, listVisiblePortions } from "@/lib/foods/repo";
 import { parseFoodId } from "@/lib/foods/schema";
+import { safeSourceUrl } from "@/lib/foods/source-url";
 import { ru } from "@/lib/i18n/ru";
 import { recipeHref } from "@/lib/recipes/paths";
 import { getRecipeIdByFoodId } from "@/lib/recipes/repo";
@@ -36,6 +38,7 @@ async function FoodContent({ params }: { params: Promise<{ id: string }> }) {
     { label: ru.targets.carbs, grams: food.carbs100 },
     ...(food.fiber100 === null ? [] : [{ label: ru.foods.fiber, grams: food.fiber100 }]),
   ];
+  const sourceUrl = safeSourceUrl(food.sourceUrl);
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8">
@@ -60,13 +63,8 @@ async function FoodContent({ params }: { params: Promise<{ id: string }> }) {
         </dl>
         <p className="text-sm text-foreground/60">
           {ru.foods.sourceTitle}:{" "}
-          {food.sourceUrl ? (
-            <a
-              href={food.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline"
-            >
+          {sourceUrl ? (
+            <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="underline">
               {ru.foods.sourceNames[food.source]}
             </a>
           ) : (
@@ -90,7 +88,9 @@ async function FoodContent({ params }: { params: Promise<{ id: string }> }) {
           <CopyFoodButton foodId={food.id} />
         </div>
       )}
-      <Portions foodId={food.id} portions={portions} />
+      <ResetOnHide>
+        <Portions foodId={food.id} portions={portions} />
+      </ResetOnHide>
     </main>
   );
 }

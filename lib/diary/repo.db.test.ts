@@ -43,6 +43,42 @@ async function ownPortionId(userId: string, foodId: string, label: string): Prom
   return portion.id;
 }
 
+describe("grams computed from a portion", () => {
+  it("refuses an entry heavier than a grams entry may be", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const foodId = await insertSharedFood(buckwheat);
+    const portionId = await insertSharedPortion(foodId, "кастрюля", DIARY_LIMITS.grams.max);
+    const result = await addEntry(testDb, alice, {
+      date: DAY,
+      meal: "lunch",
+      foodId,
+      amount: { mode: "portion", portionId, count: 2 },
+    });
+    expect(result).toBe("grams_out_of_range");
+    expect(await getDayEntries(testDb, alice, DAY)).toEqual([]);
+  });
+
+  it("refuses an edit that pushes the count past the grams range", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const foodId = await insertSharedFood(buckwheat);
+    const portionId = await insertSharedPortion(foodId, "кастрюля", DIARY_LIMITS.grams.max);
+    await addEntry(testDb, alice, {
+      date: DAY,
+      meal: "lunch",
+      foodId,
+      amount: { mode: "portion", portionId, count: 1 },
+    });
+    const entry = await onlyEntry(alice);
+    expect(
+      await updateEntry(testDb, alice, entry.id, {
+        meal: "lunch",
+        amount: { mode: "portion", count: 2 },
+      }),
+    ).toBe("grams_out_of_range");
+    expect((await onlyEntry(alice)).grams).toBe(DIARY_LIMITS.grams.max);
+  });
+});
+
 describe("addEntry", () => {
   it("adds an entry by grams with a snapshot of the food", async () => {
     const alice = await newUserId("alice@mail.com");
@@ -128,7 +164,7 @@ describe("addEntry", () => {
       foodId,
       amount: { mode: "portion", portionId, count: 2 },
     });
-    await deleteOwnPortion(testDb, alice, portionId);
+    await deleteOwnPortion(testDb, alice, foodId, portionId);
     expect(await onlyEntry(alice)).toMatchObject({
       grams: 500,
       portionLabel: "моя тарелка",

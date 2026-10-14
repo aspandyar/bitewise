@@ -131,6 +131,8 @@ export const ru = {
     portionLabelLength: (min: number, max: number) => `Порция — от ${min} до ${max} символов`,
     portionGrams: (min: number, max: number) => `Граммы — от ${min} до ${max}`,
     portionCount: (min: number, max: number) => `Количество — от ${min} до ${max}`,
+    portionTotalGrams: (min: number, max: number) =>
+      `Вместе получается меньше ${min} или больше ${max} г — измените количество`,
     choosePortion: "Выберите порцию",
     cookedWeight: (min: number, max: number) => `Вес — от ${min} до ${max} г`,
     servings: (min: number, max: number) => `Порций — целое число от ${min} до ${max}`,

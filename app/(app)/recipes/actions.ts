@@ -1,10 +1,11 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/db/client";
 import { addAmountSchema, toAddAmount, toUpdateAmount, updateAmountSchema } from "@/lib/amount";
 import { requireUserId } from "@/lib/auth/session";
-import { FOOD_LIMITS, RECIPE_LIMITS } from "@/lib/config";
+import { DIARY_LIMITS, FOOD_LIMITS, RECIPE_LIMITS } from "@/lib/config";
 import { firstFieldErrors, type FormState } from "@/lib/forms";
 import { ru } from "@/lib/i18n/ru";
 import { parseId } from "@/lib/ids";
@@ -26,9 +27,16 @@ function requireId(value: unknown): string {
   return id;
 }
 
-// The ingredient forms show amount errors at their fields; these concern the dish as a whole.
-function itemFailure(result: "not_found" | "limit" | "weight_too_low"): FormState {
+// Limit and weight errors concern the dish as a whole; a portion total that leaves the grams
+// range belongs to the count field the user just changed.
+function itemFailure(
+  result: "not_found" | "limit" | "weight_too_low" | "grams_out_of_range",
+): FormState {
   if (result === "not_found") notFound();
+  if (result === "grams_out_of_range") {
+    const { min, max } = DIARY_LIMITS.grams;
+    return { fieldErrors: { count: ru.errors.portionTotalGrams(min, max) } };
+  }
   if (result === "limit") return { formError: ru.recipes.itemLimit(RECIPE_LIMITS.maxItems) };
   return { formError: ru.recipes.weightTooLowForItem };
 }
@@ -61,7 +69,11 @@ export async function updateRecipeAction(
 
 export async function deleteRecipeAction(recipeId: string): Promise<void> {
   const userId = await requireUserId();
-  if (!(await deleteRecipe(db, userId, requireId(recipeId)))) notFound();
+  const id = requireId(recipeId);
+  if (!(await deleteRecipe(db, userId, id))) notFound();
+  // Drops the client's cached recipe screen, so browser Back renders "not found" instead of a
+  // dish that still looks editable.
+  revalidatePath(recipeHref(id));
   redirect(RECIPES_HREF);
 }
 

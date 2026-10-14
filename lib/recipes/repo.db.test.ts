@@ -215,6 +215,28 @@ describe("recipe guards", () => {
     ).toBe("not_found");
   });
 
+  it("refuses an ingredient whose portion amount leaves the grams range", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const id = await newRecipe(alice, { name: "Суп", cookedWeightG: null, servings: null });
+    const eggId = await insertSharedFood({ name: "Яйцо" });
+    const pot = await insertSharedPortion(eggId, "кастрюля", 5000);
+    expect(
+      await addItem(testDb, alice, id, {
+        foodId: eggId,
+        amount: { mode: "portion", portionId: pot, count: 2 },
+      }),
+    ).toBe("grams_out_of_range");
+
+    await addItem(testDb, alice, id, {
+      foodId: eggId,
+      amount: { mode: "portion", portionId: pot, count: 1 },
+    });
+    const itemId = (await recipeFood(alice, id)).recipe.items[0]?.id ?? "";
+    expect(await updateItem(testDb, alice, id, itemId, { mode: "portion", count: 2 })).toBe(
+      "grams_out_of_range",
+    );
+  });
+
   it("hides a recipe from another user", async () => {
     const alice = await newUserId("alice@mail.com");
     const bob = await newUserId("bob@mail.com");

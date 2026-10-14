@@ -1,5 +1,9 @@
 import { randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import * as schema from "@/db/schema";
 import { foodPortions, foods } from "@/db/schema";
 import { FOOD_LIMITS, PORTION_LIMITS } from "@/lib/config";
 import { closeTestDb, resetDb, testDb } from "@/tests/db";
@@ -13,6 +17,7 @@ import {
   createFood,
   deleteOwnPortion,
   getVisibleFood,
+  listColumnsFor,
   listOwnFoods,
   listVisiblePortions,
   softDeleteOwnFood,
@@ -58,9 +63,36 @@ describe("food visibility", () => {
     expect(food).not.toHaveProperty("ownerId");
   });
 
+  it("marks only the caller's foods as own, even without the visibility filter", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const bob = await newUserId("bob@mail.com");
+    const { id } = await createOwnFood(bob, oats);
+    const [row] = await testDb.select(listColumnsFor(alice)).from(foods).where(eq(foods.id, id));
+    expect(row?.isOwn).toBe(false);
+  });
+
   it("returns null for an unknown id", async () => {
     const alice = await newUserId("alice@mail.com");
     expect(await getVisibleFood(testDb, alice, randomUUID())).toBeNull();
+  });
+});
+
+describe("source_url", () => {
+  it("accepts only https links in the database", async () => {
+    const insert = (sourceUrl: string) =>
+      testDb.insert(foods).values({
+        name: "Ссылка",
+        kcal100: 1,
+        protein100: 0,
+        fat100: 0,
+        carbs100: 0,
+        source: "label",
+        seedKey: `label:${randomUUID()}`,
+        sourceUrl,
+      });
+    await expect(insert("javascript:alert(1)")).rejects.toThrow();
+    await expect(insert("http://example.com")).rejects.toThrow();
+    await expect(insert("https://example.com")).resolves.toBeDefined();
   });
 });
 
@@ -131,6 +163,23 @@ describe("copyFood", () => {
     ]);
   });
 
+  it("keeps the copy within the own portion cap, dropping shared portions first", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const shared = await insertSharedFood({ name: "Яйцо" });
+    await insertSharedPortion(shared, "1 шт", 50);
+    await insertSharedPortion(shared, "1 крупное", 70);
+    for (let i = 0; i < PORTION_LIMITS.maxOwnPerFood; i += 1) {
+      await addPortion(testDb, alice, shared, { label: `p${i}`, grams: 10 });
+    }
+
+    const copy = await copyFood(testDb, alice, shared);
+    if (!copy || copy === "limit") throw new Error("no copy");
+    const portions = await listVisiblePortions(testDb, alice, copy.id);
+    expect(portions).toHaveLength(PORTION_LIMITS.maxOwnPerFood);
+    expect(portions.map((p) => p.label)).not.toContain("1 шт");
+    expect(portions.map((p) => p.label)).not.toContain("1 крупное");
+  });
+
   it("refuses to copy someone else's food", async () => {
     const alice = await newUserId("alice@mail.com");
     const bob = await newUserId("bob@mail.com");
@@ -172,12 +221,59 @@ describe("portions", () => {
     const [own] = (await listVisiblePortions(testDb, alice, shared)).filter((p) => p.isOwn);
     if (!own) throw new Error("no own portion");
 
-    expect(await deleteOwnPortion(testDb, bob, own.id)).toBe(false);
-    expect(await deleteOwnPortion(testDb, alice, sharedPortion)).toBe(false);
-    expect(await deleteOwnPortion(testDb, alice, own.id)).toBe(true);
+    expect(await deleteOwnPortion(testDb, bob, shared, own.id)).toBe(false);
+    expect(await deleteOwnPortion(testDb, alice, shared, sharedPortion)).toBe(false);
+    expect(await deleteOwnPortion(testDb, alice, shared, own.id)).toBe(true);
     expect((await listVisiblePortions(testDb, alice, shared)).map((p) => p.label)).toEqual([
       "1 шт",
     ]);
+  });
+
+  it("does not delete a portion through another food's id", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const egg = await insertSharedFood({ name: "Яйцо" });
+    const milk = await insertSharedFood({ name: "Молоко" });
+    await addPortion(testDb, alice, egg, { label: "моя", grams: 60 });
+    const [own] = await listVisiblePortions(testDb, alice, egg);
+    if (!own) throw new Error("no own portion");
+
+    expect(await deleteOwnPortion(testDb, alice, milk, own.id)).toBe(false);
+    expect(await listVisiblePortions(testDb, alice, egg)).toHaveLength(1);
+  });
+
+  it("does not delete a portion of a deleted food", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const { id } = await createOwnFood(alice, oats);
+    await addPortion(testDb, alice, id, { label: "миска", grams: 50 });
+    const [own] = await listVisiblePortions(testDb, alice, id);
+    if (!own) throw new Error("no own portion");
+    await softDeleteOwnFood(testDb, alice, id);
+
+    expect(await deleteOwnPortion(testDb, alice, id, own.id)).toBe(false);
+  });
+
+  it("keeps the own portion cap under simultaneous adds", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const shared = await insertSharedFood({ name: "Яйцо" });
+    for (let i = 0; i < PORTION_LIMITS.maxOwnPerFood - 1; i += 1) {
+      await addPortion(testDb, alice, shared, { label: `p${i}`, grams: 10 });
+    }
+    // testDb has one connection; parallel submits need a pool to really overlap.
+    const parallelCount = 5;
+    const client = postgres(process.env.DATABASE_URL_TEST ?? "", { max: parallelCount });
+    try {
+      const pool = drizzle(client, { schema });
+      const results = await Promise.all(
+        Array.from({ length: parallelCount }, (_, i) =>
+          addPortion(pool, alice, shared, { label: `race${i}`, grams: 10 }),
+        ),
+      );
+      expect(results.filter((result) => result === "ok")).toHaveLength(1);
+    } finally {
+      await client.end();
+    }
+    const own = (await listVisiblePortions(testDb, alice, shared)).filter((p) => p.isOwn);
+    expect(own).toHaveLength(PORTION_LIMITS.maxOwnPerFood);
   });
 
   it("caps own portions per food", async () => {
@@ -254,7 +350,7 @@ describe("recipe foods", () => {
       .values({ foodId, userId: alice, label: "1 порция", grams: 300 });
     const [portion] = await listVisiblePortions(testDb, alice, foodId);
     if (!portion) throw new Error("no portion");
-    expect(await deleteOwnPortion(testDb, alice, portion.id)).toBe(false);
+    expect(await deleteOwnPortion(testDb, alice, foodId, portion.id)).toBe(false);
   });
 
   it("leaves recipes out of own foods when asked", async () => {
