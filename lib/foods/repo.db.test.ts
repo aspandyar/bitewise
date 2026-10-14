@@ -1,12 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import * as schema from "@/db/schema";
 import { foodPortions, foods } from "@/db/schema";
 import { FOOD_LIMITS, PORTION_LIMITS } from "@/lib/config";
-import { closeTestDb, resetDb, testDb } from "@/tests/db";
+import { closeTestDb, createTestPool, resetDb, testDb } from "@/tests/db";
 import { createOwnFood, insertSharedFood, insertSharedPortion, newUserId } from "@/tests/foods";
 import { insertRecipeFood } from "@/tests/recipes";
 import { addItem, createRecipe, getRecipe } from "@/lib/recipes/repo";
@@ -258,19 +255,17 @@ describe("portions", () => {
     for (let i = 0; i < PORTION_LIMITS.maxOwnPerFood - 1; i += 1) {
       await addPortion(testDb, alice, shared, { label: `p${i}`, grams: 10 });
     }
-    // testDb has one connection; parallel submits need a pool to really overlap.
     const parallelCount = 5;
-    const client = postgres(process.env.DATABASE_URL_TEST ?? "", { max: parallelCount });
+    const pool = createTestPool(parallelCount);
     try {
-      const pool = drizzle(client, { schema });
       const results = await Promise.all(
         Array.from({ length: parallelCount }, (_, i) =>
-          addPortion(pool, alice, shared, { label: `race${i}`, grams: 10 }),
+          addPortion(pool.db, alice, shared, { label: `race${i}`, grams: 10 }),
         ),
       );
       expect(results.filter((result) => result === "ok")).toHaveLength(1);
     } finally {
-      await client.end();
+      await pool.close();
     }
     const own = (await listVisiblePortions(testDb, alice, shared)).filter((p) => p.isOwn);
     expect(own).toHaveLength(PORTION_LIMITS.maxOwnPerFood);

@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { foods, recipeItems, recipes, users } from "@/db/schema";
-import { FOOD_LIMITS } from "@/lib/config";
+import { FOOD_LIMITS, PORTION_LIMITS } from "@/lib/config";
 import { addEntry, getDayEntries } from "@/lib/diary/repo";
 import {
   getVisibleFood,
@@ -219,7 +219,7 @@ describe("recipe guards", () => {
     const alice = await newUserId("alice@mail.com");
     const id = await newRecipe(alice, { name: "Суп", cookedWeightG: null, servings: null });
     const eggId = await insertSharedFood({ name: "Яйцо" });
-    const pot = await insertSharedPortion(eggId, "кастрюля", 5000);
+    const pot = await insertSharedPortion(eggId, "кастрюля", PORTION_LIMITS.grams.max);
     expect(
       await addItem(testDb, alice, id, {
         foodId: eggId,

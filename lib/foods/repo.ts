@@ -1,4 +1,5 @@
 import { and, asc, count, desc, eq, isNull, or, sql } from "drizzle-orm";
+import { lockUserWrites } from "@/db/locks";
 import { foodPortions, foods } from "@/db/schema";
 import type { Db } from "@/db/types";
 import { FOOD_LIMITS, FOOD_SEARCH, PORTION_LIMITS } from "@/lib/config";
@@ -37,12 +38,6 @@ export function listColumnsFor(userId: string) {
     isOwn: sql<boolean>`${foods.ownerId} IS NOT DISTINCT FROM ${userId}::uuid`,
     isRecipe: isRecipeColumn,
   };
-}
-
-// Serializes one user's capped writes, so parallel submits cannot all pass a count check.
-// The same key as the diary's: the caps are per user, and contention between them is negligible.
-async function lockUserWrites(tx: Db, userId: string): Promise<void> {
-  await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${userId}))`);
 }
 
 export async function getVisibleFood(
@@ -136,7 +131,7 @@ export async function listVisiblePortions(
         id: foodPortions.id,
         label: foodPortions.label,
         grams: foodPortions.grams,
-        isOwn: sql<boolean>`${foodPortions.userId} IS NOT NULL`,
+        isOwn: sql<boolean>`${foodPortions.userId} IS NOT DISTINCT FROM ${userId}::uuid`,
       })
       .from(foodPortions)
       .innerJoin(foods, eq(foods.id, foodPortions.foodId))
@@ -255,7 +250,8 @@ export async function deleteOwnPortion(
         eq(foodPortions.id, portionId),
         eq(foodPortions.foodId, foodId),
         eq(foodPortions.userId, userId),
-        // Qualified by hand for the same reason as isRecipeColumn.
+        // food_id is qualified by hand for the same reason as isRecipeColumn; visibleTo's columns
+        // stay unqualified and resolve to "foods" because the innermost FROM wins.
         sql`EXISTS (SELECT 1 FROM "foods" WHERE "foods"."id" = "food_portions"."food_id" AND ${visibleTo(userId)})`,
         // The serving portion is kept in sync by the recipe and is not the user's to delete.
         sql`NOT EXISTS (SELECT 1 FROM "recipes" WHERE "recipes"."food_id" = "food_portions"."food_id")`,

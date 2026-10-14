@@ -19,12 +19,17 @@ describe("loggableError", () => {
     expect(logged).not.toContain("select");
   });
 
-  it("keeps the database error code and message for diagnosis", () => {
+  it("keeps the database error code for diagnosis", () => {
     const error = new DrizzleQueryError("select 1", ["x"], pgError());
-    expect(loggableError(error)).toMatchObject({
-      code: "42P01",
-      message: 'relation "foods" does not exist',
+    expect(loggableError(error)).toMatchObject({ code: "42P01" });
+  });
+
+  it("drops the database message, which can echo a parameter", () => {
+    const cause = Object.assign(new Error('invalid input syntax for type uuid: "secret-id"'), {
+      code: "22P02",
     });
+    const error = new DrizzleQueryError("select $1", ["secret-id"], cause);
+    expect(JSON.stringify(loggableError(error))).not.toContain("secret-id");
   });
 
   it("passes other errors through untouched", () => {

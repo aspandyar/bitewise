@@ -1,4 +1,5 @@
 import { and, asc, count, eq, sql } from "drizzle-orm";
+import { lockUserWrites } from "@/db/locks";
 import { diaryEntries, foods } from "@/db/schema";
 import type { Db } from "@/db/types";
 import { isStorableGrams, NO_PORTION, toAmountColumns } from "@/lib/amount";
@@ -68,8 +69,7 @@ export async function addEntry(
   limits: { maxEntriesPerDay: number; maxEntriesTotal: number } = DIARY_LIMITS,
 ): Promise<"ok" | "not_found" | "limit" | "total_limit" | "grams_out_of_range"> {
   return db.transaction(async (tx) => {
-    // Serializes one user's adds so parallel submits cannot all pass the cap checks below.
-    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${userId}))`);
+    await lockUserWrites(tx, userId);
     const [food] = await tx
       .select({
         name: foods.name,

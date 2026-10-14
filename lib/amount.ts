@@ -57,8 +57,8 @@ export function toUpdateAmount(form: UpdateAmountForm): UpdateAmount {
     : { mode: "portion", count: form.count };
 }
 
-// A portion can be 5000 g and the count up to 50, or 0.1 g split in quarters: the product must
-// still fit the range a grams amount allows, or the entry could never be edited back in grams.
+// The heaviest portion times the largest count, or the lightest split in quarters, falls outside
+// the range a grams amount allows; such an entry could never be edited back in grams.
 export function isStorableGrams(value: number): boolean {
   return value >= grams.min && value <= grams.max;
 }
