@@ -15,6 +15,7 @@ import { getEntry } from "@/lib/diary/repo";
 import { listVisiblePortions } from "@/lib/foods/repo";
 import { parseId } from "@/lib/diary/schema";
 import { getUserToday } from "@/lib/diary/today";
+import { formatDayLabel } from "@/lib/format";
 import { ru } from "@/lib/i18n/ru";
 import { calcEntryNutrients } from "@/lib/nutrition";
 
@@ -58,6 +59,11 @@ async function EditEntryContent({ params }: Pick<PageProps<"/diary/entries/[id]/
       <BackLink href={dayHref(entry.date, today)} />
       <div className="flex flex-col gap-1">
         <p className="text-sm text-foreground/60">{ru.diary.editTitle}</p>
+        {entry.date === today ? null : (
+          <p className="text-sm font-medium">
+            {ru.diary.entryDay(formatDayLabel(entry.date, today))}
+          </p>
+        )}
         <h1 className="text-2xl font-semibold [overflow-wrap:anywhere]">{entry.foodName}</h1>
       </div>
       {/* cacheComponents keeps hidden screens alive; keyed by the stored values so a revisit

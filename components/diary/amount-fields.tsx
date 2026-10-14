@@ -73,6 +73,7 @@ export function AmountFields({
               type="button"
               aria-pressed={mode === option}
               onClick={() => selectMode(option)}
+              data-edits="grams count portionId"
               className={segment}
             >
               {option === "portion" ? ru.diary.modePortions : ru.diary.modeGrams}
@@ -143,6 +144,7 @@ export function AmountFields({
                 aria-label={ru.diary.decrease}
                 disabled={current === null || current - step < min}
                 onClick={() => current !== null && setCount(formatAmount(current - step))}
+                data-edits="count"
                 className={stepper}
               >
                 {ru.diary.minus}
@@ -162,6 +164,7 @@ export function AmountFields({
                 aria-label={ru.diary.increase}
                 disabled={current === null || current + step > max}
                 onClick={() => current !== null && setCount(formatAmount(current + step))}
+                data-edits="count"
                 className={stepper}
               >
                 {ru.diary.plus}

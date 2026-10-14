@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
   type FormEvent,
+  type MouseEvent,
   type HTMLInputTypeAttribute,
   type ReactNode,
 } from "react";
@@ -32,13 +33,24 @@ export function usePreservingFormAction(
     startTransition(() => formAction(formData));
   }
 
+  function markEdited(names: readonly string[]) {
+    const fresh = names.filter((name) => name && !edited.has(name));
+    if (fresh.length > 0) setEdited((current) => new Set([...current, ...fresh]));
+  }
+
   function onInput(event: FormEvent<HTMLFormElement>) {
     const { target } = event;
-    const name =
-      target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement
-        ? target.name
-        : "";
-    if (name && !edited.has(name)) setEdited((current) => new Set(current).add(name));
+    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+      markEdited([target.name]);
+    }
+  }
+
+  // Buttons that change a value without typing (a stepper, a mode toggle) fire no input event;
+  // they name the fields they change in data-edits instead.
+  function onClick(event: MouseEvent<HTMLFormElement>) {
+    if (!(event.target instanceof Element)) return;
+    const names = event.target.closest("[data-edits]")?.getAttribute("data-edits");
+    if (names) markEdited(names.split(" "));
   }
 
   // Runs after the error render, when aria-invalid is already on the fields. A radio group is
@@ -56,7 +68,7 @@ export function usePreservingFormAction(
     state,
     pending,
     fieldErrors: visibleFieldErrors(state.fieldErrors, edited),
-    formProps: { onSubmit, onInput },
+    formProps: { onSubmit, onInput, onClick },
   };
 }
 
