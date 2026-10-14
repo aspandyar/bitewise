@@ -1,5 +1,11 @@
 import { formatNumber as n, LOCALE } from "./number";
 
+// Phrases reused across entries; the object below cannot refer to itself while it is built.
+const PER_100G = "на 100 г";
+const KCAL_PER_100G = `ккал ${PER_100G}`;
+// Russian labels count carbs net of fiber, and so do the stored values.
+const CARBS_NET = "Углеводы без клетчатки";
+
 // Single source of UI strings so screens never hardcode Russian text in JSX.
 // Range messages take limits from config, so the text cannot drift from validation.
 export const ru = {
@@ -87,7 +93,7 @@ export const ru = {
     addOwnInstead: "Добавить свой продукт",
     searchFailed: "Не удалось выполнить поиск",
     tooManyRequests: "Слишком часто. Подождите немного",
-    per100g: "на 100 г",
+    per100g: PER_100G,
     sources: { user: "моё", usda: "USDA", label: "этикетка" },
     sourceNames: {
       user: "Ваш продукт",
@@ -101,15 +107,14 @@ export const ru = {
     kcal100: "Калории, ккал",
     protein100: "Белки, г",
     fat100: "Жиры, г",
-    carbs100: "Углеводы без клетчатки, г",
+    carbs100: `${CARBS_NET}, г`,
     fiber100: "Клетчатка, г (необязательно)",
     fiber: "Клетчатка",
-    // Russian labels count carbs net of fiber, and so do the stored values.
-    carbsNet: "Углеводы без клетчатки",
+    carbsNet: CARBS_NET,
     listSummary: (kcal: string, protein: string, fat: string, carbs: string) =>
-      `${kcal} ккал на 100 г · Б ${protein} · Ж ${fat} · У ${carbs}`,
+      `${kcal} ${KCAL_PER_100G} · Б ${protein} · Ж ${fat} · У ${carbs}`,
     portionRow: (label: string, grams: string) => `${label} — ${grams} г`,
-    sourceLabel: "Источник: ",
+    sourceLabel: "Источник:",
     edit: "Изменить",
     copy: "Скопировать к себе",
     copyHint: "Общий продукт нельзя изменить — скопируйте его и правьте копию.",
@@ -209,7 +214,7 @@ export const ru = {
     amountPortion: (label: string, grams: string) => `${label} · ${grams} г`,
     amountPortions: (count: string, label: string, grams: string) =>
       `${count} × ${label} · ${grams} г`,
-    kcalPer100g: (kcal: string) => `${kcal} ккал на 100 г`,
+    kcalPer100g: (kcal: string) => `${kcal} ${KCAL_PER_100G}`,
     editTitle: "Изменить запись",
     entryLimit: (max: number) => `Не больше ${n(max)} записей за день`,
     entryTotalLimit: (max: number) => `Не больше ${n(max)} записей в дневнике`,
