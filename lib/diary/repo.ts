@@ -2,18 +2,23 @@ import { and, asc, count, eq, sql } from "drizzle-orm";
 import { lockUserWrites } from "@/db/locks";
 import { diaryEntries, foods } from "@/db/schema";
 import type { Db } from "@/db/types";
-import { isStorableGrams, NO_PORTION, toAmountColumns } from "@/lib/amount";
+import {
+  isStorableGrams,
+  portionToPick,
+  toAmountColumns,
+  toUpdatedAmountColumns,
+} from "@/lib/amount";
 import { DIARY_LIMITS } from "@/lib/config";
 import type { IsoDate } from "@/lib/date";
 import { getVisiblePortion, visibleTo } from "@/lib/foods/repo";
 import type { PortionValues } from "@/lib/foods/types";
-import { calcPortionGrams } from "@/lib/nutrition";
 import type { AddEntryInput, DiaryEntry, UpdateEntryInput } from "./types";
 
 const entryColumns = {
   id: diaryEntries.id,
   date: diaryEntries.date,
   meal: diaryEntries.meal,
+  foodId: diaryEntries.foodId,
   foodName: diaryEntries.foodName,
   kcal100: diaryEntries.kcal100,
   protein100: diaryEntries.protein100,
@@ -125,22 +130,21 @@ export async function updateEntry(
 ): Promise<{ date: IsoDate } | null | "grams_out_of_range"> {
   return db.transaction(async (tx) => {
     const [entry] = await tx
-      .select({ date: diaryEntries.date, portionGrams: diaryEntries.portionGrams })
+      .select({
+        date: diaryEntries.date,
+        foodId: diaryEntries.foodId,
+        portionGrams: diaryEntries.portionGrams,
+      })
       .from(diaryEntries)
       .where(ownEntry(userId, entryId))
       .limit(1);
     if (!entry) return null;
     const { amount } = input;
-    let columns: Partial<typeof diaryEntries.$inferInsert>;
-    if (amount.mode === "grams") {
-      columns = { grams: amount.grams, ...NO_PORTION };
-    } else {
-      // Only the snapshotted portion can be counted; a grams entry has none to count.
-      if (entry.portionGrams === null) return null;
-      const grams = calcPortionGrams(entry.portionGrams, amount.count);
-      if (!isStorableGrams(grams)) return "grams_out_of_range";
-      columns = { grams, portionCount: amount.count };
-    }
+    const pick = portionToPick(amount, entry.portionGrams);
+    const picked = pick ? await getVisiblePortion(tx, userId, entry.foodId, pick) : null;
+    const columns = toUpdatedAmountColumns(amount, entry.portionGrams, picked);
+    if (!columns) return null;
+    if (!isStorableGrams(columns.grams)) return "grams_out_of_range";
     await tx
       .update(diaryEntries)
       .set({ meal: input.meal, ...columns, updatedAt: sql`now()` })

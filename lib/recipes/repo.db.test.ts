@@ -165,6 +165,30 @@ describe("recipe numbers", () => {
     expect((await recipeFood(alice, id)).food.kcal100).toBe(157);
   });
 
+  it("switches a grams ingredient to a portion of its food", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const id = await newRecipe(alice, { name: "Омлет", cookedWeightG: null, servings: null });
+    const eggId = await insertSharedFood({ name: "Яйцо", kcal100: 157 });
+    const milkId = await insertSharedFood({ name: "Молоко" });
+    const piece = await insertSharedPortion(eggId, "1 шт", 60);
+    const glass = await insertSharedPortion(milkId, "стакан", 200);
+    await grams(alice, id, eggId, 100);
+    const [egg] = (await recipeFood(alice, id)).recipe.items;
+    if (!egg) throw new Error("item missing");
+
+    expect(
+      await updateItem(testDb, alice, id, egg.id, { mode: "portion", portionId: glass, count: 1 }),
+    ).toBe("not_found");
+    expect(
+      await updateItem(testDb, alice, id, egg.id, { mode: "portion", portionId: piece, count: 2 }),
+    ).toBe("ok");
+    expect((await recipeFood(alice, id)).recipe.items[0]).toMatchObject({
+      grams: 120,
+      portionLabel: "1 шт",
+      portionCount: 2,
+    });
+  });
+
   it("skips a serving too small to store", async () => {
     const alice = await newUserId("alice@mail.com");
     // 0.1 g / 100 servings = 0.001 g, which numeric(8,2) would store as 0.

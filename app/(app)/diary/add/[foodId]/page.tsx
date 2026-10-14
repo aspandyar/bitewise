@@ -12,7 +12,7 @@ import { countDayEntries } from "@/lib/diary/repo";
 import { parseDiaryDate, parseId, parseMeal } from "@/lib/diary/schema";
 import { getUserToday } from "@/lib/diary/today";
 import { getVisibleFood, listVisiblePortions } from "@/lib/foods/repo";
-import { formatKcal } from "@/lib/format";
+import { formatDayLabel, formatKcal } from "@/lib/format";
 import { ru } from "@/lib/i18n/ru";
 import { calcEntryNutrients } from "@/lib/nutrition";
 
@@ -43,6 +43,10 @@ async function AmountContent({
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
       <BackLink href={addHref(date, meal)} />
       <div className="flex flex-col gap-1">
+        {/* The meal can be changed below, the day cannot: a past day must not go unnoticed. */}
+        {date === today ? null : (
+          <p className="text-sm font-medium">{ru.diary.entryDay(formatDayLabel(date, today))}</p>
+        )}
         <h1 className="text-2xl font-semibold [overflow-wrap:anywhere]">{food.name}</h1>
         <p className="text-foreground/60">{ru.diary.kcalPer100g(formatKcal(food.kcal100))}</p>
       </div>

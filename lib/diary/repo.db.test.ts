@@ -94,6 +94,7 @@ describe("addEntry", () => {
       id: expect.any(String),
       date: DAY,
       meal: "lunch",
+      foodId,
       foodName: "Гречка",
       kcal100: 343,
       protein100: 13.3,
@@ -352,6 +353,52 @@ describe("updateEntry", () => {
       await updateEntry(testDb, alice, entry.id, {
         meal: "lunch",
         amount: { mode: "portion", count: 2 },
+      }),
+    ).toBeNull();
+    expect(await onlyEntry(alice)).toEqual(entry);
+  });
+
+  it("switches a grams entry to a portion of its food", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const foodId = await insertSharedFood(buckwheat);
+    const portionId = await insertSharedPortion(foodId, "тарелка", 250);
+    await addEntry(testDb, alice, {
+      date: DAY,
+      meal: "lunch",
+      foodId,
+      amount: { mode: "grams", grams: 100 },
+    });
+    const entry = await onlyEntry(alice);
+    expect(
+      await updateEntry(testDb, alice, entry.id, {
+        meal: "lunch",
+        amount: { mode: "portion", portionId, count: 2 },
+      }),
+    ).toEqual({ date: DAY });
+    expect(await onlyEntry(alice)).toMatchObject({
+      grams: 500,
+      portionLabel: "тарелка",
+      portionGrams: 250,
+      portionCount: 2,
+    });
+  });
+
+  it("refuses a portion of another food when switching from grams", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const foodId = await insertSharedFood(buckwheat);
+    const milk = await insertSharedFood({ name: "Молоко" });
+    const glass = await insertSharedPortion(milk, "стакан", 200);
+    await addEntry(testDb, alice, {
+      date: DAY,
+      meal: "lunch",
+      foodId,
+      amount: { mode: "grams", grams: 100 },
+    });
+    const entry = await onlyEntry(alice);
+    expect(
+      await updateEntry(testDb, alice, entry.id, {
+        meal: "lunch",
+        amount: { mode: "portion", portionId: glass, count: 1 },
       }),
     ).toBeNull();
     expect(await onlyEntry(alice)).toEqual(entry);

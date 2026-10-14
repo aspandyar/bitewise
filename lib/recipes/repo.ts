@@ -3,15 +3,16 @@ import { foodPortions, foods, recipeItems, recipes } from "@/db/schema";
 import type { Db } from "@/db/types";
 import {
   isStorableGrams,
-  NO_PORTION,
+  portionToPick,
   toAmountColumns,
+  toUpdatedAmountColumns,
   type AddAmount,
   type UpdateAmount,
 } from "@/lib/amount";
 import { RECIPE_LIMITS } from "@/lib/config";
 import { createFood, getVisiblePortion, notRecipe, visibleTo } from "@/lib/foods/repo";
 import type { PortionValues } from "@/lib/foods/types";
-import { calcPortionGrams, calcRecipe, type RecipeItemValues } from "@/lib/nutrition";
+import { calcRecipe, type RecipeItemValues } from "@/lib/nutrition";
 import { loadRecipeItemValues, per100gColumns, recomputeRecipe } from "./recompute";
 import type {
   RecipeDetails,
@@ -262,20 +263,17 @@ export async function updateItem(
     const recipe = await lockOwnRecipe(tx, userId, recipeId);
     if (!recipe) return "not_found";
     const [item] = await tx
-      .select({ portionGrams: recipeItems.portionGrams })
+      .select({ foodId: recipeItems.foodId, portionGrams: recipeItems.portionGrams })
       .from(recipeItems)
       .where(ownItem(userId, recipeId, itemId))
       .limit(1);
     if (!item) return "not_found";
-    let grams: number;
-    if (amount.mode === "grams") {
-      grams = amount.grams;
-    } else {
-      // Only the snapshotted portion can be counted; a grams ingredient has none to count.
-      if (item.portionGrams === null) return "not_found";
-      grams = calcPortionGrams(item.portionGrams, amount.count);
-      if (!isStorableGrams(grams)) return "grams_out_of_range";
-    }
+    const pick = portionToPick(amount, item.portionGrams);
+    const picked = pick ? await getVisiblePortion(tx, userId, item.foodId, pick) : null;
+    const columns = toUpdatedAmountColumns(amount, item.portionGrams, picked);
+    if (!columns) return "not_found";
+    const { grams } = columns;
+    if (!isStorableGrams(grams)) return "grams_out_of_range";
     const items = (await loadRecipeItemValues(tx, userId, recipeId)).map((current) =>
       current.id === itemId ? { ...current, grams } : current,
     );
@@ -283,9 +281,7 @@ export async function updateItem(
     if (tooLow) return tooLow;
     await tx
       .update(recipeItems)
-      .set(
-        amount.mode === "grams" ? { grams, ...NO_PORTION } : { grams, portionCount: amount.count },
-      )
+      .set(columns)
       .where(ownItem(userId, recipeId, itemId));
     await recomputeRecipe(tx, recipeId);
     return "ok";

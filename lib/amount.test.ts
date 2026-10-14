@@ -39,6 +39,12 @@ describe("updateAmountSchema", () => {
       count: 2,
     });
   });
+
+  it("parses a count with a newly picked portion", () => {
+    expect(
+      toUpdateAmount(updateAmountSchema.parse({ mode: "portion", portionId, count: "1,5" })),
+    ).toEqual({ mode: "portion", portionId, count: 1.5 });
+  });
 });
 
 describe("toAmountColumns", () => {

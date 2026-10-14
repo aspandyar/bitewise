@@ -12,7 +12,8 @@ export type GramsAmount = { mode: "grams"; grams: number };
 export type AddAmount = GramsAmount | { mode: "portion"; portionId: string; count: number };
 
 // Editing keeps the portion snapshot: only its count changes, or the amount switches to grams.
-export type UpdateAmount = GramsAmount | { mode: "portion"; count: number };
+// An amount saved in grams has no snapshot, so it may pick one of its food's portions instead.
+export type UpdateAmount = GramsAmount | { mode: "portion"; count: number; portionId?: string };
 
 // Inputs get the precision the columns store, so grams = count × portion grams holds once saved.
 export const toStoragePrecision = (value: number) =>
@@ -43,7 +44,11 @@ export const addAmountSchema = z.discriminatedUnion("mode", [
 
 export const updateAmountSchema = z.discriminatedUnion("mode", [
   gramsAmountSchema,
-  z.object({ mode: z.literal("portion"), count: countField() }),
+  z.object({
+    mode: z.literal("portion"),
+    portionId: z.uuid({ error: ru.errors.choosePortion }).optional(),
+    count: countField(),
+  }),
 ]);
 
 export type AddAmountForm = z.infer<typeof addAmountSchema>;
@@ -56,9 +61,10 @@ export function toAddAmount(form: AddAmountForm): AddAmount {
 }
 
 export function toUpdateAmount(form: UpdateAmountForm): UpdateAmount {
-  return form.mode === "grams"
-    ? { mode: "grams", grams: form.grams }
-    : { mode: "portion", count: form.count };
+  if (form.mode === "grams") return { mode: "grams", grams: form.grams };
+  return form.portionId === undefined
+    ? { mode: "portion", count: form.count }
+    : { mode: "portion", portionId: form.portionId, count: form.count };
 }
 
 // The heaviest portion times the largest count, or the lightest split in quarters, falls outside
@@ -80,10 +86,33 @@ export function toAmountColumns(amount: AddAmount, portion: PortionValues | null
   if (amount.mode === "grams") return { grams: amount.grams, ...NO_PORTION };
   // Callers look the portion up first and answer "not found" when it is missing.
   if (!portion) throw new Error("portion amount without a portion");
+  return portionColumns(portion, amount.count);
+}
+
+function portionColumns(portion: PortionValues, count: number): AmountColumns {
   return {
-    grams: calcPortionGrams(portion.grams, amount.count),
+    grams: calcPortionGrams(portion.grams, count),
     portionLabel: portion.label,
     portionGrams: portion.grams,
-    portionCount: amount.count,
+    portionCount: count,
   };
+}
+
+// What an edit writes: grams drop the portion; a count multiplies the snapshot, or the portion just
+// picked when there is none yet. Null means a count with no portion to count.
+export function toUpdatedAmountColumns(
+  amount: UpdateAmount,
+  snapshotGrams: number | null,
+  picked: PortionValues | null,
+): (Partial<AmountColumns> & { grams: number }) | null {
+  if (amount.mode === "grams") return { grams: amount.grams, ...NO_PORTION };
+  if (snapshotGrams !== null) {
+    return { grams: calcPortionGrams(snapshotGrams, amount.count), portionCount: amount.count };
+  }
+  return picked ? portionColumns(picked, amount.count) : null;
+}
+
+// The portion to look up for an edit: only when a grams amount switches to a picked portion.
+export function portionToPick(amount: UpdateAmount, snapshotGrams: number | null): string | null {
+  return amount.mode === "portion" && snapshotGrams === null ? (amount.portionId ?? null) : null;
 }
