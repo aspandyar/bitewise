@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { FOOD_LIMITS, PORTION_LIMITS } from "@/lib/config";
 import { firstFieldErrors } from "@/lib/forms";
 import { ru } from "@/lib/i18n/ru";
-import { foodSchema, parseFoodId, portionSchema } from "./schema";
+import { foodSchema, parseDraftName, parseFoodId, portionSchema } from "./schema";
 
 const valid = {
   name: " Гречка ",
@@ -108,5 +108,19 @@ describe("empty required fields", () => {
       label: ru.errors.enter.portionLabel,
       grams: ru.errors.enter.grams,
     });
+  });
+});
+
+describe("parseDraftName", () => {
+  it("takes a search query as the new food's name with a capital letter", () => {
+    expect(parseDraftName("  гречка зелёная ")).toBe("Гречка зелёная");
+  });
+
+  it.each([undefined, "", "   ", ["a", "b"]])("gives no name for %j", (value) => {
+    expect(parseDraftName(value)).toBeUndefined();
+  });
+
+  it("gives no name for a value longer than a food name may be", () => {
+    expect(parseDraftName("а".repeat(FOOD_LIMITS.nameLength.max + 1))).toBeUndefined();
   });
 });

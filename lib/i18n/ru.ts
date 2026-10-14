@@ -84,6 +84,8 @@ export const ru = {
     title: "Продукты",
     searchLabel: "Поиск продуктов",
     searchPlaceholder: "Например, гречка",
+    clearSearch: "Очистить поиск",
+    clearSymbol: "×",
     add: "+ Свой продукт",
     ownTitle: "Мои продукты",
     ownTitleWithRecipes: "Мои продукты и блюда",

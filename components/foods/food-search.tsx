@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { FOOD_SEARCH } from "@/lib/config";
 import type { FoodListItem } from "@/lib/foods/types";
 import { ru } from "@/lib/i18n/ru";
-import { FoodList } from "./food-list";
+import { foodCardHref, FoodList } from "./food-list";
 
 type SearchState =
   | { kind: "loading"; query: string }
@@ -31,6 +31,9 @@ export function FoodSearch({
   // The last successful list stays on screen while the next query loads, so typing does not
   // make the results blink away on every letter.
   const [lastItems, setLastItems] = useState<FoodListItem[]>([]);
+  // Bumped by "retry": the same query runs again without retyping it.
+  const [attempt, setAttempt] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
   const query = input.trim();
 
   useEffect(() => {
@@ -66,23 +69,40 @@ export function FoodSearch({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [query, router, excludeRecipes]);
+  }, [query, router, excludeRecipes, attempt]);
 
-  const hrefFor = link
-    ? (food: FoodListItem) => `${link.prefix}${food.id}${link.search ? `?${link.search}` : ""}`
-    : undefined;
+  const hrefFor = (food: FoodListItem) =>
+    link ? `${link.prefix}${food.id}${link.search ? `?${link.search}` : ""}` : foodCardHref(food);
 
   // A state for an older query is stale until the debounce for the current one fires.
   const current = state?.query === query ? state : null;
 
+  // Enter (or "search" on a phone keyboard) opens the top result: typing "греч" + Enter is enough.
+  function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter") return;
+    const first = current?.kind === "results" ? current.items[0] : undefined;
+    if (!first) return;
+    event.preventDefault();
+    router.push(hrefFor(first));
+  }
+
+  function clear() {
+    setInput("");
+    inputRef.current?.focus();
+  }
+
+  const newFoodHref = `/foods/new?${new URLSearchParams({ name: query })}`;
+
   return (
     <div className="flex flex-col gap-4">
-      <label className="flex flex-col gap-1">
+      <label className="relative flex flex-col gap-1">
         <span className="sr-only">{ru.foods.searchLabel}</span>
         <input
+          ref={inputRef}
           type="search"
           value={input}
           onChange={(event) => setInput(event.target.value)}
+          onKeyDown={onKeyDown}
           placeholder={ru.foods.searchPlaceholder}
           maxLength={FOOD_SEARCH.maxQueryLength}
           autoComplete="off"
@@ -90,8 +110,19 @@ export function FoodSearch({
           // Search is the only job of this screen; desktop browsers focus it at once (iOS will
           // not raise the keyboard without a tap, which is fine).
           autoFocus
-          className="min-h-11 rounded-lg border border-foreground/40 bg-background px-3 text-base"
+          // The native clear cross is a few pixels wide; our own button below is 44 px.
+          className="min-h-11 rounded-lg border border-foreground/40 bg-background py-0 pr-11 pl-3 text-base [&::-webkit-search-cancel-button]:appearance-none"
         />
+        {input ? (
+          <button
+            type="button"
+            onClick={clear}
+            aria-label={ru.foods.clearSearch}
+            className="absolute top-0 right-0 flex size-11 items-center justify-center text-xl text-foreground/60"
+          >
+            {ru.foods.clearSymbol}
+          </button>
+        ) : null}
       </label>
       {!query ? (
         ownFoods.length > 0 ? (
@@ -117,13 +148,22 @@ export function FoodSearch({
           </p>
         )
       ) : current.kind === "error" ? (
-        <p role="alert" className="text-red-600 dark:text-red-400">
-          {current.message}
-        </p>
+        <div className="flex flex-col gap-2">
+          <p role="alert" className="text-red-600 dark:text-red-400">
+            {current.message}
+          </p>
+          <button
+            type="button"
+            onClick={() => setAttempt((count) => count + 1)}
+            className="flex min-h-11 w-fit items-center rounded-lg border border-foreground/40 px-4"
+          >
+            {ru.common.retry}
+          </button>
+        </div>
       ) : current.items.length === 0 ? (
         <div className="flex flex-col gap-2">
           <p>{ru.foods.nothingFound}</p>
-          <Link href="/foods/new" className="flex min-h-11 w-fit items-center underline">
+          <Link href={newFoodHref} className="flex min-h-11 w-fit items-center underline">
             {ru.foods.addOwnInstead}
           </Link>
         </div>

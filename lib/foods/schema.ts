@@ -66,3 +66,13 @@ export function parseFoodId(value: unknown): string | null {
   const parsed = foodIdSchema.safeParse(value);
   return parsed.success ? parsed.data : null;
 }
+
+const draftNameSchema = z.string().trim().min(nameLength.min).max(nameLength.max);
+
+// "Add your own" from an empty search carries the query in the URL; it only prefills the form, so
+// anything odd is dropped rather than reported. Search text is lower-case; names start capitalized.
+export function parseDraftName(value: unknown): string | undefined {
+  const parsed = draftNameSchema.safeParse(value);
+  if (!parsed.success) return undefined;
+  return parsed.data.charAt(0).toLocaleUpperCase(ru.locale) + parsed.data.slice(1);
+}

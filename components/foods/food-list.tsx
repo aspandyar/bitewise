@@ -3,7 +3,7 @@ import { formatGrams, formatKcal } from "@/lib/format";
 import type { FoodListItem } from "@/lib/foods/types";
 import { ru } from "@/lib/i18n/ru";
 
-const foodCardHref = (food: FoodListItem) => `/foods/${food.id}`;
+export const foodCardHref = (food: FoodListItem) => `/foods/${food.id}`;
 
 export function FoodList({
   items,
