@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { DIARY_LIMITS, PORTION_LIMITS } from "@/lib/config";
+import { firstFieldErrors } from "@/lib/forms";
+import { ru } from "@/lib/i18n/ru";
 import {
   addAmountSchema,
   isStorableGrams,
@@ -71,5 +73,21 @@ describe("isStorableGrams", () => {
 
   it("rejects a tiny portion split in quarters", () => {
     expect(isStorableGrams(PORTION_LIMITS.grams.min * DIARY_LIMITS.portionCount.min)).toBe(false);
+  });
+});
+
+describe("empty amount fields", () => {
+  it("asks to fill in grams", () => {
+    const parsed = addAmountSchema.safeParse({ mode: "grams", grams: "" });
+    expect(parsed.error && firstFieldErrors(parsed.error)).toEqual({
+      grams: ru.errors.enter.grams,
+    });
+  });
+
+  it("asks to fill in the count", () => {
+    const parsed = updateAmountSchema.safeParse({ mode: "portion", count: " " });
+    expect(parsed.error && firstFieldErrors(parsed.error)).toEqual({
+      count: ru.errors.enter.count,
+    });
   });
 });

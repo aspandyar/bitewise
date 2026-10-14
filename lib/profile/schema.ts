@@ -21,8 +21,16 @@ export function makeProfileSchema(today: IsoDate) {
         ctx.addIssue({ code: "custom", message: ru.errors.ageRange(ageYears.min, ageYears.max) });
       }
     }),
-    heightCm: decimalField(heightCm, ru.errors.heightRange(heightCm.min, heightCm.max)),
-    weightKg: decimalField(weightKg, ru.errors.weightRange(weightKg.min, weightKg.max)),
+    heightCm: decimalField(
+      heightCm,
+      ru.errors.heightRange(heightCm.min, heightCm.max),
+      ru.errors.enter.height,
+    ),
+    weightKg: decimalField(
+      weightKg,
+      ru.errors.weightRange(weightKg.min, weightKg.max),
+      ru.errors.enter.weight,
+    ),
     activityLevel: z.enum(ACTIVITY_LEVELS, { error: ru.errors.choose }),
     goal: z.enum(GOALS, { error: ru.errors.choose }),
   });

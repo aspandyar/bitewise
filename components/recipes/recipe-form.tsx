@@ -38,7 +38,10 @@ export function RecipeForm({
           defaultValue={asInput(initial?.cookedWeightG)}
           error={errors.cookedWeightG}
         />
-        <p className="text-sm text-foreground/60">{ru.recipes.cookedWeightHint}</p>
+        {/* The error already says what to fix; the hint under it would read as a second message. */}
+        {errors.cookedWeightG ? null : (
+          <p className="text-sm text-foreground/60">{ru.recipes.cookedWeightHint}</p>
+        )}
       </div>
       <TextField
         label={ru.recipes.servings}

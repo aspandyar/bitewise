@@ -31,4 +31,7 @@ export type RecipeDetails = {
   items: RecipeItemRow[];
 };
 
-export type RecipeWriteResult = "ok" | "not_found" | "limit" | "weight_too_low";
+// Carries the smallest cooked weight the composition allows, so the message can name it.
+export type WeightTooLow = { kind: "weight_too_low"; minWeightG: number };
+
+export type RecipeWriteResult = "ok" | "not_found" | "limit" | WeightTooLow;

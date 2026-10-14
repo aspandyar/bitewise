@@ -8,7 +8,7 @@ import {
 } from "./forms";
 
 describe("decimalField", () => {
-  const field = decimalField({ min: 30, max: 300 }, "bad");
+  const field = decimalField({ min: 30, max: 300 }, "bad", "empty");
 
   it("accepts a decimal comma from a Russian keyboard", () => {
     expect(field.parse("80,5")).toBe(80.5);
@@ -20,6 +20,14 @@ describe("decimalField", () => {
 
   it.each(["", "  ", "abc", "29.9", "300.1"])("rejects %j", (value) => {
     expect(field.safeParse(value).success).toBe(false);
+  });
+
+  it.each(["", "  "])("asks to fill in %j", (value) => {
+    expect(field.safeParse(value).error?.issues[0]?.message).toBe("empty");
+  });
+
+  it.each(["abc", "29.9"])("reports the range for %j", (value) => {
+    expect(field.safeParse(value).error?.issues[0]?.message).toBe("bad");
   });
 
   it("accepts the limits themselves", () => {

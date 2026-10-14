@@ -20,11 +20,15 @@ export const toStoragePrecision = (value: number) =>
 
 const { grams, portionCount } = DIARY_LIMITS;
 const gramsField = () =>
-  decimalField(grams, ru.errors.gramsRange(grams.min, grams.max)).transform(toStoragePrecision);
-const countField = () =>
-  decimalField(portionCount, ru.errors.portionCount(portionCount.min, portionCount.max)).transform(
+  decimalField(grams, ru.errors.gramsRange(grams.min, grams.max), ru.errors.enter.grams).transform(
     toStoragePrecision,
   );
+const countField = () =>
+  decimalField(
+    portionCount,
+    ru.errors.portionCount(portionCount.min, portionCount.max),
+    ru.errors.enter.count,
+  ).transform(toStoragePrecision);
 
 const gramsAmountSchema = z.object({ mode: z.literal("grams"), grams: gramsField() });
 

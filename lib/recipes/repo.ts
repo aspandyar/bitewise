@@ -13,7 +13,13 @@ import { createFood, getVisiblePortion, notRecipe, visibleTo } from "@/lib/foods
 import type { PortionValues } from "@/lib/foods/types";
 import { calcPortionGrams, calcRecipe, type RecipeItemValues } from "@/lib/nutrition";
 import { loadRecipeItemValues, per100gColumns, recomputeRecipe } from "./recompute";
-import type { RecipeDetails, RecipeListItem, RecipeValues, RecipeWriteResult } from "./types";
+import type {
+  RecipeDetails,
+  RecipeListItem,
+  RecipeValues,
+  RecipeWriteResult,
+  WeightTooLow,
+} from "./types";
 
 // A recipe lives while its food row does: deleting a recipe soft-deletes that row.
 function ownLiveRecipe(userId: string, recipeId: string) {
@@ -29,8 +35,13 @@ function ownItem(userId: string, recipeId: string, itemId: string) {
 }
 
 // A stated weight must stay plausible for the composition; without one the raw weight always is.
-function weightTooLow(items: readonly RecipeItemValues[], cookedWeightG: number | null): boolean {
-  return cookedWeightG !== null && calcRecipe(items, cookedWeightG).weightRaised;
+function weightTooLow(
+  items: readonly RecipeItemValues[],
+  cookedWeightG: number | null,
+): WeightTooLow | null {
+  if (cookedWeightG === null) return null;
+  const recipe = calcRecipe(items, cookedWeightG);
+  return recipe.weightRaised ? { kind: "weight_too_low", minWeightG: recipe.weightG } : null;
 }
 
 // Locks the recipe row, and only an own one: parallel writes cannot pass the item cap or store
@@ -159,13 +170,15 @@ export async function updateRecipe(
   userId: string,
   recipeId: string,
   values: RecipeValues,
-): Promise<"ok" | "not_found" | "weight_too_low"> {
+): Promise<"ok" | "not_found" | WeightTooLow> {
   return db.transaction(async (tx) => {
     const recipe = await lockOwnRecipe(tx, userId, recipeId);
     if (!recipe) return "not_found";
-    if (weightTooLow(await loadRecipeItemValues(tx, userId, recipeId), values.cookedWeightG)) {
-      return "weight_too_low";
-    }
+    const tooLow = weightTooLow(
+      await loadRecipeItemValues(tx, userId, recipeId),
+      values.cookedWeightG,
+    );
+    if (tooLow) return tooLow;
     await tx
       .update(foods)
       .set({ name: values.name, updatedAt: sql`now()` })
@@ -227,9 +240,11 @@ export async function addItem(
     if (items.length >= limits.maxItems) return "limit";
     const columns = toAmountColumns(input.amount, portion);
     if (!isStorableGrams(columns.grams)) return "grams_out_of_range";
-    if (weightTooLow([...items, { per100g: food, grams: columns.grams }], recipe.cookedWeightG)) {
-      return "weight_too_low";
-    }
+    const tooLow = weightTooLow(
+      [...items, { per100g: food, grams: columns.grams }],
+      recipe.cookedWeightG,
+    );
+    if (tooLow) return tooLow;
     await tx.insert(recipeItems).values({ recipeId, userId, foodId: input.foodId, ...columns });
     await recomputeRecipe(tx, recipeId);
     return "ok";
@@ -242,7 +257,7 @@ export async function updateItem(
   recipeId: string,
   itemId: string,
   amount: UpdateAmount,
-): Promise<"ok" | "not_found" | "weight_too_low" | "grams_out_of_range"> {
+): Promise<"ok" | "not_found" | WeightTooLow | "grams_out_of_range"> {
   return db.transaction(async (tx) => {
     const recipe = await lockOwnRecipe(tx, userId, recipeId);
     if (!recipe) return "not_found";
@@ -264,7 +279,8 @@ export async function updateItem(
     const items = (await loadRecipeItemValues(tx, userId, recipeId)).map((current) =>
       current.id === itemId ? { ...current, grams } : current,
     );
-    if (weightTooLow(items, recipe.cookedWeightG)) return "weight_too_low";
+    const tooLow = weightTooLow(items, recipe.cookedWeightG);
+    if (tooLow) return tooLow;
     await tx
       .update(recipeItems)
       .set(

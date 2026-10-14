@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { firstFieldErrors } from "@/lib/forms";
+import { ru } from "@/lib/i18n/ru";
 import { makeProfileSchema } from "./schema";
 
 const schema = makeProfileSchema("2026-10-09");
@@ -35,5 +37,15 @@ describe("profile schema", () => {
 
   it("accepts exactly 14 years old", () => {
     expect(schema.safeParse({ ...valid, birthDate: "2012-10-09" }).success).toBe(true);
+  });
+});
+
+describe("empty profile fields", () => {
+  it("asks to fill in height and weight", () => {
+    const parsed = schema.safeParse({ ...valid, heightCm: "", weightKg: " " });
+    expect(parsed.error && firstFieldErrors(parsed.error)).toEqual({
+      heightCm: ru.errors.enter.height,
+      weightKg: ru.errors.enter.weight,
+    });
   });
 });

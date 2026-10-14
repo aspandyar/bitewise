@@ -1,5 +1,6 @@
 import { NUTRIENT_STORAGE_DECIMALS } from "@/lib/config";
 import { addDays, parseIsoDate, type IsoDate } from "@/lib/date";
+import { formatNumber } from "@/lib/i18n/number";
 import { ru } from "@/lib/i18n/ru";
 
 // Rounding lives only here: stored and computed values keep full precision.
@@ -9,6 +10,11 @@ export function formatKcal(kcal: number): string {
 
 export function formatGrams(grams: number): string {
   return String(Math.round(grams));
+}
+
+// A lower bound shown in a message: rounding down would name a weight the check still rejects.
+export function formatGramsAtLeast(grams: number): string {
+  return formatNumber(Math.ceil(grams));
 }
 
 // Decided on the shown number, not the raw one: −0.3 kcal left must not read "over by 0".

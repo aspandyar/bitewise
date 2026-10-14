@@ -35,7 +35,7 @@ async function FoodContent({ params }: { params: Promise<{ id: string }> }) {
   const rows = [
     { label: ru.targets.protein, grams: food.protein100 },
     { label: ru.targets.fat, grams: food.fat100 },
-    { label: ru.targets.carbs, grams: food.carbs100 },
+    { label: ru.foods.carbsNet, grams: food.carbs100 },
     ...(food.fiber100 === null ? [] : [{ label: ru.foods.fiber, grams: food.fiber100 }]),
   ];
   const sourceUrl = safeSourceUrl(food.sourceUrl);
@@ -53,7 +53,10 @@ async function FoodContent({ params }: { params: Promise<{ id: string }> }) {
         </p>
         <dl className="grid grid-cols-2 gap-2">
           {rows.map((row) => (
-            <div key={row.label} className="rounded-lg bg-foreground/5 px-3 py-2">
+            <div
+              key={row.label}
+              className="flex flex-col justify-between gap-1 rounded-lg bg-foreground/5 px-3 py-2"
+            >
               <dt className="text-xs text-foreground/60">{row.label}</dt>
               <dd className="font-medium">
                 {formatGrams(row.grams)} {ru.targets.gramsUnit}
@@ -62,7 +65,7 @@ async function FoodContent({ params }: { params: Promise<{ id: string }> }) {
           ))}
         </dl>
         <p className="text-sm text-foreground/60">
-          {ru.foods.sourceTitle}:{" "}
+          {ru.foods.sourceLabel}{" "}
           {sourceUrl ? (
             <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="underline">
               {ru.foods.sourceNames[food.source]}

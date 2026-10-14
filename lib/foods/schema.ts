@@ -5,7 +5,7 @@ import { ru } from "@/lib/i18n/ru";
 
 const { nameLength, kcal100, nutrient100G, maxTotalGramsPer100G } = FOOD_LIMITS;
 const gramsMessage = ru.errors.gramsRange(nutrient100G.min, nutrient100G.max);
-const grams = () => decimalField(nutrient100G, gramsMessage);
+const grams = () => decimalField(nutrient100G, gramsMessage, ru.errors.enter.grams);
 const nameMessage = ru.errors.nameLength(nameLength.min, nameLength.max);
 
 // Integer storage units (hundredths): 33.3 + 33.3 + 33.4 is 100.00000000000001 in floats.
@@ -15,13 +15,18 @@ const toHundredths = (value: number) => Math.round(value * NUTRIENT_STORAGE_SCAL
 export const foodNameSchema = z
   .string()
   .trim()
+  .nonempty({ error: ru.errors.enter.name })
   .min(nameLength.min, { error: nameMessage })
   .max(nameLength.max, { error: nameMessage });
 
 export const foodSchema = z
   .object({
     name: foodNameSchema,
-    kcal100: decimalField(kcal100, ru.errors.kcalRange(kcal100.min, kcal100.max)),
+    kcal100: decimalField(
+      kcal100,
+      ru.errors.kcalRange(kcal100.min, kcal100.max),
+      ru.errors.enter.kcal,
+    ),
     protein100: grams(),
     fat100: grams(),
     carbs100: grams(),
@@ -44,9 +49,14 @@ export const portionSchema = z.object({
   label: z
     .string()
     .trim()
+    .nonempty({ error: ru.errors.enter.portionLabel })
     .min(labelLength.min, { error: labelMessage })
     .max(labelLength.max, { error: labelMessage }),
-  grams: decimalField(portionGrams, ru.errors.portionGrams(portionGrams.min, portionGrams.max)),
+  grams: decimalField(
+    portionGrams,
+    ru.errors.portionGrams(portionGrams.min, portionGrams.max),
+    ru.errors.enter.grams,
+  ),
 });
 
 export const foodIdSchema = z.uuid();

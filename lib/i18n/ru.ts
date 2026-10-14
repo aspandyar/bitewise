@@ -1,8 +1,16 @@
+import { formatNumber as n, LOCALE } from "./number";
+
+// Phrases reused across entries; the object below cannot refer to itself while it is built.
+const PER_100G = "на 100 г";
+const KCAL_PER_100G = `ккал ${PER_100G}`;
+// Russian labels count carbs net of fiber, and so do the stored values.
+const CARBS_NET = "Углеводы без клетчатки";
+
 // Single source of UI strings so screens never hardcode Russian text in JSX.
 // Range messages take limits from config, so the text cannot drift from validation.
 export const ru = {
   // BCP 47 tag for Intl number formatting ("1,5", not "1.5").
-  locale: "ru-RU",
+  locale: LOCALE,
   app: {
     name: "Bitewise",
     description: "Дневник еды и калорий",
@@ -78,16 +86,15 @@ export const ru = {
     searchPlaceholder: "Например, гречка",
     add: "+ Свой продукт",
     ownTitle: "Мои продукты",
+    ownTitleWithRecipes: "Мои продукты и блюда",
     startTyping: "Начните вводить название",
     searching: "Ищем…",
     nothingFound: "Ничего не найдено",
     addOwnInstead: "Добавить свой продукт",
     searchFailed: "Не удалось выполнить поиск",
     tooManyRequests: "Слишком часто. Подождите немного",
-    per100g: "на 100 г",
-    macroShort: { protein: "Б", fat: "Ж", carbs: "У" },
+    per100g: PER_100G,
     sources: { user: "моё", usda: "USDA", label: "этикетка" },
-    sourceTitle: "Источник",
     sourceNames: {
       user: "Ваш продукт",
       usda: "USDA FoodData Central",
@@ -100,9 +107,14 @@ export const ru = {
     kcal100: "Калории, ккал",
     protein100: "Белки, г",
     fat100: "Жиры, г",
-    carbs100: "Углеводы без клетчатки, г",
+    carbs100: `${CARBS_NET}, г`,
     fiber100: "Клетчатка, г (необязательно)",
     fiber: "Клетчатка",
+    carbsNet: CARBS_NET,
+    listSummary: (kcal: string, protein: string, fat: string, carbs: string) =>
+      `${kcal} ${KCAL_PER_100G} · Б ${protein} · Ж ${fat} · У ${carbs}`,
+    portionRow: (label: string, grams: string) => `${label} — ${grams} г`,
+    sourceLabel: "Источник:",
     edit: "Изменить",
     copy: "Скопировать к себе",
     copyHint: "Общий продукт нельзя изменить — скопируйте его и правьте копию.",
@@ -113,29 +125,39 @@ export const ru = {
     portionGrams: "Граммы",
     addPortion: "Добавить порцию",
     deletePortion: "Удалить",
-    portionLimit: (max: number) => `Не больше ${max} своих порций у продукта`,
-    foodLimit: (max: number) => `Не больше ${max} своих продуктов. Удалите ненужные`,
+    portionLimit: (max: number) => `Не больше ${n(max)} своих порций у продукта`,
+    foodLimit: (max: number) => `Не больше ${n(max)} своих продуктов. Удалите ненужные`,
   },
   errors: {
     email: "Введите корректный email",
-    passwordLength: (min: number, max: number) => `Пароль — от ${min} до ${max} символов`,
+    passwordLength: (min: number, max: number) => `Пароль — от ${n(min)} до ${n(max)} символов`,
     choose: "Выберите вариант",
+    // Shown when a required field is left blank, instead of its range.
+    enter: {
+      name: "Введите название",
+      portionLabel: "Введите название порции",
+      grams: "Введите граммы",
+      kcal: "Введите калории",
+      count: "Введите количество",
+      height: "Введите рост",
+      weight: "Введите вес",
+    },
     date: "Введите корректную дату",
-    ageRange: (min: number, max: number) => `Возраст — от ${min} до ${max} лет`,
-    heightRange: (min: number, max: number) => `Рост — от ${min} до ${max} см`,
-    weightRange: (min: number, max: number) => `Вес — от ${min} до ${max} кг`,
-    kcalRange: (min: number, max: number) => `Калории — от ${min} до ${max} ккал`,
-    gramsRange: (min: number, max: number) => `От ${min} до ${max} г`,
-    nameLength: (min: number, max: number) => `Название — от ${min} до ${max} символов`,
-    macroSum: (max: number) => `Белки, жиры, углеводы и клетчатка — вместе не больше ${max} г`,
-    portionLabelLength: (min: number, max: number) => `Порция — от ${min} до ${max} символов`,
-    portionGrams: (min: number, max: number) => `Граммы — от ${min} до ${max}`,
-    portionCount: (min: number, max: number) => `Количество — от ${min} до ${max}`,
+    ageRange: (min: number, max: number) => `Возраст — от ${n(min)} до ${n(max)} лет`,
+    heightRange: (min: number, max: number) => `Рост — от ${n(min)} до ${n(max)} см`,
+    weightRange: (min: number, max: number) => `Вес — от ${n(min)} до ${n(max)} кг`,
+    kcalRange: (min: number, max: number) => `Калории — от ${n(min)} до ${n(max)} ккал`,
+    gramsRange: (min: number, max: number) => `От ${n(min)} до ${n(max)} г`,
+    nameLength: (min: number, max: number) => `Название — от ${n(min)} до ${n(max)} символов`,
+    macroSum: (max: number) => `Белки, жиры, углеводы и клетчатка — вместе не больше ${n(max)} г`,
+    portionLabelLength: (min: number, max: number) => `Порция — от ${n(min)} до ${n(max)} символов`,
+    portionGrams: (min: number, max: number) => `Граммы — от ${n(min)} до ${n(max)}`,
+    portionCount: (min: number, max: number) => `Количество — от ${n(min)} до ${n(max)}`,
     portionTotalGrams: (min: number, max: number) =>
-      `Вместе получается меньше ${min} или больше ${max} г — измените количество`,
+      `Вместе получается меньше ${n(min)} или больше ${n(max)} г — измените количество`,
     choosePortion: "Выберите порцию",
-    cookedWeight: (min: number, max: number) => `Вес — от ${min} до ${max} г`,
-    servings: (min: number, max: number) => `Порций — целое число от ${min} до ${max}`,
+    cookedWeight: (min: number, max: number) => `Вес — от ${n(min)} до ${n(max)} г`,
+    servings: (min: number, max: number) => `Порций — целое число от ${n(min)} до ${n(max)}`,
   },
   diary: {
     today: "Сегодня",
@@ -188,13 +210,14 @@ export const ru = {
     portionOption: (label: string, grams: string, kcal: string) =>
       `${label} · ${grams} г · ${kcal} ккал`,
     amountGrams: (grams: string) => `${grams} г`,
-    amountPortion: (label: string, grams: string) => `${label} (${grams} г)`,
+    // A dot, not brackets: labels often carry their own ("1 шт (крупное)").
+    amountPortion: (label: string, grams: string) => `${label} · ${grams} г`,
     amountPortions: (count: string, label: string, grams: string) =>
-      `${count} × ${label} (${grams} г)`,
-    kcalPer100g: (kcal: string) => `${kcal} ккал на 100 г`,
+      `${count} × ${label} · ${grams} г`,
+    kcalPer100g: (kcal: string) => `${kcal} ${KCAL_PER_100G}`,
     editTitle: "Изменить запись",
-    entryLimit: (max: number) => `Не больше ${max} записей за день`,
-    entryTotalLimit: (max: number) => `Не больше ${max} записей в дневнике`,
+    entryLimit: (max: number) => `Не больше ${n(max)} записей за день`,
+    entryTotalLimit: (max: number) => `Не больше ${n(max)} записей в дневнике`,
   },
   recipes: {
     title: "Блюда",
@@ -216,9 +239,10 @@ export const ru = {
     listServing: (kcal: string) => ` · порция ${kcal} ккал`,
     weightRaised:
       "Вес готового блюда меньше, чем позволяет состав, — цифры посчитаны по минимально возможному весу. Проверьте вес",
-    weightTooLow: "Меньше, чем весят белки, жиры и углеводы состава. Проверьте вес",
-    weightTooLowForItem:
-      "С этим ингредиентом вес готового блюда меньше, чем позволяет состав. Сначала увеличьте вес блюда",
+    weightTooLow: (minGrams: string) =>
+      `Меньше, чем весят белки, жиры и углеводы состава: нужно не меньше ${minGrams} г`,
+    weightTooLowForItem: (minGrams: string) =>
+      `С этим ингредиентом вес готового блюда меньше, чем позволяет состав. Сначала увеличьте вес блюда — до ${minGrams} г или больше`,
     ingredientsTitle: "Состав",
     noIngredients: "Ингредиентов пока нет — добавьте первый",
     addIngredient: "+ Ингредиент",
@@ -228,6 +252,6 @@ export const ru = {
     deletedFood: "удалён",
     edit: "Изменить",
     toDiary: "В дневник",
-    itemLimit: (max: number) => `Не больше ${max} ингредиентов в блюде`,
+    itemLimit: (max: number) => `Не больше ${n(max)} ингредиентов в блюде`,
   },
 } as const;
