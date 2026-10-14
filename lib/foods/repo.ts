@@ -277,13 +277,14 @@ export async function searchFoods(
   const startsWord = sql`(${foods.searchName} LIKE ${namePrefix} OR ${foods.searchName} LIKE ${wordPrefix})`;
   const match =
     query.length >= FOOD_SEARCH.minTrigramLength
-      ? sql`(${startsWord} OR ${query} <% ${foods.searchName})`
+      ? sql`(${startsWord} OR (${query} <% ${foods.searchName} AND ${query} <<% ${foods.searchName}))`
       : startsWord;
 
   return db.transaction(async (tx) => {
-    // `<%` reads its cut-off from this setting; LOCAL keeps it inside this transaction.
+    // `<%` and `<<%` read their cut-offs from these settings; LOCAL keeps them inside this
+    // transaction.
     await tx.execute(
-      sql`SELECT set_config('pg_trgm.word_similarity_threshold', ${String(FOOD_SEARCH.wordSimilarityThreshold)}, true)`,
+      sql`SELECT set_config('pg_trgm.word_similarity_threshold', ${String(FOOD_SEARCH.wordSimilarityThreshold)}, true), set_config('pg_trgm.strict_word_similarity_threshold', ${String(FOOD_SEARCH.strictWordSimilarityThreshold)}, true)`,
     );
     return tx
       .select(listColumnsFor(userId))
@@ -294,6 +295,9 @@ export async function searchFoods(
         sql`${foods.searchName} LIKE ${namePrefix} DESC`,
         sql`${foods.searchName} LIKE ${wordPrefix} DESC`,
         sql`word_similarity(${query}, ${foods.searchName}) DESC`,
+        // Among equal prefix matches the closer whole word wins: "греч" → "гречка" before
+        // "греческий", which word_similarity scores the same.
+        sql`strict_word_similarity(${query}, ${foods.searchName}) DESC`,
         asc(foods.name),
       )
       .limit(FOOD_SEARCH.limit);

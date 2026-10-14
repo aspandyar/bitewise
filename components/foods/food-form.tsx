@@ -21,9 +21,12 @@ function asInput(value: number | null | undefined): string {
 export function FoodForm({
   action,
   initial,
+  draftName,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   initial?: FoodValues;
+  // A new food started from an empty search opens with the query as its name.
+  draftName?: string;
 }) {
   const { state, pending, fieldErrors: errors, formProps } = usePreservingFormAction(action);
   return (
@@ -32,7 +35,7 @@ export function FoodForm({
         label={ru.foods.name}
         name="name"
         autoComplete="off"
-        defaultValue={initial?.name}
+        defaultValue={initial?.name ?? draftName}
         error={errors.name}
       />
       <p className="text-sm text-foreground/60">{ru.foods.valuesHint}</p>
@@ -43,6 +46,8 @@ export function FoodForm({
           name={field.name}
           inputMode="decimal"
           defaultValue={asInput(initial?.[field.name])}
+          // With the name already taken from the search, the first thing to type is kcal.
+          autoFocus={draftName !== undefined && field.name === "kcal100"}
           error={errors[field.name]}
         />
       ))}

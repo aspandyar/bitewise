@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { FOOD_SEARCH } from "@/lib/config";
 import type { FoodListItem } from "@/lib/foods/types";
 import { ru } from "@/lib/i18n/ru";
-import { FoodList } from "./food-list";
+import { foodCardHref, FoodList } from "./food-list";
 
 type SearchState =
   | { kind: "loading"; query: string }
@@ -15,6 +15,12 @@ type SearchState =
 
 // A plain object rather than a function: server pages pass it, and functions cannot cross to the client.
 type FoodLink = { prefix: string; search?: string };
+
+function foodHref(link: FoodLink | undefined, food: FoodListItem): string {
+  return link
+    ? `${link.prefix}${food.id}${link.search ? `?${link.search}` : ""}`
+    : foodCardHref(food);
+}
 
 export function FoodSearch({
   ownFoods,
@@ -31,6 +37,11 @@ export function FoodSearch({
   // The last successful list stays on screen while the next query loads, so typing does not
   // make the results blink away on every letter.
   const [lastItems, setLastItems] = useState<FoodListItem[]>([]);
+  // Bumped by "retry": the same query runs again without retyping it.
+  const [attempt, setAttempt] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  // Enter pressed before this query's results arrive: they open the top one when they land.
+  const pendingEnterRef = useRef<string | null>(null);
   const query = input.trim();
 
   useEffect(() => {
@@ -55,6 +66,12 @@ export function FoodSearch({
           return;
         }
         const body = (await response.json()) as { items: FoodListItem[] };
+        const first = body.items[0];
+        if (pendingEnterRef.current === query && first) {
+          pendingEnterRef.current = null;
+          router.push(foodHref(link, first));
+          return;
+        }
         setState({ kind: "results", query, items: body.items });
         setLastItems(body.items);
       } catch {
@@ -66,33 +83,77 @@ export function FoodSearch({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [query, router, excludeRecipes]);
+  }, [query, router, excludeRecipes, attempt, link]);
 
-  const hrefFor = link
-    ? (food: FoodListItem) => `${link.prefix}${food.id}${link.search ? `?${link.search}` : ""}`
-    : undefined;
+  const hrefFor = (food: FoodListItem) => foodHref(link, food);
 
   // A state for an older query is stale until the debounce for the current one fires.
   const current = state?.query === query ? state : null;
 
+  // Enter (or "search" on a phone keyboard) opens the top result: typing "греч" + Enter is enough.
+  function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    // An IME commits its composition with Enter; that must not open a result.
+    if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+    event.preventDefault();
+    if (current?.kind !== "results") {
+      pendingEnterRef.current = query || null;
+      return;
+    }
+    const first = current.items[0];
+    if (first) router.push(hrefFor(first));
+  }
+
+  // Shows the loading state at once (the rerun still waits out the debounce) and drops the old
+  // list, so a stale row cannot be tapped while the new search loads.
+  function retry() {
+    setState({ kind: "loading", query });
+    setLastItems([]);
+    setAttempt((count) => count + 1);
+    inputRef.current?.focus();
+  }
+
+  function clear() {
+    setInput("");
+    setLastItems([]);
+    inputRef.current?.focus();
+  }
+
+  const newFoodHref = `/foods/new?${new URLSearchParams({ name: query })}`;
+
   return (
     <div className="flex flex-col gap-4">
-      <label className="flex flex-col gap-1">
-        <span className="sr-only">{ru.foods.searchLabel}</span>
-        <input
-          type="search"
-          value={input}
-          onChange={(event) => setInput(event.target.value)}
-          placeholder={ru.foods.searchPlaceholder}
-          maxLength={FOOD_SEARCH.maxQueryLength}
-          autoComplete="off"
-          enterKeyHint="search"
-          // Search is the only job of this screen; desktop browsers focus it at once (iOS will
-          // not raise the keyboard without a tap, which is fine).
-          autoFocus
-          className="min-h-11 rounded-lg border border-foreground/40 bg-background px-3 text-base"
-        />
-      </label>
+      {/* The clear button sits outside the label, so it does not become part of the field's name. */}
+      <div className="relative">
+        <label className="flex flex-col gap-1">
+          <span className="sr-only">{ru.foods.searchLabel}</span>
+          <input
+            ref={inputRef}
+            type="search"
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder={ru.foods.searchPlaceholder}
+            maxLength={FOOD_SEARCH.maxQueryLength}
+            autoComplete="off"
+            enterKeyHint="search"
+            // Search is the only job of this screen; desktop browsers focus it at once (iOS will
+            // not raise the keyboard without a tap, which is fine).
+            autoFocus
+            // The native clear cross is a few pixels wide; our own button below is 44 px.
+            className="min-h-11 rounded-lg border border-foreground/40 bg-background py-0 pr-11 pl-3 text-base [&::-webkit-search-cancel-button]:appearance-none"
+          />
+        </label>
+        {input ? (
+          <button
+            type="button"
+            onClick={clear}
+            aria-label={ru.foods.clearSearch}
+            className="absolute top-0 right-0 flex size-11 items-center justify-center text-xl text-foreground/60"
+          >
+            {ru.foods.clearSymbol}
+          </button>
+        ) : null}
+      </div>
       {!query ? (
         ownFoods.length > 0 ? (
           <section className="flex flex-col gap-2">
@@ -108,7 +169,8 @@ export function FoodSearch({
         )
       ) : !current || current.kind === "loading" ? (
         lastItems.length > 0 ? (
-          <div aria-busy="true" className="opacity-60">
+          // inert: the dimmed list belongs to the previous query and must not be tapped.
+          <div aria-busy="true" inert className="opacity-60">
             <FoodList items={lastItems} hrefFor={hrefFor} />
           </div>
         ) : (
@@ -117,13 +179,22 @@ export function FoodSearch({
           </p>
         )
       ) : current.kind === "error" ? (
-        <p role="alert" className="text-red-600 dark:text-red-400">
-          {current.message}
-        </p>
+        <div className="flex flex-col gap-2">
+          <p role="alert" className="text-red-600 dark:text-red-400">
+            {current.message}
+          </p>
+          <button
+            type="button"
+            onClick={retry}
+            className="flex min-h-11 w-fit items-center rounded-lg border border-foreground/40 px-4"
+          >
+            {ru.common.retry}
+          </button>
+        </div>
       ) : current.items.length === 0 ? (
         <div className="flex flex-col gap-2">
           <p>{ru.foods.nothingFound}</p>
-          <Link href="/foods/new" className="flex min-h-11 w-fit items-center underline">
+          <Link href={newFoodHref} className="flex min-h-11 w-fit items-center underline">
             {ru.foods.addOwnInstead}
           </Link>
         </div>

@@ -61,6 +61,30 @@ describe("searchFoods", () => {
     expect(await names(alice, "гречко")).not.toContain("Молоко 3,2 %");
   });
 
+  it("ranks the closer word first among equal prefix matches", async () => {
+    await insertSharedFood({ name: "Греческий йогурт 0 %" });
+    const found = await names(alice, "греч");
+    expect(found.indexOf("Гречка варёная")).toBeLessThan(found.indexOf("Греческий йогурт 0 %"));
+  });
+
+  it("does not match a short query to a word that only shares a few letters", async () => {
+    await insertSharedFood({ name: "Перец болгарский красный" });
+    await insertSharedFood({ name: "Сыр рикотта" });
+    expect(await names(alice, "борщ")).toEqual([]);
+    expect(await names(alice, "рис")).toEqual([]);
+  });
+
+  it("keeps the closest passing fuzzy match and drops the closest failing one", async () => {
+    await insertSharedFood({ name: "Куриная грудка, филе сырое" });
+    await insertSharedFood({ name: "Кукуруза консервированная" });
+    expect(await names(alice, "кура")).toEqual(["Куриная грудка, филе сырое"]);
+  });
+
+  it("finds a misspelt word but not its look-alikes", async () => {
+    await insertSharedFood({ name: "Малина" });
+    expect(await names(alice, "малоко")).toEqual(["Молоко 3,2 %"]);
+  });
+
   it("finds ё-words when typed with е", async () => {
     expect(await names(alice, "свекла")).toEqual(["Свёкла варёная"]);
     expect(await names(alice, "варен")).toEqual(
