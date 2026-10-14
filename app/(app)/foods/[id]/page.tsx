@@ -35,7 +35,7 @@ async function FoodContent({ params }: { params: Promise<{ id: string }> }) {
   const rows = [
     { label: ru.targets.protein, grams: food.protein100 },
     { label: ru.targets.fat, grams: food.fat100 },
-    { label: ru.targets.carbs, grams: food.carbs100 },
+    { label: ru.foods.carbsNet, grams: food.carbs100 },
     ...(food.fiber100 === null ? [] : [{ label: ru.foods.fiber, grams: food.fiber100 }]),
   ];
   const sourceUrl = safeSourceUrl(food.sourceUrl);
@@ -62,7 +62,7 @@ async function FoodContent({ params }: { params: Promise<{ id: string }> }) {
           ))}
         </dl>
         <p className="text-sm text-foreground/60">
-          {ru.foods.sourceTitle}:{" "}
+          {ru.foods.sourceLabel}
           {sourceUrl ? (
             <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="underline">
               {ru.foods.sourceNames[food.source]}

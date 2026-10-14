@@ -19,7 +19,7 @@ export function RecipeSummary({
   const macros = [
     { label: ru.targets.protein, grams: per100g.protein100 },
     { label: ru.targets.fat, grams: per100g.fat100 },
-    { label: ru.targets.carbs, grams: per100g.carbs100 },
+    { label: ru.foods.carbsNet, grams: per100g.carbs100 },
   ];
   return (
     <section className="flex flex-col gap-3 rounded-2xl border border-foreground/10 p-5">
@@ -31,10 +31,16 @@ export function RecipeSummary({
       </p>
       <dl className="grid grid-cols-3 gap-2">
         {macros.map((row) => (
-          <div key={row.label} className="rounded-lg bg-foreground/5 px-3 py-2">
+          <div
+            key={row.label}
+            className="flex flex-col justify-between gap-1 rounded-lg bg-foreground/5 px-3 py-2"
+          >
             <dt className="text-xs text-foreground/60">{row.label}</dt>
-            <dd className="font-medium">
-              {formatGrams(row.grams)} {ru.targets.gramsUnit}
+            <dd className="flex flex-col">
+              <span className="font-medium">
+                {formatGrams(row.grams)} {ru.targets.gramsUnit}
+              </span>
+              <span className="text-xs text-foreground/60">{ru.foods.per100g}</span>
             </dd>
           </div>
         ))}

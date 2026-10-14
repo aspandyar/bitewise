@@ -42,7 +42,7 @@ export function Portions({ foodId, portions }: { foodId: string; portions: Porti
           {portions.map((portion) => (
             <li key={portion.id} className="flex min-h-11 items-center justify-between gap-2">
               <span className="min-w-0 [overflow-wrap:anywhere]">
-                {portion.label} — {formatGrams(portion.grams)} {ru.targets.gramsUnit}
+                {ru.foods.portionRow(portion.label, formatGrams(portion.grams))}
               </span>
               {portion.isOwn ? (
                 <form action={deletePortionAction.bind(null, foodId, portion.id)}>

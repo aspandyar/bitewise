@@ -24,10 +24,12 @@ export function FoodList({
               </span>
             </span>
             <span className="text-sm text-foreground/60">
-              {formatKcal(food.kcal100)} {ru.targets.kcalUnit} {ru.foods.per100g} ·{" "}
-              {ru.foods.macroShort.protein} {formatGrams(food.protein100)} ·{" "}
-              {ru.foods.macroShort.fat} {formatGrams(food.fat100)} · {ru.foods.macroShort.carbs}{" "}
-              {formatGrams(food.carbs100)}
+              {ru.foods.listSummary(
+                formatKcal(food.kcal100),
+                formatGrams(food.protein100),
+                formatGrams(food.fat100),
+                formatGrams(food.carbs100),
+              )}
             </span>
           </Link>
         </li>
