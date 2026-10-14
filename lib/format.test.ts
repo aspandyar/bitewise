@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { formatAmount, formatDayLabel, formatEntryAmount, formatGrams, formatKcal } from "./format";
+import {
+  formatAmount,
+  formatDayLabel,
+  formatEntryAmount,
+  formatGrams,
+  formatKcal,
+  isOverTarget,
+} from "./format";
 
 describe("formatKcal", () => {
   it("hides floating-point noise", () => {
@@ -18,6 +25,20 @@ describe("formatGrams", () => {
 
   it("shows 0 for 0 g", () => {
     expect(formatGrams(0)).toBe("0");
+  });
+});
+
+describe("isOverTarget", () => {
+  it("is not over when the overshoot rounds to 0", () => {
+    expect(isOverTarget(-0.3)).toBe(false);
+  });
+
+  it("is over once the overshoot shows as at least 1", () => {
+    expect(isOverTarget(-0.6)).toBe(true);
+  });
+
+  it("is not over with something left", () => {
+    expect(isOverTarget(12)).toBe(false);
   });
 });
 

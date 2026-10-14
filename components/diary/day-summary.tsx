@@ -1,4 +1,4 @@
-import { formatGrams, formatKcal } from "@/lib/format";
+import { formatGrams, formatKcal, isOverTarget } from "@/lib/format";
 import { ru } from "@/lib/i18n/ru";
 import type { DayProgress, NutrientProgress } from "@/lib/nutrition";
 
@@ -10,7 +10,7 @@ const macroRows = [
 
 // Numbers next to each bar carry the meaning; the bar is decoration for screen readers.
 function Bar({ progress }: { progress: NutrientProgress }) {
-  const over = progress.remaining < 0;
+  const over = isOverTarget(progress.remaining);
   return (
     <div aria-hidden className="h-2 overflow-hidden rounded-full bg-foreground/10">
       <div
@@ -23,7 +23,7 @@ function Bar({ progress }: { progress: NutrientProgress }) {
 
 export function DaySummary({ progress }: { progress: DayProgress }) {
   const { kcal } = progress;
-  const over = kcal.remaining < 0;
+  const over = isOverTarget(kcal.remaining);
   return (
     <section
       aria-label={ru.diary.summaryTitle}
