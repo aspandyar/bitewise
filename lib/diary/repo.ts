@@ -14,7 +14,7 @@ import { getVisiblePortion, visibleTo } from "@/lib/foods/repo";
 import type { PortionValues } from "@/lib/foods/types";
 import type { AddEntryInput, DiaryEntry, UpdateEntryInput } from "./types";
 
-const entryColumns = {
+export const entryColumns = {
   id: diaryEntries.id,
   date: diaryEntries.date,
   meal: diaryEntries.meal,

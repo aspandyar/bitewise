@@ -190,6 +190,8 @@ export const DIARY_DEFAULT_MEAL: Meal = "lunch";
 export const QUICK = {
   // Enough for a week of breakfasts without scrolling on a phone.
   recentLimit: 8,
+  // Recent foods are picked from this many latest entries: weeks of eating, one cheap query.
+  recentScanEntries: 500,
   maxFavorites: 100,
   // Long enough to notice a wrong tap and undo it, short enough not to cover the day for long.
   undoMs: 5000,
