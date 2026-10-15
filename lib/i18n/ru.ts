@@ -77,7 +77,11 @@ export const ru = {
     proteinG: "Белки, г",
     fatG: "Жиры, г",
     carbsG: "Углеводы, г",
-    calculatedHint: "Расчётная",
+    calculatedValue: (value: string, unit: string) => `Расчётная: ${value} ${unit}`,
+    kcalFromMacros: (kcal: string) => `По белкам, жирам и углеводам: ${kcal} ккал`,
+    manualKept:
+      "Норма задана вручную и не меняется, когда меняется профиль. «Вернуть расчётную» — снова считать от профиля",
+    manualOnSave: "После сохранения норма станет ручной и перестанет меняться вслед за профилем",
     resetToAuto: "Вернуть расчётную",
   },
   foods: {
@@ -105,6 +109,8 @@ export const ru = {
     newTitle: "Новый продукт",
     editTitle: "Изменить продукт",
     valuesHint: "Все значения — на 100 г продукта",
+    kcalMismatch: (kcal: string) =>
+      `По белкам, жирам и углеводам выходит около ${kcal} ккал — проверьте цифры. Сохранить можно и так`,
     name: "Название",
     kcal100: "Калории, ккал",
     protein100: "Белки, г",
@@ -115,8 +121,10 @@ export const ru = {
     carbsNet: CARBS_NET,
     listSummary: (kcal: string, protein: string, fat: string, carbs: string) =>
       `${kcal} ${KCAL_PER_100G} · Б ${protein} · Ж ${fat} · У ${carbs}`,
-    portionRow: (label: string, grams: string) => `${label} — ${grams} г`,
+    portionRow: (label: string, grams: string, kcal: string) =>
+      `${label} — ${grams} г · ${kcal} ккал`,
     sourceLabel: "Источник:",
+    attribution: "Данные о продуктах:",
     edit: "Изменить",
     copy: "Скопировать к себе",
     copyHint: "Общий продукт нельзя изменить — скопируйте его и правьте копию.",

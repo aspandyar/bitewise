@@ -59,6 +59,16 @@ export const KCAL_PER_GRAM = {
   protein: 4,
   fat: 9,
   carbs: 4,
+  // Fermentable fiber; Russian labels list carbs net of it, so it is counted on its own.
+  fiber: 2,
+} as const;
+
+// An own food's kcal is flagged (never refused) when it misses the 4/9/4 estimate by more than
+// both bounds. Tuned on the seed: only cocoa powder, dry wine and beer (alcohol) are flagged, while
+// a dropped digit (31 for 313) always is; the absolute floor spares near-zero foods like coffee.
+export const KCAL_CHECK = {
+  maxShareOff: 0.2,
+  minKcalOff: 20,
 } as const;
 
 // Plausible human ranges: wider would let typos (1800 cm) through, narrower would reject real people.
@@ -184,6 +194,9 @@ export const RECIPE_LIMITS = {
   cookedWeightG: { min: 0.1, max: 20_000 },
   servings: { min: 1, max: 100 },
 } as const;
+
+// Credited on the foods screen: the seed's shared foods come from there (public domain).
+export const USDA_FDC_URL = "https://fdc.nal.usda.gov/";
 
 // FoodData Central nutrient ids (nutrient.csv), all per 100 g.
 export const USDA_NUTRIENT_IDS = {

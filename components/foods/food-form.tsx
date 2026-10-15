@@ -1,6 +1,9 @@
 "use client";
 
+import { Fragment, useState, type FormEvent } from "react";
 import { FormError, SubmitButton, TextField, usePreservingFormAction } from "@/components/ui/form";
+import { kcalMismatchEstimate } from "@/lib/foods/kcal-check";
+import { formatKcal } from "@/lib/format";
 import type { FormState } from "@/lib/forms";
 import type { FoodValues } from "@/lib/foods/types";
 import { ru } from "@/lib/i18n/ru";
@@ -29,8 +32,34 @@ export function FoodForm({
   draftName?: string;
 }) {
   const { state, pending, fieldErrors: errors, formProps } = usePreservingFormAction(action);
+  const [kcalEstimate, setKcalEstimate] = useState(() =>
+    kcalMismatchEstimate({
+      kcal100: asInput(initial?.kcal100),
+      protein100: asInput(initial?.protein100),
+      fat100: asInput(initial?.fat100),
+      carbs100: asInput(initial?.carbs100),
+      fiber100: asInput(initial?.fiber100),
+    }),
+  );
+
+  // Re-checked on every keystroke; it only warns, saving stays possible (alcohol, rounded labels).
+  function onInput(event: FormEvent<HTMLFormElement>) {
+    formProps.onInput(event);
+    const data = new FormData(event.currentTarget);
+    const read = (name: string) => String(data.get(name) ?? "");
+    setKcalEstimate(
+      kcalMismatchEstimate({
+        kcal100: read("kcal100"),
+        protein100: read("protein100"),
+        fat100: read("fat100"),
+        carbs100: read("carbs100"),
+        fiber100: read("fiber100"),
+      }),
+    );
+  }
+
   return (
-    <form {...formProps} className="flex flex-col gap-4">
+    <form {...formProps} onInput={onInput} className="flex flex-col gap-4">
       <TextField
         label={ru.foods.name}
         name="name"
@@ -40,16 +69,22 @@ export function FoodForm({
       />
       <p className="text-sm text-foreground/60">{ru.foods.valuesHint}</p>
       {numberFields.map((field) => (
-        <TextField
-          key={field.name}
-          label={field.label}
-          name={field.name}
-          inputMode="decimal"
-          defaultValue={asInput(initial?.[field.name])}
-          // With the name already taken from the search, the first thing to type is kcal.
-          autoFocus={draftName !== undefined && field.name === "kcal100"}
-          error={errors[field.name]}
-        />
+        <Fragment key={field.name}>
+          <TextField
+            label={field.label}
+            name={field.name}
+            inputMode="decimal"
+            defaultValue={asInput(initial?.[field.name])}
+            // With the name already taken from the search, the first thing to type is kcal.
+            autoFocus={draftName !== undefined && field.name === "kcal100"}
+            error={errors[field.name]}
+          />
+          {field.name === "kcal100" && kcalEstimate !== null ? (
+            <p role="status" className="text-sm text-amber-700 dark:text-amber-400">
+              {ru.foods.kcalMismatch(formatKcal(kcalEstimate))}
+            </p>
+          ) : null}
+        </Fragment>
       ))}
       <FormError message={state.formError} />
       <SubmitButton pending={pending}>{ru.common.save}</SubmitButton>

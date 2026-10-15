@@ -2,6 +2,7 @@ import {
   ACTIVITY_FACTORS,
   FOOD_LIMITS,
   GOAL_ADJUSTMENTS,
+  KCAL_CHECK,
   KCAL_PER_GRAM,
   MACRO_TARGETS,
   MIFFLIN_ST_JEOR,
@@ -257,4 +258,23 @@ export function calcServingPortionGrams(weightG: number, servings: number | null
   if (servings === null) return null;
   const grams = calcServingGrams(weightG, servings);
   return grams >= PORTION_LIMITS.grams.min && grams <= PORTION_LIMITS.grams.max ? grams : null;
+}
+
+export type MacroGrams = { proteinG: number; fatG: number; carbsG: number; fiberG: number | null };
+
+// Atwater estimate of energy per the given grams; carbs are net, so known fiber adds its own share.
+export function calcKcalFromMacros(macros: MacroGrams): number {
+  return (
+    macros.proteinG * KCAL_PER_GRAM.protein +
+    macros.fatG * KCAL_PER_GRAM.fat +
+    macros.carbsG * KCAL_PER_GRAM.carbs +
+    (macros.fiberG ?? 0) * KCAL_PER_GRAM.fiber
+  );
+}
+
+// A soft check for typos in a food's own numbers: labels round and alcohol is not counted, so
+// a miss is only flagged when it is large both in share and in kcal.
+export function isKcalConsistentWithMacros(kcal: number, macros: MacroGrams): boolean {
+  const off = Math.abs(kcal - calcKcalFromMacros(macros));
+  return off <= Math.max(kcal * KCAL_CHECK.maxShareOff, KCAL_CHECK.minKcalOff);
 }

@@ -5,6 +5,7 @@ import {
   firstFieldErrors,
   optionalDecimalField,
   optionalIntegerField,
+  readDecimalInput,
   visibleFieldErrors,
 } from "./forms";
 
@@ -102,5 +103,19 @@ describe("visibleFieldErrors", () => {
 
   it("handles a state without field errors", () => {
     expect(visibleFieldErrors(undefined, new Set(["grams"]))).toEqual({});
+  });
+});
+
+describe("readDecimalInput", () => {
+  it.each([
+    ["12,6", 12.6],
+    [" 3.3 ", 3.3],
+    ["0", 0],
+  ])("reads %j as %d", (value, expected) => {
+    expect(readDecimalInput(value)).toBe(expected);
+  });
+
+  it.each(["", "  ", "abc", "1,2,3"])("has no number yet for %j", (value) => {
+    expect(readDecimalInput(value)).toBeNull();
   });
 });

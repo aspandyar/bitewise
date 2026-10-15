@@ -1,12 +1,14 @@
 "use client";
 
 import { resetTargetAction, saveManualTargetAction } from "@/app/(app)/actions";
+import { useState, type FormEvent } from "react";
 import { useFormStatus } from "react-dom";
 import { FormError, SubmitButton, TextField, usePreservingFormAction } from "@/components/ui/form";
 import type { TargetMode } from "@/lib/config";
 import { formatGrams, formatKcal } from "@/lib/format";
+import { readDecimalInput } from "@/lib/forms";
 import { ru } from "@/lib/i18n/ru";
-import type { MacroTargets } from "@/lib/nutrition";
+import { calcKcalFromMacros, type MacroTargets } from "@/lib/nutrition";
 
 const fields = [
   { name: "kcal", label: ru.targets.kcal, format: formatKcal, unit: ru.targets.kcalUnit },
@@ -44,9 +46,33 @@ export function TargetsForm({
     fieldErrors: errors,
     formProps,
   } = usePreservingFormAction(saveManualTargetAction);
+  const [macroKcal, setMacroKcal] = useState<number | null>(() =>
+    calcKcalFromMacros({
+      proteinG: current.proteinG,
+      fatG: current.fatG,
+      carbsG: current.carbsG,
+      fiberG: null,
+    }),
+  );
+
+  // Manual kcal and macros are typed separately; the live sum shows when they disagree.
+  function onInput(event: FormEvent<HTMLFormElement>) {
+    formProps.onInput(event);
+    const data = new FormData(event.currentTarget);
+    const read = (name: string) => readDecimalInput(String(data.get(name) ?? ""));
+    const proteinG = read("proteinG");
+    const fatG = read("fatG");
+    const carbsG = read("carbsG");
+    setMacroKcal(
+      proteinG === null || fatG === null || carbsG === null
+        ? null
+        : calcKcalFromMacros({ proteinG, fatG, carbsG, fiberG: null }),
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <form {...formProps} className="flex flex-col gap-4">
+      <form {...formProps} onInput={onInput} className="flex flex-col gap-4">
         {fields.map((field) => (
           <div key={field.name} className="flex flex-col gap-1">
             <TextField
@@ -57,10 +83,18 @@ export function TargetsForm({
               error={errors[field.name]}
             />
             <p className="text-sm text-foreground/60">
-              {ru.targets.calculatedHint}: {field.format(calculated[field.name])} {field.unit}
+              {ru.targets.calculatedValue(field.format(calculated[field.name]), field.unit)}
             </p>
+            {field.name === "kcal" && macroKcal !== null ? (
+              <p className="text-sm text-foreground/60">
+                {ru.targets.kcalFromMacros(formatKcal(macroKcal))}
+              </p>
+            ) : null}
           </div>
         ))}
+        <p className="text-sm text-foreground/60">
+          {mode === "manual" ? ru.targets.manualKept : ru.targets.manualOnSave}
+        </p>
         <FormError message={state.formError} />
         <SubmitButton pending={pending}>{ru.common.save}</SubmitButton>
       </form>

@@ -67,3 +67,12 @@ export function visibleFieldErrors(
     Object.entries(fieldErrors ?? {}).filter(([field]) => !editedSinceSubmit.has(field)),
   );
 }
+
+// For live previews while typing: the same reading as decimalField ("12,6" from a Russian
+// keyboard), with null for anything that is not a number yet.
+export function readDecimalInput(value: string): number | null {
+  const trimmed = value.trim();
+  if (trimmed === "") return null;
+  const parsed = Number(trimmed.replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : null;
+}
