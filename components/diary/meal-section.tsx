@@ -45,7 +45,9 @@ export function MealSection({
               >
                 <span className="flex min-w-0 flex-col">
                   <span className="[overflow-wrap:anywhere]">{row.foodName}</span>
-                  <span className="text-sm text-foreground/60">{formatEntryAmount(row)}</span>
+                  {row.foodId === null ? null : (
+                    <span className="text-sm text-foreground/60">{formatEntryAmount(row)}</span>
+                  )}
                 </span>
                 <span className="shrink-0 text-sm">
                   {formatKcal(row.nutrients.kcal)} {ru.targets.kcalUnit}

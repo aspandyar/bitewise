@@ -218,6 +218,12 @@ export const ru = {
     otherAmount: (name: string) => `Другое количество: ${name}`,
     otherAmountSymbol: "…",
     quickKcalLink: "Ввести только калории",
+    quickTitle: "Только калории",
+    quickKcal: "Калории, ккал",
+    quickName: "Что это (необязательно)",
+    quickProtein: "Б, г",
+    quickFat: "Ж, г",
+    quickCarbs: "У, г",
     daySwitch: "День записи",
     addErrors: {
       limit: `Не больше ${n(DIARY_LIMITS.maxEntriesPerDay)} записей за день`,

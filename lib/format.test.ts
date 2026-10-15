@@ -105,6 +105,12 @@ describe("formatDayLabel", () => {
 
 // The unit is joined with a no-break space, so "75 г" never splits across lines.
 describe("formatEntryAmount", () => {
+  it("shows no amount for a just-kcal entry, only its kcal are meaningful", () => {
+    expect(
+      formatEntryAmount({ grams: 100, portionLabel: null, portionCount: null, foodId: null }),
+    ).toBe("");
+  });
+
   it("shows grams for a grams entry", () => {
     expect(formatEntryAmount({ grams: 150.4, portionLabel: null, portionCount: null })).toBe(
       "150\u00a0г",
