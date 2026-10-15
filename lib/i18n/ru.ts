@@ -210,6 +210,7 @@ export const ru = {
     addTo: (meal: string) => `Добавить: ${meal}`,
     addTitle: (meal: string, day: string) => `${meal} · ${day}`,
     entryDay: (day: string) => `Запись в день: ${day}`,
+    quickDefaultName: "Быстрый ввод",
     submitAdd: "Добавить",
     amountLegend: "Сколько",
     modeGrams: "Граммы",

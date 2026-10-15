@@ -1,13 +1,14 @@
-import { and, asc, desc, eq, inArray, isNotNull, lt, max } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNotNull, lt, max, sql } from "drizzle-orm";
+import { lockUserWrites } from "@/db/locks";
 import { diaryEntries, favorites, foods } from "@/db/schema";
 import type { Db } from "@/db/types";
 import type { AmountColumns } from "@/lib/amount";
-import { QUICK, type Meal } from "@/lib/config";
+import { DIARY_LIMITS, QUICK, type Meal } from "@/lib/config";
 import type { IsoDate } from "@/lib/date";
 import { listColumnsFor, visibleTo } from "@/lib/foods/repo";
 import { calcEntryNutrients } from "@/lib/nutrition";
 import { lastAmount } from "./quick";
-import { entryColumns } from "./repo";
+import { checkEntryLimits, entryColumns, type EntryLimits } from "./repo";
 import type { DiaryEntry } from "./types";
 
 export type QuickFood = {
@@ -142,4 +143,137 @@ export async function findRepeatSource(
     .where(and(ofMeal, eq(diaryEntries.date, last.date)))
     .orderBy(asc(diaryEntries.createdAt), asc(diaryEntries.id));
   return { date: last.date, entries };
+}
+
+// The same amount as the food's last entry, snapshotted from the food as it is now. The portion
+// comes from that entry's snapshot: the portion itself may have been deleted since.
+export async function quickAddEntry(
+  db: Db,
+  userId: string,
+  input: { date: IsoDate; meal: Meal; foodId: string },
+  limits: EntryLimits = DIARY_LIMITS,
+): Promise<{ id: string } | "not_found" | "no_amount" | "limit" | "total_limit"> {
+  return db.transaction(async (tx) => {
+    await lockUserWrites(tx, userId);
+    const [food] = await tx
+      .select({
+        name: foods.name,
+        kcal100: foods.kcal100,
+        protein100: foods.protein100,
+        fat100: foods.fat100,
+        carbs100: foods.carbs100,
+      })
+      .from(foods)
+      .where(and(eq(foods.id, input.foodId), visibleTo(userId)))
+      .limit(1);
+    if (!food) return "not_found";
+    const [last] = await tx
+      .select(amountColumns)
+      .from(diaryEntries)
+      .where(and(eq(diaryEntries.userId, userId), eq(diaryEntries.foodId, input.foodId)))
+      .orderBy(desc(diaryEntries.createdAt), desc(diaryEntries.id))
+      .limit(1);
+    if (!last) return "no_amount";
+    const capped = await checkEntryLimits(tx, userId, input.date, 1, limits);
+    if (capped) return capped;
+    const [row] = await tx
+      .insert(diaryEntries)
+      .values({
+        userId,
+        date: input.date,
+        meal: input.meal,
+        foodId: input.foodId,
+        foodName: food.name,
+        kcal100: food.kcal100,
+        protein100: food.protein100,
+        fat100: food.fat100,
+        carbs100: food.carbs100,
+        ...lastAmount(last),
+      })
+      .returning({ id: diaryEntries.id });
+    if (!row) throw new Error("quick add insert returned no row");
+    return row;
+  });
+}
+
+// Copies the entries as they were (snapshots included): the same meal, the same numbers.
+export async function repeatMeal(
+  db: Db,
+  userId: string,
+  input: { date: IsoDate; meal: Meal },
+  limits: EntryLimits = DIARY_LIMITS,
+): Promise<{ ids: string[] } | "nothing" | "not_empty" | "limit" | "total_limit"> {
+  return db.transaction(async (tx) => {
+    await lockUserWrites(tx, userId);
+    const source = await findRepeatSource(tx, userId, input.date, input.meal);
+    if (!source) {
+      const [filled] = await tx
+        .select({ id: diaryEntries.id })
+        .from(diaryEntries)
+        .where(
+          and(
+            eq(diaryEntries.userId, userId),
+            eq(diaryEntries.date, input.date),
+            eq(diaryEntries.meal, input.meal),
+          ),
+        )
+        .limit(1);
+      return filled ? "not_empty" : "nothing";
+    }
+    const capped = await checkEntryLimits(tx, userId, input.date, source.entries.length, limits);
+    if (capped) return capped;
+    const rows = await tx
+      .insert(diaryEntries)
+      .values(
+        source.entries.map((entry, index) => ({
+          userId,
+          // One statement shares now(); the offset keeps the source's order in the day list.
+          createdAt: sql`now() + ${index} * interval '1 microsecond'`,
+          date: input.date,
+          meal: input.meal,
+          foodId: entry.foodId,
+          foodName: entry.foodName,
+          kcal100: entry.kcal100,
+          protein100: entry.protein100,
+          fat100: entry.fat100,
+          carbs100: entry.carbs100,
+          grams: entry.grams,
+          portionLabel: entry.portionLabel,
+          portionGrams: entry.portionGrams,
+          portionCount: entry.portionCount,
+        })),
+      )
+      .returning({ id: diaryEntries.id });
+    return { ids: rows.map((row) => row.id) };
+  });
+}
+
+export async function toggleFavorite(
+  db: Db,
+  userId: string,
+  foodId: string,
+  // Injectable so tests can reach the cap without starring a hundred foods.
+  maxFavorites: number = QUICK.maxFavorites,
+): Promise<"added" | "removed" | "not_found" | "limit"> {
+  return db.transaction(async (tx) => {
+    await lockUserWrites(tx, userId);
+    const [food] = await tx
+      .select({ id: foods.id })
+      .from(foods)
+      .where(and(eq(foods.id, foodId), visibleTo(userId)))
+      .limit(1);
+    if (!food) return "not_found";
+    const removed = await tx
+      .delete(favorites)
+      .where(and(eq(favorites.userId, userId), eq(favorites.foodId, foodId)))
+      .returning({ foodId: favorites.foodId });
+    if (removed.length > 0) return "removed";
+    const [owned] = await tx
+      .select({ total: count() })
+      .from(favorites)
+      .where(eq(favorites.userId, userId));
+    if ((owned?.total ?? 0) >= maxFavorites) return "limit";
+    await tx.insert(favorites).values({ userId, foodId });
+    return "added";
+  });
 }
