@@ -31,7 +31,15 @@ describe("withToast and undo", () => {
 });
 
 describe("parseToast", () => {
-  it.each(["saved", "deleted", "copied", "added", "addedMany"] as const)("reads %s", (toast) => {
+  it.each([
+    "saved",
+    "deleted",
+    "copied",
+    "added",
+    "addedMany",
+    "alreadyFilled",
+    "dayFull",
+  ] as const)("reads %s", (toast) => {
     expect(parseToast(toast)).toBe(toast);
   });
 

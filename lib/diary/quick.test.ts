@@ -64,7 +64,7 @@ describe("lastAmount", () => {
 });
 
 describe("parseAddError", () => {
-  it.each(["limit", "totalLimit"] as const)("reads %s", (value) => {
+  it.each(["limit", "totalLimit", "gone"] as const)("reads %s", (value) => {
     expect(parseAddError(value)).toBe(value);
   });
 

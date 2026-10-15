@@ -66,12 +66,17 @@ export async function listRecentFoods(
     .orderBy(desc(diaryEntries.createdAt), desc(diaryEntries.id))
     .limit(QUICK.recentScanEntries);
 
+  // The amount comes from the food's newest entry; within "this meal" the order follows when the
+  // food was last eaten at this meal, not at any meal.
   const seen = new Map<string, { row: (typeof rows)[number]; atMeal: boolean; order: number }>();
   rows.forEach((row, order) => {
     if (exclude.has(row.id)) return;
     const known = seen.get(row.id);
     if (!known) seen.set(row.id, { row, atMeal: row.meal === meal, order });
-    else if (!known.atMeal && row.meal === meal) known.atMeal = true;
+    else if (!known.atMeal && row.meal === meal) {
+      known.atMeal = true;
+      known.order = order;
+    }
   });
   return (
     [...seen.values()]

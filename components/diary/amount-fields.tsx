@@ -8,7 +8,8 @@ import { formatAmount, formatGrams, formatKcal } from "@/lib/format";
 import { ru } from "@/lib/i18n/ru";
 import { calcPortionGrams, type Per100g } from "@/lib/nutrition";
 
-// kcal is computed by the server page: the client never derives nutrients itself.
+// Portion kcal come from the server page; the live total is a preview through the same
+// lib/nutrition functions, and the server recomputes what is saved.
 export type PortionOption = { id: string | null; label: string; grams: number; kcal: number };
 
 type AmountMode = "grams" | "portion";

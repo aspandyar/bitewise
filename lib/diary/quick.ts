@@ -42,7 +42,8 @@ export function lastAmount(entry: AmountColumns): AmountColumns {
 
 // A quick add that hits a cap returns to the add screen with one of these; only known keys reach
 // the page, never text from the URL.
-export const ADD_ERRORS = ["limit", "totalLimit"] as const;
+// "gone": the food was deleted while a stale add screen still listed it.
+export const ADD_ERRORS = ["limit", "totalLimit", "gone"] as const;
 export type AddError = (typeof ADD_ERRORS)[number];
 const addErrorSchema = z.enum(ADD_ERRORS);
 

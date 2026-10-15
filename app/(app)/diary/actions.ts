@@ -114,7 +114,8 @@ export async function quickAddAction(
   const { today, date, meal } = await requireDayAndMeal(rawDate, rawMeal);
   const id = requireId(foodId);
   const result = await quickAddEntry(db, userId, { date, meal, foodId: id });
-  if (result === "not_found") notFound();
+  // A cached add screen can still list a food deleted since: say so there, not with a 404.
+  if (result === "not_found") redirect(addHref(date, meal, "gone"));
   // A favorite never logged has no amount to repeat: it gets the regular amount screen.
   if (result === "no_amount") redirect(addFoodHref(id, date, meal));
   if (result === "limit") redirect(addHref(date, meal, "limit"));
@@ -126,10 +127,12 @@ export async function repeatMealAction(rawDate: string, rawMeal: string): Promis
   const userId = await requireUserId();
   const { today, date, meal } = await requireDayAndMeal(rawDate, rawMeal);
   const result = await repeatMeal(db, userId, { date, meal });
-  // Filled in another tab or nothing left to repeat: the refreshed day shows why.
-  if (result === "not_empty" || result === "nothing") redirect(dayHref(date, today));
-  if (result === "limit") redirect(addHref(date, meal, "limit"));
-  if (result === "total_limit") redirect(addHref(date, meal, "totalLimit"));
+  // The repeat button lives on the day, so every outcome returns there with its message.
+  if (result === "not_empty") redirect(withToast(dayHref(date, today), "alreadyFilled"));
+  if (result === "nothing") redirect(dayHref(date, today));
+  if (result === "limit" || result === "total_limit") {
+    redirect(withToast(dayHref(date, today), "dayFull"));
+  }
   redirect(withToast(dayHref(date, today), "addedMany", result.ids));
 }
 

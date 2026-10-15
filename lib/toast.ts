@@ -3,8 +3,20 @@ import { TOAST_PARAM, UNDO_PARAM } from "@/lib/config";
 
 // Server actions end in a redirect, so the confirmation rides along in the URL; only known keys
 // are shown, never text from the URL itself.
-export const TOASTS = ["saved", "deleted", "copied", "added", "addedMany"] as const;
+export const TOASTS = [
+  "saved",
+  "deleted",
+  "copied",
+  "added",
+  "addedMany",
+  "alreadyFilled",
+  "dayFull",
+] as const;
+
+// Only an add can be undone: other toasts ignore an undo list someone put in the URL.
 export type Toast = (typeof TOASTS)[number];
+
+export const UNDOABLE_TOASTS: readonly Toast[] = ["added", "addedMany"];
 
 const toastSchema = z.enum(TOASTS);
 

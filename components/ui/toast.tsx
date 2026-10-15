@@ -6,7 +6,7 @@ import { undoAddAction } from "@/app/(app)/diary/actions";
 import { QUICK, TOAST_DURATION_MS, TOAST_PARAM, UNDO_PARAM } from "@/lib/config";
 import { parseUndoIds } from "@/lib/diary/quick";
 import { ru } from "@/lib/i18n/ru";
-import { parseToast, withoutToast, type Toast } from "@/lib/toast";
+import { parseToast, UNDOABLE_TOASTS, withoutToast, type Toast } from "@/lib/toast";
 
 type Shown = { toast: Toast; undo: string[] | null; key: string };
 
@@ -32,7 +32,11 @@ export function ToastHost() {
   // tells two identical toasts in a row apart (two quick adds of the same food).
   const key = `${fromUrl}:${undoFromUrl}`;
   if (fromUrl !== null && key !== shown?.key) {
-    setShown({ toast: fromUrl, undo: parseUndoIds(undoFromUrl), key });
+    setShown({
+      toast: fromUrl,
+      undo: UNDOABLE_TOASTS.includes(fromUrl) ? parseUndoIds(undoFromUrl) : null,
+      key,
+    });
   }
 
   // The parameters leave the URL at once: leaving the page before the toast hides must not leave

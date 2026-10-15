@@ -47,6 +47,19 @@ describe("listRecentFoods", () => {
     ]);
   });
 
+  it("orders this meal's foods by when they were last eaten at this meal", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const oatsId = await insertSharedFood(oats);
+    const coffee = await insertSharedFood({ name: "Кофе" });
+    await grams(alice, coffee, "breakfast", 250, "2026-10-08");
+    await grams(alice, oatsId, "breakfast", 60, "2026-10-13");
+    await grams(alice, coffee, "lunch", 250, DAY);
+    expect(names(await listRecentFoods(testDb, alice, "breakfast", 8, new Set()))).toEqual([
+      "Овсянка",
+      "Кофе",
+    ]);
+  });
+
   it("lists each food once and stops at the limit", async () => {
     const alice = await newUserId("alice@mail.com");
     const oatsId = await insertSharedFood(oats);

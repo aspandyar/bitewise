@@ -3,7 +3,6 @@ import { quickAddAction } from "@/app/(app)/diary/actions";
 import type { Meal } from "@/lib/config";
 import type { IsoDate } from "@/lib/date";
 import { addFoodHref } from "@/lib/diary/paths";
-import type { AddError } from "@/lib/diary/quick";
 import type { QuickFood } from "@/lib/diary/quick-repo";
 import { formatEntryAmount, formatKcal } from "@/lib/format";
 import { ru } from "@/lib/i18n/ru";
@@ -75,21 +74,14 @@ export function QuickLists({
   recent,
   date,
   meal,
-  error,
 }: {
   favorites: QuickFood[];
   recent: QuickFood[];
   date: IsoDate;
   meal: Meal;
-  error: AddError | null;
 }) {
   return (
     <div className="flex flex-col gap-4">
-      {error ? (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
-          {ru.diary.addErrors[error]}
-        </p>
-      ) : null}
       <QuickSection title={ru.diary.favoritesTitle} foods={favorites} date={date} meal={meal} />
       <QuickSection title={ru.diary.recentTitle} foods={recent} date={date} meal={meal} />
     </div>

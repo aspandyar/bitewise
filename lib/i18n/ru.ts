@@ -233,6 +233,7 @@ export const ru = {
     addErrors: {
       limit: `Не больше ${n(DIARY_LIMITS.maxEntriesPerDay)} записей за день`,
       totalLimit: `Не больше ${n(DIARY_LIMITS.maxEntriesTotal)} записей в дневнике`,
+      gone: "Этого продукта больше нет — выберите другой",
     },
     submitAdd: "Добавить",
     amountLegend: "Сколько",
@@ -265,6 +266,8 @@ export const ru = {
     added: "Добавлено",
     addedMany: (count: number) => `Добавлено записей: ${n(count)}`,
     undo: "Отменить",
+    alreadyFilled: "Этот приём пищи уже заполнен",
+    dayFull: `Не больше ${n(DIARY_LIMITS.maxEntriesPerDay)} записей за день`,
   },
   recipes: {
     title: "Блюда",

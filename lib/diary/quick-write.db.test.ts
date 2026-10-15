@@ -12,7 +12,14 @@ import { calcEntryNutrients } from "@/lib/nutrition";
 import { closeTestDb, resetDb, testDb } from "@/tests/db";
 import { createOwnFood, insertSharedFood, newUserId } from "@/tests/foods";
 import { isFavorite, quickAddEntry, repeatMeal, toggleFavorite } from "./quick-repo";
-import { addEntry, addQuickEntry, deleteOwnEntries, getDayEntries, updateQuickEntry } from "./repo";
+import {
+  addEntry,
+  addQuickEntry,
+  deleteOwnEntries,
+  getDayEntries,
+  updateEntry,
+  updateQuickEntry,
+} from "./repo";
 
 const DAY = "2026-10-14";
 const NEXT = "2026-10-15";
@@ -169,6 +176,55 @@ describe("deleteOwnEntries", () => {
     expect(await deleteOwnEntries(testDb, alice, [mine.id, theirs.id, randomUUID()])).toBe(1);
     expect(await getDayEntries(testDb, alice, DAY)).toEqual([]);
     expect(await getDayEntries(testDb, bob, DAY)).toHaveLength(1);
+  });
+});
+
+describe("caps and other users' ids", () => {
+  const values = { name: "Пирожок", kcal: 300, proteinG: 0, fatG: 0, carbsG: 0 };
+
+  it("refuses to edit another user's just-kcal entry", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const bob = await newUserId("bob@mail.com");
+    await addQuickEntry(testDb, alice, { date: DAY, meal: "snack", values });
+    const [entry] = await getDayEntries(testDb, alice, DAY);
+    if (!entry) throw new Error("no entry");
+    expect(await updateQuickEntry(testDb, bob, entry.id, { meal: "lunch", values })).toBeNull();
+  });
+
+  it("keeps the daily cap for just-kcal entries", async () => {
+    const alice = await newUserId("alice@mail.com");
+    await addQuickEntry(testDb, alice, { date: DAY, meal: "snack", values });
+    expect(
+      await addQuickEntry(testDb, alice, { date: DAY, meal: "snack", values }, limits(1)),
+    ).toBe("limit");
+  });
+
+  it("keeps the total cap for a repeated meal", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const food = await insertSharedFood(oats);
+    await grams(alice, food, 60);
+    await grams(alice, food, 70);
+    expect(
+      await repeatMeal(
+        testDb,
+        alice,
+        { date: NEXT, meal: "breakfast" },
+        { maxEntriesPerDay: 100, maxEntriesTotal: 3 },
+      ),
+    ).toBe("total_limit");
+  });
+
+  it("does not edit a just-kcal entry as a food amount", async () => {
+    const alice = await newUserId("alice@mail.com");
+    await addQuickEntry(testDb, alice, { date: DAY, meal: "snack", values });
+    const [entry] = await getDayEntries(testDb, alice, DAY);
+    if (!entry) throw new Error("no entry");
+    expect(
+      await updateEntry(testDb, alice, entry.id, {
+        meal: "snack",
+        amount: { mode: "grams", grams: 50 },
+      }),
+    ).toBeNull();
   });
 });
 

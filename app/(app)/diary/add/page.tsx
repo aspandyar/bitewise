@@ -40,12 +40,18 @@ async function AddContent({ searchParams }: Pick<PageProps<"/diary/add">, "searc
     new Set(favorites.map((food) => food.foodId)),
   );
   const hasQuick = favorites.length > 0 || recent.length > 0;
+  const addError = parseAddError(params.error);
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
       <BackLink href={dayHref(date, today)} />
       <h1 className="text-2xl font-semibold">
         {ru.diary.addTitle(ru.diary.meals[meal], formatDayLabel(date, today))}
       </h1>
+      {addError ? (
+        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+          {ru.diary.addErrors[addError]}
+        </p>
+      ) : null}
       <DaySwitch date={date} today={today} meal={meal} />
       <Link href={quickKcalHref(date, meal)} className="flex min-h-11 w-fit items-center underline">
         {ru.diary.quickKcalLink}
@@ -59,13 +65,7 @@ async function AddContent({ searchParams }: Pick<PageProps<"/diary/add">, "searc
         newFoodSearch={diarySearch(date, meal)}
         idle={
           hasQuick ? (
-            <QuickLists
-              favorites={favorites}
-              recent={recent}
-              date={date}
-              meal={meal}
-              error={parseAddError(params.error)}
-            />
+            <QuickLists favorites={favorites} recent={recent} date={date} meal={meal} />
           ) : undefined
         }
       />

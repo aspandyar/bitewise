@@ -44,7 +44,9 @@ export function hourInTimeZone(now: Date, timeZone: string): number {
   })
     .formatToParts(now)
     .find((part) => part.type === "hour")?.value;
-  return Number(hour);
+  const parsed = Number(hour);
+  // Never seen in practice; UTC beats NaN, which would silently pick the late meal.
+  return Number.isFinite(parsed) ? parsed : now.getUTCHours();
 }
 
 // Calendar arithmetic in UTC: no zone means no daylight-saving hour to skip a day over.
