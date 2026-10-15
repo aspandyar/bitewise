@@ -31,3 +31,15 @@ export function parseMeal(value: unknown): Meal | null {
   const parsed = mealSchema.safeParse(value);
   return parsed.success ? parsed.data : null;
 }
+
+// A day and a meal carried through another screen (a new food started from the diary search),
+// so it can return to the entry it was opened for.
+export function parseEntryContext(
+  rawDate: unknown,
+  rawMeal: unknown,
+  today: IsoDate,
+): { date: IsoDate; meal: Meal } | null {
+  const date = parseDiaryDate(rawDate, today);
+  const meal = parseMeal(rawMeal);
+  return date && meal ? { date, meal } : null;
+}

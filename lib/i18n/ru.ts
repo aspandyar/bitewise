@@ -1,3 +1,4 @@
+import { DIARY_LIMITS } from "@/lib/config";
 import { formatNumber as n, LOCALE } from "./number";
 
 // Phrases reused across entries; the object below cannot refer to itself while it is built.
@@ -211,6 +212,17 @@ export const ru = {
     addTitle: (meal: string, day: string) => `${meal} · ${day}`,
     entryDay: (day: string) => `Запись в день: ${day}`,
     quickDefaultName: "Быстрый ввод",
+    favoritesTitle: "Избранное",
+    recentTitle: "Недавние",
+    quickAmount: (amount: string, kcal: string) => `${amount} · ${kcal}${NBSP}ккал`,
+    otherAmount: (name: string) => `Другое количество: ${name}`,
+    otherAmountSymbol: "…",
+    quickKcalLink: "Ввести только калории",
+    daySwitch: "День записи",
+    addErrors: {
+      limit: `Не больше ${n(DIARY_LIMITS.maxEntriesPerDay)} записей за день`,
+      totalLimit: `Не больше ${n(DIARY_LIMITS.maxEntriesTotal)} записей в дневнике`,
+    },
     submitAdd: "Добавить",
     amountLegend: "Сколько",
     modeGrams: "Граммы",

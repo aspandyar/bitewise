@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { FOOD_SEARCH } from "@/lib/config";
 import type { FoodListItem } from "@/lib/foods/types";
 import { ru } from "@/lib/i18n/ru";
@@ -26,10 +26,16 @@ export function FoodSearch({
   ownFoods,
   link,
   excludeRecipes = false,
+  idle,
+  newFoodSearch,
 }: {
   ownFoods: FoodListItem[];
   link?: FoodLink;
   excludeRecipes?: boolean;
+  // Shown instead of the own foods list while the query is empty (the diary's quick lists).
+  idle?: ReactNode;
+  // Carried to "add your own" so a new food can return to the entry it was started for.
+  newFoodSearch?: string;
 }) {
   const router = useRouter();
   const [input, setInput] = useState("");
@@ -118,7 +124,9 @@ export function FoodSearch({
     inputRef.current?.focus();
   }
 
-  const newFoodHref = `/foods/new?${new URLSearchParams({ name: query })}`;
+  const newFoodParams = new URLSearchParams(newFoodSearch);
+  newFoodParams.set("name", query);
+  const newFoodHref = `/foods/new?${newFoodParams}`;
 
   return (
     <div className="flex flex-col gap-4">
@@ -154,7 +162,9 @@ export function FoodSearch({
           </button>
         ) : null}
       </div>
-      {!query ? (
+      {!query && idle ? (
+        idle
+      ) : !query ? (
         ownFoods.length > 0 ? (
           <section className="flex flex-col gap-2">
             <h2 className="text-sm font-medium text-foreground/60">

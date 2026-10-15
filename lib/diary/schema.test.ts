@@ -9,6 +9,7 @@ import {
   toAddAmount,
   toUpdateAmount,
   updateEntryFormSchema,
+  parseEntryContext,
 } from "./schema";
 
 const portionId = randomUUID();
@@ -118,5 +119,26 @@ describe("parseMeal and parseId", () => {
   it("parses uuids only", () => {
     expect(parseId(portionId)).toBe(portionId);
     expect(parseId("1")).toBeNull();
+  });
+});
+
+describe("parseEntryContext", () => {
+  const today = "2026-10-15";
+
+  it("reads a day and a meal for an entry", () => {
+    expect(parseEntryContext("2026-10-14", "breakfast", today)).toEqual({
+      date: "2026-10-14",
+      meal: "breakfast",
+    });
+  });
+
+  it.each([
+    ["2026-10-16", "breakfast"],
+    ["1999-12-31", "breakfast"],
+    ["2026-10-14", "brunch"],
+    [undefined, "breakfast"],
+    ["2026-10-14", undefined],
+  ])("has no context for %j / %j", (date, meal) => {
+    expect(parseEntryContext(date, meal, today)).toBeNull();
   });
 });

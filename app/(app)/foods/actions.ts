@@ -15,6 +15,9 @@ import {
   updateOwnFood,
 } from "@/lib/foods/repo";
 import { foodSchema, parseFoodId, portionSchema } from "@/lib/foods/schema";
+import { addFoodHref } from "@/lib/diary/paths";
+import { parseEntryContext } from "@/lib/diary/schema";
+import { getUserToday } from "@/lib/diary/today";
 import { ru } from "@/lib/i18n/ru";
 import { withToast } from "@/lib/toast";
 
@@ -27,10 +30,14 @@ function requireId(value: unknown): string {
 
 export async function createFoodAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const userId = await requireUserId();
-  const parsed = foodSchema.safeParse(Object.fromEntries(formData));
+  const raw = Object.fromEntries(formData);
+  const parsed = foodSchema.safeParse(raw);
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
   const created = await createFood(db, userId, parsed.data);
   if (created === "limit") return { formError: ru.foods.foodLimit(FOOD_LIMITS.maxOwnFoods) };
+  // Started from the diary search: back to logging it, not to the food card.
+  const entry = parseEntryContext(raw.date, raw.meal, await getUserToday(new Date()));
+  if (entry) redirect(withToast(addFoodHref(created.id, entry.date, entry.meal), "saved"));
   redirect(withToast(`/foods/${created.id}`, "saved"));
 }
 

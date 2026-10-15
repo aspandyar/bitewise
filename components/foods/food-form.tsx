@@ -4,6 +4,8 @@ import { useState, type FocusEvent, type FormEvent } from "react";
 import { FormError, SubmitButton, TextField, usePreservingFormAction } from "@/components/ui/form";
 import { kcalMismatchEstimate } from "@/lib/foods/kcal-check";
 import { formatInputNumber, formatKcal } from "@/lib/format";
+import type { Meal } from "@/lib/config";
+import type { IsoDate } from "@/lib/date";
 import type { FormState } from "@/lib/forms";
 import type { FoodValues } from "@/lib/foods/types";
 import { ru } from "@/lib/i18n/ru";
@@ -20,11 +22,14 @@ export function FoodForm({
   action,
   initial,
   draftName,
+  entry,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   initial?: FoodValues;
   // A new food started from an empty search opens with the query as its name.
   draftName?: string;
+  // Started from the diary search: saving returns to the amount screen of that day and meal.
+  entry?: { date: IsoDate; meal: Meal };
 }) {
   const { state, pending, fieldErrors: errors, formProps } = usePreservingFormAction(action);
   const [kcalEstimate, setKcalEstimate] = useState(() =>
@@ -63,6 +68,12 @@ export function FoodForm({
 
   return (
     <form {...formProps} onInput={onInput} onBlur={onBlur} className="flex flex-col gap-4">
+      {entry ? (
+        <>
+          <input type="hidden" name="date" value={entry.date} />
+          <input type="hidden" name="meal" value={entry.meal} />
+        </>
+      ) : null}
       <TextField
         label={ru.foods.name}
         name="name"
