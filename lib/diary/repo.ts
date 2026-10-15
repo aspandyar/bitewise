@@ -138,7 +138,8 @@ export async function updateEntry(
       .from(diaryEntries)
       .where(ownEntry(userId, entryId))
       .limit(1);
-    if (!entry) return null;
+    // A "just kcal" entry has no amount to edit; it has its own form and update.
+    if (!entry || entry.foodId === null) return null;
     const { amount } = input;
     const pick = portionToPick(amount, entry.portionGrams);
     const picked = pick ? await getVisiblePortion(tx, userId, entry.foodId, pick) : null;

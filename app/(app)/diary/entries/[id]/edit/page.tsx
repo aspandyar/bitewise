@@ -27,7 +27,8 @@ async function EditEntryContent({ params }: Pick<PageProps<"/diary/entries/[id]/
     getEntry(db, userId, entryId),
     getUserToday(new Date()),
   ]);
-  if (!entry) notFound();
+  // A "just kcal" entry gets its own edit form (stage 5, task 7).
+  if (!entry || entry.foodId === null) notFound();
 
   // A portion entry counts its snapshot; a grams entry may switch to a portion of its food,
   // priced with the entry's own snapshot so the preview matches what is saved.

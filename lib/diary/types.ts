@@ -11,8 +11,9 @@ export type DiaryEntry = {
   id: string;
   date: IsoDate;
   meal: Meal;
-  // Lets an entry saved in grams pick one of its food's portions when edited.
-  foodId: string;
+  // Lets an entry saved in grams pick one of its food's portions when edited; null for a
+  // "just kcal" entry, whose numbers live only in the snapshot.
+  foodId: string | null;
   foodName: string;
   kcal100: number;
   protein100: number;

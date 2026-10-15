@@ -43,6 +43,39 @@ async function ownPortionId(userId: string, foodId: string, label: string): Prom
   return portion.id;
 }
 
+describe("just-kcal entries in the schema", () => {
+  const quick = {
+    date: DAY,
+    meal: "snack" as const,
+    foodId: null,
+    foodName: "Быстрый ввод",
+    kcal100: 450,
+    protein100: 0,
+    fat100: 0,
+    carbs100: 0,
+    grams: 100,
+  };
+
+  it("stores an entry without a food", async () => {
+    const alice = await newUserId("alice@mail.com");
+    await testDb.insert(diaryEntries).values({ ...quick, userId: alice });
+    expect((await onlyEntry(alice)).foodId).toBeNull();
+  });
+
+  it("refuses a portion on an entry without a food", async () => {
+    const alice = await newUserId("alice@mail.com");
+    await expect(
+      testDb.insert(diaryEntries).values({
+        ...quick,
+        userId: alice,
+        portionLabel: "1 шт",
+        portionGrams: 100,
+        portionCount: 1,
+      }),
+    ).rejects.toThrow();
+  });
+});
+
 describe("grams computed from a portion", () => {
   it("refuses an entry heavier than a grams entry may be", async () => {
     const alice = await newUserId("alice@mail.com");
