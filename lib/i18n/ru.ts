@@ -1,7 +1,9 @@
 import { formatNumber as n, LOCALE } from "./number";
 
 // Phrases reused across entries; the object below cannot refer to itself while it is built.
-const PER_100G = "на 100 г";
+// Keeps a number on the same line as its unit ("567 ккал" never splits across lines).
+const NBSP = "\u00a0";
+const PER_100G = `на 100${NBSP}г`;
 const KCAL_PER_100G = `ккал ${PER_100G}`;
 // Russian labels count carbs net of fiber, and so do the stored values.
 const CARBS_NET = "Углеводы без клетчатки";
@@ -120,9 +122,9 @@ export const ru = {
     fiber: "Клетчатка",
     carbsNet: CARBS_NET,
     listSummary: (kcal: string, protein: string, fat: string, carbs: string) =>
-      `${kcal} ${KCAL_PER_100G} · Б ${protein} · Ж ${fat} · У ${carbs}`,
+      `${kcal}${NBSP}${KCAL_PER_100G} · Б ${protein} · Ж ${fat} · У ${carbs}`,
     portionRow: (label: string, grams: string, kcal: string) =>
-      `${label} — ${grams} г · ${kcal} ккал`,
+      `${label} — ${grams}${NBSP}г · ${kcal}${NBSP}ккал`,
     sourceLabel: "Источник:",
     copiedFrom: (source: string) => ` · копия: ${source}`,
     attribution: "Данные о продуктах:",
@@ -220,13 +222,13 @@ export const ru = {
     minus: "−",
     plus: "+",
     portionOption: (label: string, grams: string, kcal: string) =>
-      `${label} · ${grams} г · ${kcal} ккал`,
-    amountGrams: (grams: string) => `${grams} г`,
+      `${label} · ${grams}${NBSP}г · ${kcal}${NBSP}ккал`,
+    amountGrams: (grams: string) => `${grams}${NBSP}г`,
     // A dot, not brackets: labels often carry their own ("1 шт (крупное)").
-    amountPortion: (label: string, grams: string) => `${label} · ${grams} г`,
+    amountPortion: (label: string, grams: string) => `${label} · ${grams}${NBSP}г`,
     amountPortions: (count: string, label: string, grams: string) =>
-      `${count} × ${label} · ${grams} г`,
-    kcalPer100g: (kcal: string) => `${kcal} ${KCAL_PER_100G}`,
+      `${count} × ${label} · ${grams}${NBSP}г`,
+    kcalPer100g: (kcal: string) => `${kcal}${NBSP}${KCAL_PER_100G}`,
     editTitle: "Изменить запись",
     entryLimit: (max: number) => `Не больше ${n(max)} записей за день`,
     entryTotalLimit: (max: number) => `Не больше ${n(max)} записей в дневнике`,
@@ -251,9 +253,9 @@ export const ru = {
     // Stored as the dish's portion label, shown in the diary like any portion.
     servingLabel: "1 порция",
     badge: "блюдо",
-    serving: (grams: string, kcal: string) => `1 порция · ${grams} г · ${kcal} ккал`,
-    whole: (grams: string, kcal: string) => `Всё блюдо · ${grams} г · ${kcal} ккал`,
-    listServing: (kcal: string) => ` · порция ${kcal} ккал`,
+    serving: (grams: string, kcal: string) => `1 порция · ${grams}${NBSP}г · ${kcal}${NBSP}ккал`,
+    whole: (grams: string, kcal: string) => `Всё блюдо · ${grams}${NBSP}г · ${kcal}${NBSP}ккал`,
+    listServing: (kcal: string) => ` · порция ${kcal}${NBSP}ккал`,
     weightRaised:
       "Вес готового блюда меньше, чем позволяет состав, — цифры посчитаны по минимально возможному весу. Проверьте вес",
     weightTooLow: (minGrams: string) =>

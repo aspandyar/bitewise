@@ -28,6 +28,12 @@ const amountFormat = new Intl.NumberFormat(ru.locale, {
   useGrouping: false,
 });
 
+// Prefills an edit form with the stored value as typed — full precision, a decimal comma, no
+// thousand groups — so saving without changes keeps it exact.
+export function formatInputNumber(value: number | null | undefined): string {
+  return value === null || value === undefined ? "" : String(value).replace(".", ",");
+}
+
 // Portion counts are stored to hundredths, so that is all the precision worth showing.
 export function formatAmount(count: number): string {
   return amountFormat.format(count);

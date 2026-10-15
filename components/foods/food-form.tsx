@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type FocusEvent, type FormEvent } from "react";
 import { FormError, SubmitButton, TextField, usePreservingFormAction } from "@/components/ui/form";
 import { kcalMismatchEstimate } from "@/lib/foods/kcal-check";
-import { formatKcal } from "@/lib/format";
+import { formatInputNumber, formatKcal } from "@/lib/format";
 import type { FormState } from "@/lib/forms";
 import type { FoodValues } from "@/lib/foods/types";
 import { ru } from "@/lib/i18n/ru";
@@ -15,11 +15,6 @@ const numberFields = [
   { name: "carbs100", label: ru.foods.carbs100 },
   { name: "fiber100", label: ru.foods.fiber100 },
 ] as const;
-
-// Edit shows stored values as typed (no rounding), so saving without changes keeps them exact.
-function asInput(value: number | null | undefined): string {
-  return value === null || value === undefined ? "" : String(value);
-}
 
 export function FoodForm({
   action,
@@ -34,32 +29,40 @@ export function FoodForm({
   const { state, pending, fieldErrors: errors, formProps } = usePreservingFormAction(action);
   const [kcalEstimate, setKcalEstimate] = useState(() =>
     kcalMismatchEstimate({
-      kcal100: asInput(initial?.kcal100),
-      protein100: asInput(initial?.protein100),
-      fat100: asInput(initial?.fat100),
-      carbs100: asInput(initial?.carbs100),
-      fiber100: asInput(initial?.fiber100),
+      kcal100: formatInputNumber(initial?.kcal100),
+      protein100: formatInputNumber(initial?.protein100),
+      fat100: formatInputNumber(initial?.fat100),
+      carbs100: formatInputNumber(initial?.carbs100),
+      fiber100: formatInputNumber(initial?.fiber100),
     }),
   );
 
-  // Re-checked on every keystroke; it only warns, saving stays possible (alcohol, rounded labels).
+  function estimateFrom(form: HTMLFormElement): number | null {
+    const data = new FormData(form);
+    const read = (name: string) => String(data.get(name) ?? "");
+    return kcalMismatchEstimate({
+      kcal100: read("kcal100"),
+      protein100: read("protein100"),
+      fat100: read("fat100"),
+      carbs100: read("carbs100"),
+      fiber100: read("fiber100"),
+    });
+  }
+
+  // Only a warning: saving stays possible (alcohol, rounded labels). It appears when a field is
+  // left, so it never pushes the field being typed in mid-number, and goes as soon as it no
+  // longer applies.
   function onInput(event: FormEvent<HTMLFormElement>) {
     formProps.onInput(event);
-    const data = new FormData(event.currentTarget);
-    const read = (name: string) => String(data.get(name) ?? "");
-    setKcalEstimate(
-      kcalMismatchEstimate({
-        kcal100: read("kcal100"),
-        protein100: read("protein100"),
-        fat100: read("fat100"),
-        carbs100: read("carbs100"),
-        fiber100: read("fiber100"),
-      }),
-    );
+    if (kcalEstimate !== null && estimateFrom(event.currentTarget) === null) setKcalEstimate(null);
+  }
+
+  function onBlur(event: FocusEvent<HTMLFormElement>) {
+    setKcalEstimate(estimateFrom(event.currentTarget));
   }
 
   return (
-    <form {...formProps} onInput={onInput} className="flex flex-col gap-4">
+    <form {...formProps} onInput={onInput} onBlur={onBlur} className="flex flex-col gap-4">
       <TextField
         label={ru.foods.name}
         name="name"
@@ -74,7 +77,7 @@ export function FoodForm({
             label={field.label}
             name={field.name}
             inputMode="decimal"
-            defaultValue={asInput(initial?.[field.name])}
+            defaultValue={formatInputNumber(initial?.[field.name])}
             // With the name already taken from the search, the first thing to type is kcal.
             autoFocus={draftName !== undefined && field.name === "kcal100"}
             error={errors[field.name]}
