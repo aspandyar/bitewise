@@ -13,6 +13,7 @@ import { getVisibleFood, listVisiblePortions } from "@/lib/foods/repo";
 import { parseFoodId } from "@/lib/foods/schema";
 import { safeSourceUrl } from "@/lib/foods/source-url";
 import { ru } from "@/lib/i18n/ru";
+import { calcEntryNutrients } from "@/lib/nutrition";
 import { recipeHref } from "@/lib/recipes/paths";
 import { getRecipeIdByFoodId } from "@/lib/recipes/repo";
 
@@ -73,6 +74,7 @@ async function FoodContent({ params }: { params: Promise<{ id: string }> }) {
           ) : (
             ru.foods.sourceNames[food.source]
           )}
+          {food.copiedFrom ? ru.foods.copiedFrom(ru.foods.sourceNames[food.copiedFrom]) : null}
         </p>
       </section>
       {food.isOwn ? (
@@ -92,7 +94,13 @@ async function FoodContent({ params }: { params: Promise<{ id: string }> }) {
         </div>
       )}
       <ResetOnHide>
-        <Portions foodId={food.id} portions={portions} />
+        <Portions
+          foodId={food.id}
+          portions={portions.map((portion) => ({
+            ...portion,
+            kcal: calcEntryNutrients(food, portion.grams).kcal,
+          }))}
+        />
       </ResetOnHide>
     </main>
   );

@@ -2,13 +2,9 @@
 
 import { FormError, SubmitButton, TextField, usePreservingFormAction } from "@/components/ui/form";
 import type { FormState } from "@/lib/forms";
+import { formatInputNumber } from "@/lib/format";
 import { ru } from "@/lib/i18n/ru";
 import type { RecipeValues } from "@/lib/recipes/types";
-
-// Edit shows stored values as typed, so saving without changes keeps them exact.
-function asInput(value: number | null | undefined): string {
-  return value === null || value === undefined ? "" : String(value);
-}
 
 export function RecipeForm({
   action,
@@ -34,7 +30,7 @@ export function RecipeForm({
           label={ru.recipes.cookedWeight}
           name="cookedWeightG"
           inputMode="decimal"
-          defaultValue={asInput(initial?.cookedWeightG)}
+          defaultValue={formatInputNumber(initial?.cookedWeightG)}
           error={errors.cookedWeightG}
         />
         {/* The error already says what to fix; the hint under it would read as a second message. */}
@@ -46,7 +42,7 @@ export function RecipeForm({
         label={ru.recipes.servings}
         name="servings"
         inputMode="numeric"
-        defaultValue={asInput(initial?.servings)}
+        defaultValue={formatInputNumber(initial?.servings)}
         error={errors.servings}
       />
       <FormError message={state.formError} />

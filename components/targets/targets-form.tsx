@@ -1,12 +1,14 @@
 "use client";
 
 import { resetTargetAction, saveManualTargetAction } from "@/app/(app)/actions";
+import { useState, type FormEvent } from "react";
 import { useFormStatus } from "react-dom";
 import { FormError, SubmitButton, TextField, usePreservingFormAction } from "@/components/ui/form";
 import type { TargetMode } from "@/lib/config";
 import { formatGrams, formatKcal } from "@/lib/format";
+import { readDecimalInput } from "@/lib/forms";
 import { ru } from "@/lib/i18n/ru";
-import type { MacroTargets } from "@/lib/nutrition";
+import { calcKcalFromMacros, type MacroTargets } from "@/lib/nutrition";
 
 const fields = [
   { name: "kcal", label: ru.targets.kcal, format: formatKcal, unit: ru.targets.kcalUnit },
@@ -14,6 +16,14 @@ const fields = [
   { name: "fatG", label: ru.targets.fatG, format: formatGrams, unit: ru.targets.gramsUnit },
   { name: "carbsG", label: ru.targets.carbsG, format: formatGrams, unit: ru.targets.gramsUnit },
 ] as const;
+
+function kcalOfFields(protein: string, fat: string, carbs: string): number | null {
+  const proteinG = readDecimalInput(protein);
+  const fatG = readDecimalInput(fat);
+  const carbsG = readDecimalInput(carbs);
+  if (proteinG === null || fatG === null || carbsG === null) return null;
+  return calcKcalFromMacros({ proteinG, fatG, carbsG, fiberG: null });
+}
 
 function ResetButton() {
   // Disabled while pending so a double tap cannot fire the reset twice.
@@ -44,9 +54,26 @@ export function TargetsForm({
     fieldErrors: errors,
     formProps,
   } = usePreservingFormAction(saveManualTargetAction);
+  // Starts from the values as the fields show them, so the first keystroke does not move it.
+  const [macroKcal, setMacroKcal] = useState(() =>
+    kcalOfFields(
+      formatGrams(current.proteinG),
+      formatGrams(current.fatG),
+      formatGrams(current.carbsG),
+    ),
+  );
+
+  // Manual kcal and macros are typed separately; the macro sum next to kcal shows a mismatch.
+  function onInput(event: FormEvent<HTMLFormElement>) {
+    formProps.onInput(event);
+    const data = new FormData(event.currentTarget);
+    const read = (name: string) => String(data.get(name) ?? "");
+    setMacroKcal(kcalOfFields(read("proteinG"), read("fatG"), read("carbsG")));
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <form {...formProps} className="flex flex-col gap-4">
+      <form {...formProps} onInput={onInput} className="flex flex-col gap-4">
         {fields.map((field) => (
           <div key={field.name} className="flex flex-col gap-1">
             <TextField
@@ -57,10 +84,18 @@ export function TargetsForm({
               error={errors[field.name]}
             />
             <p className="text-sm text-foreground/60">
-              {ru.targets.calculatedHint}: {field.format(calculated[field.name])} {field.unit}
+              {ru.targets.calculatedValue(field.format(calculated[field.name]), field.unit)}
             </p>
+            {field.name === "kcal" && macroKcal !== null ? (
+              <p className="text-sm text-foreground/60">
+                {ru.targets.kcalFromMacros(formatKcal(macroKcal))}
+              </p>
+            ) : null}
           </div>
         ))}
+        <p className="text-sm text-foreground/60">
+          {mode === "manual" ? ru.targets.manualKept : ru.targets.manualOnSave}
+        </p>
         <FormError message={state.formError} />
         <SubmitButton pending={pending}>{ru.common.save}</SubmitButton>
       </form>

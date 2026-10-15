@@ -16,6 +16,7 @@ import {
 } from "@/lib/foods/repo";
 import { foodSchema, parseFoodId, portionSchema } from "@/lib/foods/schema";
 import { ru } from "@/lib/i18n/ru";
+import { withToast } from "@/lib/toast";
 
 // Bound arguments come from the client and can be tampered with, so ids are re-validated here.
 function requireId(value: unknown): string {
@@ -30,7 +31,7 @@ export async function createFoodAction(_prev: FormState, formData: FormData): Pr
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
   const created = await createFood(db, userId, parsed.data);
   if (created === "limit") return { formError: ru.foods.foodLimit(FOOD_LIMITS.maxOwnFoods) };
-  redirect(`/foods/${created.id}`);
+  redirect(withToast(`/foods/${created.id}`, "saved"));
 }
 
 export async function updateFoodAction(
@@ -43,7 +44,7 @@ export async function updateFoodAction(
   const parsed = foodSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
   if (!(await updateOwnFood(db, userId, id, parsed.data))) notFound();
-  redirect(`/foods/${id}`);
+  redirect(withToast(`/foods/${id}`, "saved"));
 }
 
 export async function deleteFoodAction(foodId: string): Promise<void> {
@@ -53,7 +54,7 @@ export async function deleteFoodAction(foodId: string): Promise<void> {
   // Drops the client's cached food screen, so browser Back renders "not found" instead of a food
   // that still looks editable.
   revalidatePath(`/foods/${id}`);
-  redirect("/foods");
+  redirect(withToast("/foods", "deleted"));
 }
 
 export async function copyFoodAction(foodId: string): Promise<void> {
@@ -63,7 +64,7 @@ export async function copyFoodAction(foodId: string): Promise<void> {
   // The copy button has no form state to show a message in; reaching the cap means a script,
   // not a person, so the generic error screen is enough.
   if (copy === "limit") throw new Error("own food cap reached");
-  redirect(`/foods/${copy.id}/edit`);
+  redirect(withToast(`/foods/${copy.id}/edit`, "copied"));
 }
 
 export async function addPortionAction(

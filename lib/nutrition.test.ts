@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   calcAgeYears,
+  calcKcalFromMacros,
+  isKcalConsistentWithMacros,
   calcDayProgress,
   calcEntryNutrients,
   calcPortionGrams,
@@ -441,5 +443,69 @@ describe("calcServingPortionGrams", () => {
   it("returns null for a serving heavier than any portion", () => {
     // 20 kg in one serving × 50 in the diary would overflow numeric(8,2).
     expect(calcServingPortionGrams(20_000, 1)).toBeNull();
+  });
+});
+
+describe("calcKcalFromMacros", () => {
+  it("counts 4 kcal per g of protein and carbs and 9 per g of fat", () => {
+    // 12.6 × 4 + 3.3 × 9 + 57.1 × 4 = 50.4 + 29.7 + 228.4 = 308.5
+    expect(
+      calcKcalFromMacros({ proteinG: 12.6, fatG: 3.3, carbsG: 57.1, fiberG: null }),
+    ).toBeCloseTo(308.5, 10);
+  });
+
+  it("adds 2 kcal per g of fiber when it is known", () => {
+    // 1 × 4 + 0.7 × 9 + 5.4 × 4 + 6.5 × 2 = 4 + 6.3 + 21.6 + 13 = 44.9
+    expect(calcKcalFromMacros({ proteinG: 1, fatG: 0.7, carbsG: 5.4, fiberG: 6.5 })).toBeCloseTo(
+      44.9,
+      10,
+    );
+  });
+});
+
+describe("isKcalConsistentWithMacros", () => {
+  const buckwheat = { proteinG: 12.6, fatG: 3.3, carbsG: 57.1, fiberG: null };
+  const zero = { proteinG: 0, fatG: 0, carbsG: 0, fiberG: null };
+
+  it("accepts water: nothing on the label, nothing by the formula", () => {
+    expect(calcKcalFromMacros(zero)).toBe(0);
+    expect(isKcalConsistentWithMacros(0, zero)).toBe(true);
+  });
+
+  it("lets the 20 % share decide for a dense food", () => {
+    // 50 g of protein = 200 kcal by the formula. 250 kcal is 50 off, exactly 20 % of 250: accepted.
+    // 260 kcal is 60 off, more than 20 % of 260 (52) and more than 20 kcal: flagged.
+    const protein = { proteinG: 50, fatG: 0, carbsG: 0, fiberG: null };
+    expect(isKcalConsistentWithMacros(250, protein)).toBe(true);
+    expect(isKcalConsistentWithMacros(260, protein)).toBe(false);
+  });
+
+  it("accepts a miss of exactly 20 kcal on a light food", () => {
+    // 10 g of carbs = 40 kcal; 60 kcal is 20 off — the floor, while 20 % of 60 is only 12.
+    expect(isKcalConsistentWithMacros(60, { proteinG: 0, fatG: 0, carbsG: 10, fiberG: null })).toBe(
+      true,
+    );
+  });
+
+  it("accepts label kcal close to the formula", () => {
+    expect(isKcalConsistentWithMacros(313, buckwheat)).toBe(true);
+  });
+
+  it("flags a dropped digit", () => {
+    expect(isKcalConsistentWithMacros(31, buckwheat)).toBe(false);
+  });
+
+  it("ignores a large share of a tiny number", () => {
+    // Black coffee: 1 kcal on the label, 0.7 by the formula — 30 % off, but 0.3 kcal.
+    expect(
+      isKcalConsistentWithMacros(1, { proteinG: 0.1, fatG: 0, carbsG: 0.075, fiberG: null }),
+    ).toBe(true);
+  });
+
+  it("flags alcohol, which the formula does not count", () => {
+    // Dry red wine: 85 kcal, 10.7 by protein, fat and carbs.
+    expect(
+      isKcalConsistentWithMacros(85, { proteinG: 0.1, fatG: 0, carbsG: 2.6, fiberG: null }),
+    ).toBe(false);
   });
 });

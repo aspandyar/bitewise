@@ -24,7 +24,12 @@ export type FoodListItem = {
   isRecipe: boolean;
 };
 
-export type FoodDetails = FoodListItem & { fiber100: number | null; sourceUrl: string | null };
+export type FoodDetails = FoodListItem & {
+  fiber100: number | null;
+  sourceUrl: string | null;
+  // Where an own food's numbers were copied from; null for anything else.
+  copiedFrom: FoodSource | null;
+};
 
 export type PortionValues = { label: string; grams: number };
 

@@ -5,6 +5,7 @@ import {
   formatEntryAmount,
   formatGrams,
   formatGramsAtLeast,
+  formatInputNumber,
   formatKcal,
   isOverTarget,
 } from "./format";
@@ -40,6 +41,20 @@ describe("formatGramsAtLeast", () => {
 
   it("groups thousands like other numbers in messages", () => {
     expect(formatGramsAtLeast(12_345.6)).toBe("12\u00a0346");
+  });
+});
+
+describe("formatInputNumber", () => {
+  it("prefills a stored value with a decimal comma and its full precision", () => {
+    expect(formatInputNumber(11.73)).toBe("11,73");
+  });
+
+  it("keeps whole numbers and large values unbroken", () => {
+    expect(formatInputNumber(20000)).toBe("20000");
+  });
+
+  it.each([null, undefined])("leaves %j empty", (value) => {
+    expect(formatInputNumber(value)).toBe("");
   });
 });
 
@@ -88,28 +103,29 @@ describe("formatDayLabel", () => {
   });
 });
 
+// The unit is joined with a no-break space, so "75 г" never splits across lines.
 describe("formatEntryAmount", () => {
   it("shows grams for a grams entry", () => {
     expect(formatEntryAmount({ grams: 150.4, portionLabel: null, portionCount: null })).toBe(
-      "150 г",
+      "150\u00a0г",
     );
   });
 
   it("shows a single portion without a multiplier", () => {
     expect(formatEntryAmount({ grams: 60, portionLabel: "1 шт", portionCount: 1 })).toBe(
-      "1 шт · 60 г",
+      "1 шт · 60\u00a0г",
     );
   });
 
   it("shows a fractional count with its grams", () => {
     expect(formatEntryAmount({ grams: 90, portionLabel: "1 шт", portionCount: 1.5 })).toBe(
-      "1,5 × 1 шт · 90 г",
+      "1,5 × 1 шт · 90\u00a0г",
     );
   });
 
   it("keeps a label with its own brackets free of double brackets", () => {
     expect(
       formatEntryAmount({ grams: 75, portionLabel: "1 шт (крупное)", portionCount: 1.5 }),
-    ).toBe("1,5 × 1 шт (крупное) · 75 г");
+    ).toBe("1,5 × 1 шт (крупное) · 75\u00a0г");
   });
 });

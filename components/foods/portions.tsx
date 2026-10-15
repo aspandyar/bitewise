@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useFormStatus } from "react-dom";
 import { addPortionAction, deletePortionAction } from "@/app/(app)/foods/actions";
 import { FormError, SubmitButton, TextField, usePreservingFormAction } from "@/components/ui/form";
-import { formatGrams } from "@/lib/format";
+import { formatGrams, formatKcal } from "@/lib/format";
 import type { PortionItem } from "@/lib/foods/types";
 import { ru } from "@/lib/i18n/ru";
 
@@ -22,7 +22,14 @@ function DeletePortionButton({ label }: { label: string }) {
   );
 }
 
-export function Portions({ foodId, portions }: { foodId: string; portions: PortionItem[] }) {
+// kcal per portion arrives computed by the server page; the client does not derive nutrients.
+export function Portions({
+  foodId,
+  portions,
+}: {
+  foodId: string;
+  portions: (PortionItem & { kcal: number })[];
+}) {
   const {
     state,
     pending,
@@ -50,7 +57,11 @@ export function Portions({ foodId, portions }: { foodId: string; portions: Porti
           {portions.map((portion) => (
             <li key={portion.id} className="flex min-h-11 items-center justify-between gap-2">
               <span className="min-w-0 [overflow-wrap:anywhere]">
-                {ru.foods.portionRow(portion.label, formatGrams(portion.grams))}
+                {ru.foods.portionRow(
+                  portion.label,
+                  formatGrams(portion.grams),
+                  formatKcal(portion.kcal),
+                )}
               </span>
               {portion.isOwn ? (
                 <form action={deletePortionAction.bind(null, foodId, portion.id)}>
