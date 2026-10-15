@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { repeatMealAction } from "@/app/(app)/diary/actions";
 import type { Meal } from "@/lib/config";
 import type { IsoDate } from "@/lib/date";
 import { addHref, editHref } from "@/lib/diary/paths";
 import type { DiaryEntry } from "@/lib/diary/types";
 import { formatEntryAmount, formatKcal } from "@/lib/format";
 import { ru } from "@/lib/i18n/ru";
+import { RepeatMealButton } from "./repeat-meal-button";
 import type { Nutrients } from "@/lib/nutrition";
 
 // Nutrients are computed on the server page; this component only lays them out.
@@ -15,11 +17,14 @@ export function MealSection({
   date,
   rows,
   kcal,
+  repeatLabel,
 }: {
   meal: Meal;
   date: IsoDate;
   rows: EntryRow[];
   kcal: number;
+  // Offered only for an empty meal that was filled on an earlier day.
+  repeatLabel?: string;
 }) {
   const title = ru.diary.meals[meal];
   const headingId = `meal-${meal}`;
@@ -64,6 +69,11 @@ export function MealSection({
       >
         {ru.diary.add}
       </Link>
+      {repeatLabel ? (
+        <form action={repeatMealAction.bind(null, date, meal)}>
+          <RepeatMealButton label={repeatLabel} />
+        </form>
+      ) : null}
     </section>
   );
 }

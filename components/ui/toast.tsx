@@ -11,7 +11,10 @@ import { parseToast, withoutToast, type Toast } from "@/lib/toast";
 type Shown = { toast: Toast; undo: string[] | null; key: string };
 
 function message({ toast, undo }: Shown): string {
-  if (toast === "addedMany") return ru.toasts.addedMany(undo?.length ?? 0);
+  // A repeat of a one-entry meal reads like any single add.
+  if (toast === "addedMany" && (undo?.length ?? 0) > 1)
+    return ru.toasts.addedMany(undo?.length ?? 0);
+  if (toast === "addedMany") return ru.toasts.added;
   return ru.toasts[toast];
 }
 

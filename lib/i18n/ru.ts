@@ -219,6 +219,8 @@ export const ru = {
     otherAmountSymbol: "…",
     quickKcalLink: "Ввести только калории",
     quickTitle: "Только калории",
+    repeat: (names: readonly string[], more: number, kcal: string) =>
+      `Повторить: ${names.join(", ")}${more > 0 ? ` и ещё ${n(more)}` : ""} · ${kcal}${NBSP}ккал`,
     quickKcal: "Калории, ккал",
     quickName: "Что это (необязательно)",
     quickProtein: "Б, г",
