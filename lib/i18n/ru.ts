@@ -230,6 +230,11 @@ export const ru = {
     entryLimit: (max: number) => `Не больше ${n(max)} записей за день`,
     entryTotalLimit: (max: number) => `Не больше ${n(max)} записей в дневнике`,
   },
+  toasts: {
+    saved: "Сохранено",
+    deleted: "Удалено",
+    copied: "Копия создана — можно править",
+  },
   recipes: {
     title: "Блюда",
     add: "+ Новое блюдо",

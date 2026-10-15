@@ -195,6 +195,10 @@ export const RECIPE_LIMITS = {
   servings: { min: 1, max: 100 },
 } as const;
 
+// A confirmation after a redirect travels in this query parameter and hides after a few seconds.
+export const TOAST_PARAM = "toast";
+export const TOAST_DURATION_MS = 3000;
+
 // Credited on the foods screen: the seed's shared foods come from there (public domain).
 export const USDA_FDC_URL = "https://fdc.nal.usda.gov/";
 
