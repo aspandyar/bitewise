@@ -236,6 +236,7 @@ export const ru = {
     },
     submitAdd: "Добавить",
     amountLegend: "Сколько",
+    amountKcal: (kcal: string) => `= ${kcal}${NBSP}ккал`,
     modeGrams: "Граммы",
     modePortions: "Порции",
     grams: "Граммы",

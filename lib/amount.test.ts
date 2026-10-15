@@ -6,6 +6,7 @@ import { ru } from "@/lib/i18n/ru";
 import {
   addAmountSchema,
   isStorableGrams,
+  previewKcal,
   portionToPick,
   toAddAmount,
   toAmountColumns,
@@ -144,5 +145,28 @@ describe("portionToPick", () => {
 
   it("has nothing to pick for grams", () => {
     expect(portionToPick({ mode: "grams", grams: 10 }, null)).toBeNull();
+  });
+});
+
+describe("previewKcal", () => {
+  const oats = { kcal100: 350, protein100: 12, fat100: 6, carbs100: 60 };
+
+  it("prices typed grams", () => {
+    expect(previewKcal(oats, { mode: "grams", grams: "60" })).toBe(210);
+  });
+
+  it("prices a portion times its count", () => {
+    // 2 × 40 g = 80 g × 3.5 kcal/g = 280
+    expect(previewKcal(oats, { mode: "portion", portionGrams: 40, count: "2" })).toBe(280);
+  });
+
+  it.each([
+    { mode: "grams" as const, grams: "" },
+    { mode: "grams" as const, grams: "0" },
+    { mode: "grams" as const, grams: "abc" },
+    { mode: "portion" as const, portionGrams: 40, count: "" },
+    { mode: "portion" as const, portionGrams: null, count: "1" },
+  ])("has nothing to show for %j", (amount) => {
+    expect(previewKcal(oats, amount)).toBeNull();
   });
 });

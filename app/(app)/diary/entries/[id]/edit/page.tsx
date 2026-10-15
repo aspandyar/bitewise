@@ -103,6 +103,12 @@ async function EditEntryContent({ params }: Pick<PageProps<"/diary/entries/[id]/
       <ResetOnHide>
         <EditEntryForm
           key={`${entry.id}:${entry.meal}:${entry.grams}:${entry.portionCount}`}
+          per100g={{
+            kcal100: entry.kcal100,
+            protein100: entry.protein100,
+            fat100: entry.fat100,
+            carbs100: entry.carbs100,
+          }}
           action={updateEntryAction.bind(null, entry.id)}
           meal={entry.meal}
           portions={portions}

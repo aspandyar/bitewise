@@ -55,6 +55,12 @@ async function AmountContent({
       <ResetOnHide>
         <AddEntryForm
           key={`${food.id}:${date}:${meal}:${dayCount}`}
+          per100g={{
+            kcal100: food.kcal100,
+            protein100: food.protein100,
+            fat100: food.fat100,
+            carbs100: food.carbs100,
+          }}
           date={date}
           foodId={food.id}
           meal={meal}
