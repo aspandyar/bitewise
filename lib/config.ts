@@ -63,7 +63,7 @@ export const KCAL_PER_GRAM = {
   fiber: 2,
 } as const;
 
-// An own food's kcal is flagged (never refused) when it misses the 4/9/4 estimate by more than
+// An own food's kcal is flagged (never refused) when it misses the Atwater estimate by more than
 // both bounds. Tuned on the seed: only cocoa powder, dry wine and beer (alcohol) are flagged, while
 // a dropped digit (31 for 313) always is; the absolute floor spares near-zero foods like coffee.
 export const KCAL_CHECK = {

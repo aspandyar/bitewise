@@ -17,6 +17,14 @@ const fields = [
   { name: "carbsG", label: ru.targets.carbsG, format: formatGrams, unit: ru.targets.gramsUnit },
 ] as const;
 
+function kcalOfFields(protein: string, fat: string, carbs: string): number | null {
+  const proteinG = readDecimalInput(protein);
+  const fatG = readDecimalInput(fat);
+  const carbsG = readDecimalInput(carbs);
+  if (proteinG === null || fatG === null || carbsG === null) return null;
+  return calcKcalFromMacros({ proteinG, fatG, carbsG, fiberG: null });
+}
+
 function ResetButton() {
   // Disabled while pending so a double tap cannot fire the reset twice.
   const { pending } = useFormStatus();
@@ -46,28 +54,21 @@ export function TargetsForm({
     fieldErrors: errors,
     formProps,
   } = usePreservingFormAction(saveManualTargetAction);
-  const [macroKcal, setMacroKcal] = useState<number | null>(() =>
-    calcKcalFromMacros({
-      proteinG: current.proteinG,
-      fatG: current.fatG,
-      carbsG: current.carbsG,
-      fiberG: null,
-    }),
+  // Starts from the values as the fields show them, so the first keystroke does not move it.
+  const [macroKcal, setMacroKcal] = useState(() =>
+    kcalOfFields(
+      formatGrams(current.proteinG),
+      formatGrams(current.fatG),
+      formatGrams(current.carbsG),
+    ),
   );
 
-  // Manual kcal and macros are typed separately; the live sum shows when they disagree.
+  // Manual kcal and macros are typed separately; the macro sum next to kcal shows a mismatch.
   function onInput(event: FormEvent<HTMLFormElement>) {
     formProps.onInput(event);
     const data = new FormData(event.currentTarget);
-    const read = (name: string) => readDecimalInput(String(data.get(name) ?? ""));
-    const proteinG = read("proteinG");
-    const fatG = read("fatG");
-    const carbsG = read("carbsG");
-    setMacroKcal(
-      proteinG === null || fatG === null || carbsG === null
-        ? null
-        : calcKcalFromMacros({ proteinG, fatG, carbsG, fiberG: null }),
-    );
+    const read = (name: string) => String(data.get(name) ?? "");
+    setMacroKcal(kcalOfFields(read("proteinG"), read("fatG"), read("carbsG")));
   }
 
   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { FormError, SubmitButton, TextField, usePreservingFormAction } from "@/components/ui/form";
 import { kcalMismatchEstimate } from "@/lib/foods/kcal-check";
 import { formatKcal } from "@/lib/format";
@@ -69,7 +69,7 @@ export function FoodForm({
       />
       <p className="text-sm text-foreground/60">{ru.foods.valuesHint}</p>
       {numberFields.map((field) => (
-        <Fragment key={field.name}>
+        <div key={field.name} className="flex flex-col gap-1">
           <TextField
             label={field.label}
             name={field.name}
@@ -79,12 +79,14 @@ export function FoodForm({
             autoFocus={draftName !== undefined && field.name === "kcal100"}
             error={errors[field.name]}
           />
-          {field.name === "kcal100" && kcalEstimate !== null ? (
+          {/* Always mounted (empty takes no space), so a screen reader announces the warning
+              when its text appears. */}
+          {field.name === "kcal100" ? (
             <p role="status" className="text-sm text-amber-700 dark:text-amber-400">
-              {ru.foods.kcalMismatch(formatKcal(kcalEstimate))}
+              {kcalEstimate === null ? null : ru.foods.kcalMismatch(formatKcal(kcalEstimate))}
             </p>
           ) : null}
-        </Fragment>
+        </div>
       ))}
       <FormError message={state.formError} />
       <SubmitButton pending={pending}>{ru.common.save}</SubmitButton>

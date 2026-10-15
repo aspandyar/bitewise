@@ -179,6 +179,32 @@ describe("copyFood", () => {
     expect(portions.map((p) => p.label)).not.toContain("1 крупное");
   });
 
+  it("credits a label source and nothing for a copy of a plain own food", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const [label] = await testDb
+      .insert(foods)
+      .values({
+        name: "Сырок",
+        kcal100: 300,
+        protein100: 15,
+        fat100: 11,
+        carbs100: 35,
+        source: "label",
+        seedKey: `label:${randomUUID()}`,
+        sourceUrl: "https://example.com/syrok",
+      })
+      .returning({ id: foods.id });
+    if (!label) throw new Error("no label food");
+    const fromLabel = await copyFood(testDb, alice, label.id);
+    const { id: own } = await createOwnFood(alice, oats);
+    const fromOwn = await copyFood(testDb, alice, own);
+    if (!fromLabel || fromLabel === "limit" || !fromOwn || fromOwn === "limit") {
+      throw new Error("no copy");
+    }
+    expect((await getVisibleFood(testDb, alice, fromLabel.id))?.copiedFrom).toBe("label");
+    expect((await getVisibleFood(testDb, alice, fromOwn.id))?.copiedFrom).toBeNull();
+  });
+
   it("keeps where a copy of a copy first came from", async () => {
     const alice = await newUserId("alice@mail.com");
     const shared = await insertSharedFood({ name: "Яйцо" });

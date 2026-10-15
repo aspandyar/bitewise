@@ -10,7 +10,7 @@ type FoodFormNumbers = {
 };
 
 // Runs while the form is typed in, so it stays silent until every number it needs is there.
-// Returns the 4/9/4 estimate to show when the typed kcal look like a typo.
+// Returns the Atwater estimate (4/9/4, fiber 2) to show when the typed kcal look like a typo.
 export function kcalMismatchEstimate(values: FoodFormNumbers): number | null {
   const kcal = readDecimalInput(values.kcal100);
   const proteinG = readDecimalInput(values.protein100);

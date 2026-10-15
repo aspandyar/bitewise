@@ -465,6 +465,27 @@ describe("calcKcalFromMacros", () => {
 
 describe("isKcalConsistentWithMacros", () => {
   const buckwheat = { proteinG: 12.6, fatG: 3.3, carbsG: 57.1, fiberG: null };
+  const zero = { proteinG: 0, fatG: 0, carbsG: 0, fiberG: null };
+
+  it("accepts water: nothing on the label, nothing by the formula", () => {
+    expect(calcKcalFromMacros(zero)).toBe(0);
+    expect(isKcalConsistentWithMacros(0, zero)).toBe(true);
+  });
+
+  it("lets the 20 % share decide for a dense food", () => {
+    // 50 g of protein = 200 kcal by the formula. 250 kcal is 50 off, exactly 20 % of 250: accepted.
+    // 260 kcal is 60 off, more than 20 % of 260 (52) and more than 20 kcal: flagged.
+    const protein = { proteinG: 50, fatG: 0, carbsG: 0, fiberG: null };
+    expect(isKcalConsistentWithMacros(250, protein)).toBe(true);
+    expect(isKcalConsistentWithMacros(260, protein)).toBe(false);
+  });
+
+  it("accepts a miss of exactly 20 kcal on a light food", () => {
+    // 10 g of carbs = 40 kcal; 60 kcal is 20 off — the floor, while 20 % of 60 is only 12.
+    expect(isKcalConsistentWithMacros(60, { proteinG: 0, fatG: 0, carbsG: 10, fiberG: null })).toBe(
+      true,
+    );
+  });
 
   it("accepts label kcal close to the formula", () => {
     expect(isKcalConsistentWithMacros(313, buckwheat)).toBe(true);
