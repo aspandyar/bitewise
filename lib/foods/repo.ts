@@ -2,7 +2,7 @@ import { and, asc, count, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { lockUserWrites } from "@/db/locks";
 import { foodPortions, foods } from "@/db/schema";
 import type { Db } from "@/db/types";
-import { FOOD_LIMITS, FOOD_SEARCH, PORTION_LIMITS } from "@/lib/config";
+import { FOOD_LIMITS, FOOD_SEARCH, PORTION_LIMITS, type FoodSource } from "@/lib/config";
 import { recomputeRecipesUsingFoods } from "@/lib/recipes/recompute";
 import { escapeLike } from "./search";
 import type { FoodDetails, FoodListItem, FoodValues, PortionItem, PortionValues } from "./types";
@@ -46,7 +46,12 @@ export async function getVisibleFood(
   foodId: string,
 ): Promise<FoodDetails | null> {
   const [row] = await db
-    .select({ ...listColumnsFor(userId), fiber100: foods.fiber100, sourceUrl: foods.sourceUrl })
+    .select({
+      ...listColumnsFor(userId),
+      fiber100: foods.fiber100,
+      sourceUrl: foods.sourceUrl,
+      copiedFrom: foods.copiedFrom,
+    })
     .from(foods)
     .where(and(eq(foods.id, foodId), visibleTo(userId)))
     .limit(1);
@@ -78,6 +83,7 @@ export async function createFood(
   db: Db,
   userId: string,
   values: FoodValues,
+  copiedFrom: FoodSource | null = null,
 ): Promise<{ id: string } | "limit"> {
   return db.transaction(async (tx) => {
     await lockUserWrites(tx, userId);
@@ -88,7 +94,7 @@ export async function createFood(
     if ((owned?.total ?? 0) >= FOOD_LIMITS.maxOwnFoods) return "limit";
     const [row] = await tx
       .insert(foods)
-      .values({ ...values, ownerId: userId, source: "user" })
+      .values({ ...values, ownerId: userId, source: "user", copiedFrom })
       .returning({ id: foods.id });
     if (!row) throw new Error("food insert returned no row");
     return row;
@@ -193,12 +199,17 @@ export async function copyFood(
         fat100: foods.fat100,
         carbs100: foods.carbs100,
         fiber100: foods.fiber100,
+        source: foods.source,
+        copiedFrom: foods.copiedFrom,
       })
       .from(foods)
       .where(and(eq(foods.id, foodId), visibleTo(userId), notRecipe))
       .limit(1);
     if (!source) return null;
-    const copy = await createFood(tx, userId, source);
+    const { source: origin, copiedFrom, ...values } = source;
+    // A copy of a copy still credits the original data; a copy of a plain own food has none.
+    const credit = copiedFrom ?? (origin === "user" ? null : origin);
+    const copy = await createFood(tx, userId, values, credit);
     if (copy === "limit") return copy;
     // Every copied portion becomes the user's own and so counts against the cap. Shared ones come
     // first in the list, so the slice drops generic portions before the user's.

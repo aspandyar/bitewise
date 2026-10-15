@@ -1,0 +1,2 @@
+ALTER TABLE "foods" ADD COLUMN "copied_from" "food_source";--> statement-breakpoint
+ALTER TABLE "foods" ADD CONSTRAINT "foods_copied_from_only_own" CHECK ("foods"."copied_from" IS NULL OR "foods"."source" = 'user');

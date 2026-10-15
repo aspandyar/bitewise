@@ -54,6 +54,7 @@ describe("food visibility", () => {
       ...oats,
       source: "user",
       sourceUrl: null,
+      copiedFrom: null,
       isOwn: true,
       isRecipe: false,
     });
@@ -151,6 +152,7 @@ describe("copyFood", () => {
       kcal100: 143,
       fiber100: 0,
       source: "user",
+      copiedFrom: "usda",
       isOwn: true,
     });
     const portions = await listVisiblePortions(testDb, alice, copy.id);
@@ -175,6 +177,16 @@ describe("copyFood", () => {
     expect(portions).toHaveLength(PORTION_LIMITS.maxOwnPerFood);
     expect(portions.map((p) => p.label)).not.toContain("1 шт");
     expect(portions.map((p) => p.label)).not.toContain("1 крупное");
+  });
+
+  it("keeps where a copy of a copy first came from", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const shared = await insertSharedFood({ name: "Яйцо" });
+    const first = await copyFood(testDb, alice, shared);
+    if (!first || first === "limit") throw new Error("no copy");
+    const second = await copyFood(testDb, alice, first.id);
+    if (!second || second === "limit") throw new Error("no copy");
+    expect((await getVisibleFood(testDb, alice, second.id))?.copiedFrom).toBe("usda");
   });
 
   it("refuses to copy someone else's food", async () => {

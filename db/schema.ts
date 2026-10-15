@@ -113,6 +113,8 @@ export const foods = pgTable(
     // Stable key the seed upserts by: "usda:<fdcId>" or "label:<slug>".
     seedKey: text("seed_key"),
     sourceUrl: text("source_url"),
+    // A copy is the user's own food, but its numbers came from somewhere: shown as "копия: USDA".
+    copiedFrom: foodSourceEnum("copied_from"),
     // Soft delete: diary entries (stage 3) will keep pointing at foods the user removed.
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     createdAt: createdAt(),
@@ -125,6 +127,7 @@ export const foods = pgTable(
     // A user's own food is never seed data, and every shared food comes from the seed.
     check("foods_user_source_has_owner", sql`(${t.source} = 'user') = (${t.ownerId} IS NOT NULL)`),
     check("foods_seed_key_iff_shared", sql`(${t.ownerId} IS NULL) = (${t.seedKey} IS NOT NULL)`),
+    check("foods_copied_from_only_own", sql`${t.copiedFrom} IS NULL OR ${t.source} = 'user'`),
     // Rendered as a link on the food card; the seed validates it, the database guarantees it.
     check("foods_source_url_https", sql`${t.sourceUrl} IS NULL OR ${t.sourceUrl} LIKE 'https://%'`),
     check(

@@ -124,6 +124,7 @@ export const ru = {
     portionRow: (label: string, grams: string, kcal: string) =>
       `${label} — ${grams} г · ${kcal} ккал`,
     sourceLabel: "Источник:",
+    copiedFrom: (source: string) => ` · копия: ${source}`,
     attribution: "Данные о продуктах:",
     edit: "Изменить",
     copy: "Скопировать к себе",

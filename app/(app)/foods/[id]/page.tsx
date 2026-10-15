@@ -74,6 +74,7 @@ async function FoodContent({ params }: { params: Promise<{ id: string }> }) {
           ) : (
             ru.foods.sourceNames[food.source]
           )}
+          {food.copiedFrom ? ru.foods.copiedFrom(ru.foods.sourceNames[food.copiedFrom]) : null}
         </p>
       </section>
       {food.isOwn ? (
