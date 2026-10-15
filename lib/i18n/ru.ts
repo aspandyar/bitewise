@@ -238,6 +238,9 @@ export const ru = {
     saved: "Сохранено",
     deleted: "Удалено",
     copied: "Копия создана — можно править",
+    added: "Добавлено",
+    addedMany: (count: number) => `Добавлено записей: ${n(count)}`,
+    undo: "Отменить",
   },
   recipes: {
     title: "Блюда",

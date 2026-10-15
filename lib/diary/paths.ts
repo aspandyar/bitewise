@@ -1,5 +1,6 @@
 import type { Meal } from "@/lib/config";
 import type { IsoDate } from "@/lib/date";
+import type { AddError } from "./quick";
 
 // Today lives at "/" so the installed app always opens on the current day.
 export function dayHref(date: IsoDate, today: IsoDate): string {
@@ -10,8 +11,15 @@ export function diarySearch(date: IsoDate, meal: Meal): string {
   return new URLSearchParams({ date, meal }).toString();
 }
 
-export function addHref(date: IsoDate, meal: Meal): string {
-  return `/diary/add?${diarySearch(date, meal)}`;
+export function addHref(date: IsoDate, meal: Meal, error?: AddError): string {
+  const href = `/diary/add?${diarySearch(date, meal)}`;
+  return error ? `${href}&error=${error}` : href;
+}
+
+export const QUICK_KCAL_PATH = "/diary/quick";
+
+export function quickKcalHref(date: IsoDate, meal: Meal): string {
+  return `${QUICK_KCAL_PATH}?${diarySearch(date, meal)}`;
 }
 
 export function editHref(entryId: string): string {

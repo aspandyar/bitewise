@@ -219,6 +219,8 @@ export const RECIPE_LIMITS = {
 
 // A confirmation after a redirect travels in this query parameter and hides after a few seconds.
 export const TOAST_PARAM = "toast";
+// Entries a quick add or a repeat just created, so the toast can offer to undo them.
+export const UNDO_PARAM = "undo";
 export const TOAST_DURATION_MS = 3000;
 
 // Credited on the foods screen: the seed's shared foods come from there (public domain).

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { DIARY_LIMITS } from "@/lib/config";
-import { lastAmount, mealForHour, parseUndoIds, repeatSummary } from "./quick";
+import { lastAmount, mealForHour, parseAddError, parseUndoIds, repeatSummary } from "./quick";
 
 describe("mealForHour", () => {
   it.each([
@@ -60,5 +60,15 @@ describe("lastAmount", () => {
     expect(
       lastAmount({ grams: 999, portionLabel: "1 шт", portionGrams: 60, portionCount: 2 }),
     ).toEqual({ grams: 120, portionLabel: "1 шт", portionGrams: 60, portionCount: 2 });
+  });
+});
+
+describe("parseAddError", () => {
+  it.each(["limit", "totalLimit"] as const)("reads %s", (value) => {
+    expect(parseAddError(value)).toBe(value);
+  });
+
+  it.each([undefined, "", "<b>oops</b>", ["limit"]])("ignores %j", (value) => {
+    expect(parseAddError(value)).toBeNull();
   });
 });

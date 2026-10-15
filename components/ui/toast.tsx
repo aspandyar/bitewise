@@ -1,10 +1,19 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { TOAST_DURATION_MS, TOAST_PARAM } from "@/lib/config";
+import { startTransition, useEffect, useState } from "react";
+import { undoAddAction } from "@/app/(app)/diary/actions";
+import { QUICK, TOAST_DURATION_MS, TOAST_PARAM, UNDO_PARAM } from "@/lib/config";
+import { parseUndoIds } from "@/lib/diary/quick";
 import { ru } from "@/lib/i18n/ru";
 import { parseToast, withoutToast, type Toast } from "@/lib/toast";
+
+type Shown = { toast: Toast; undo: string[] | null; key: string };
+
+function message({ toast, undo }: Shown): string {
+  if (toast === "addedMany") return ru.toasts.addedMany(undo?.length ?? 0);
+  return ru.toasts[toast];
+}
 
 // The live region is always mounted: screen readers announce a change inside an existing
 // region, not one that appears together with its text.
@@ -13,12 +22,17 @@ export function ToastHost() {
   const pathname = usePathname();
   const params = useSearchParams();
   const fromUrl = parseToast(params.get(TOAST_PARAM));
-  const [shown, setShown] = useState<Toast | null>(null);
+  const undoFromUrl = params.get(UNDO_PARAM);
+  const [shown, setShown] = useState<Shown | null>(null);
 
-  // Taken out of the URL during render, so the toast outlives the parameter it came in.
-  if (fromUrl !== null && fromUrl !== shown) setShown(fromUrl);
+  // Taken out of the URL during render, so the toast outlives the parameters it came in. The key
+  // tells two identical toasts in a row apart (two quick adds of the same food).
+  const key = `${fromUrl}:${undoFromUrl}`;
+  if (fromUrl !== null && key !== shown?.key) {
+    setShown({ toast: fromUrl, undo: parseUndoIds(undoFromUrl), key });
+  }
 
-  // The parameter leaves the URL at once: leaving the page before the toast hides must not leave
+  // The parameters leave the URL at once: leaving the page before the toast hides must not leave
   // a history entry that shows it again on Back.
   useEffect(() => {
     if (fromUrl === null) return;
@@ -27,9 +41,18 @@ export function ToastHost() {
 
   useEffect(() => {
     if (shown === null) return;
-    const timer = setTimeout(() => setShown(null), TOAST_DURATION_MS);
+    // Long enough to notice a wrong tap when there is something to undo.
+    const timer = setTimeout(() => setShown(null), shown.undo ? QUICK.undoMs : TOAST_DURATION_MS);
     return () => clearTimeout(timer);
   }, [shown]);
+
+  function undo(ids: string[]) {
+    setShown(null);
+    startTransition(async () => {
+      await undoAddAction(ids);
+      router.refresh();
+    });
+  }
 
   return (
     <div
@@ -37,8 +60,19 @@ export function ToastHost() {
       className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4"
     >
       {shown ? (
-        <p className="rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background shadow-lg">
-          {ru.toasts[shown]}
+        <p className="flex items-center gap-3 rounded-full bg-foreground py-1 pr-1 pl-4 text-sm font-medium text-background shadow-lg">
+          <span className="py-1">{message(shown)}</span>
+          {shown.undo ? (
+            <button
+              type="button"
+              onClick={() => shown.undo && undo(shown.undo)}
+              className="pointer-events-auto min-h-11 rounded-full px-4 underline"
+            >
+              {ru.toasts.undo}
+            </button>
+          ) : (
+            <span className="pr-3" />
+          )}
         </p>
       ) : null}
     </div>

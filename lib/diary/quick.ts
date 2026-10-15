@@ -39,3 +39,14 @@ export function lastAmount(entry: AmountColumns): AmountColumns {
     portionCount: entry.portionCount,
   };
 }
+
+// A quick add that hits a cap returns to the add screen with one of these; only known keys reach
+// the page, never text from the URL.
+export const ADD_ERRORS = ["limit", "totalLimit"] as const;
+export type AddError = (typeof ADD_ERRORS)[number];
+const addErrorSchema = z.enum(ADD_ERRORS);
+
+export function parseAddError(value: unknown): AddError | null {
+  const parsed = addErrorSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
