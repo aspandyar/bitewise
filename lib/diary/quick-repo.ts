@@ -268,10 +268,12 @@ export async function toggleFavorite(
       .where(and(eq(favorites.userId, userId), eq(favorites.foodId, foodId)))
       .returning({ foodId: favorites.foodId });
     if (removed.length > 0) return "removed";
+    // Foods are only soft-deleted, so their stars stay in the table; they must not fill the cap.
     const [owned] = await tx
       .select({ total: count() })
       .from(favorites)
-      .where(eq(favorites.userId, userId));
+      .innerJoin(foods, eq(foods.id, favorites.foodId))
+      .where(and(eq(favorites.userId, userId), visibleTo(userId)));
     if ((owned?.total ?? 0) >= maxFavorites) return "limit";
     await tx.insert(favorites).values({ userId, foodId });
     return "added";

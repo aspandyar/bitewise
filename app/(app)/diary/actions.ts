@@ -30,6 +30,8 @@ import {
 import { getUserToday } from "@/lib/diary/today";
 import { firstFieldErrors, type FormState } from "@/lib/forms";
 import { ru } from "@/lib/i18n/ru";
+import { recipeHref } from "@/lib/recipes/paths";
+import { getRecipeIdByFoodId } from "@/lib/recipes/repo";
 import { withToast } from "@/lib/toast";
 
 // Bound arguments and hidden fields come from the client and can be tampered with.
@@ -185,6 +187,7 @@ export async function toggleFavoriteAction(foodId: string): Promise<void> {
   if (result === "not_found") notFound();
   // The cap is far above real use; reaching it means a script, and the star simply stays off.
   revalidatePath(`/foods/${id}`);
-  revalidatePath("/recipes/[id]", "page");
+  const recipeId = await getRecipeIdByFoodId(db, userId, id);
+  if (recipeId) revalidatePath(recipeHref(recipeId));
   revalidatePath("/diary/add");
 }

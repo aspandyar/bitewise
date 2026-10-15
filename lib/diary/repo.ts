@@ -1,4 +1,4 @@
-import { and, asc, count, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, count, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { lockUserWrites } from "@/db/locks";
 import { diaryEntries, foods } from "@/db/schema";
 import type { Db } from "@/db/types";
@@ -9,7 +9,7 @@ import {
   toAmountColumns,
   toUpdatedAmountColumns,
 } from "@/lib/amount";
-import { DIARY_LIMITS, NUTRIENT_BASE_GRAMS, type Meal } from "@/lib/config";
+import { DIARY_LIMITS, NUTRIENT_BASE_GRAMS, QUICK, type Meal } from "@/lib/config";
 import type { IsoDate } from "@/lib/date";
 import { getVisiblePortion, visibleTo } from "@/lib/foods/repo";
 import type { PortionValues } from "@/lib/foods/types";
@@ -181,7 +181,8 @@ export async function deleteEntry(
   return row ?? null;
 }
 
-// Undo of a quick add or a repeat: ids come from the URL, so only the user's own are touched.
+// Undo of a quick add or a repeat: ids come from the URL, so only the user's own entries, and only
+// ones created within the undo window, are touched.
 export async function deleteOwnEntries(
   db: Db,
   userId: string,
@@ -190,7 +191,13 @@ export async function deleteOwnEntries(
   if (ids.length === 0) return 0;
   const rows = await db
     .delete(diaryEntries)
-    .where(and(eq(diaryEntries.userId, userId), inArray(diaryEntries.id, [...ids])))
+    .where(
+      and(
+        eq(diaryEntries.userId, userId),
+        inArray(diaryEntries.id, [...ids]),
+        gt(diaryEntries.createdAt, sql`now() - ${QUICK.undoWindowMs} * interval '1 millisecond'`),
+      ),
+    )
     .returning({ id: diaryEntries.id });
   return rows.length;
 }

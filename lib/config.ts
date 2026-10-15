@@ -191,6 +191,9 @@ export const QUICK = {
   maxFavorites: 100,
   // Long enough to notice a wrong tap and undo it, short enough not to cover the day for long.
   undoMs: 5000,
+  // "Отменить" deletes only entries this fresh: a crafted ?undo= link cannot wipe older history.
+  // Wider than undoMs to cover a slow network and a server action round trip.
+  undoWindowMs: 120_000,
   // The repeat button names this many foods, then "и ещё N", to stay on one line at 375 px.
   repeatNames: 2,
   // One "just kcal" entry; more is a typo, not a meal.

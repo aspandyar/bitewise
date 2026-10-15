@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { diaryEntries } from "@/db/schema";
+import { QUICK } from "@/lib/config";
 import {
   addPortion,
   deleteOwnPortion,
@@ -170,6 +172,31 @@ describe("deleteOwnEntries", () => {
   });
 });
 
+describe("deleteOwnEntries undo window", () => {
+  it("leaves entries older than the undo window alone", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const [old] = await testDb
+      .insert(diaryEntries)
+      .values({
+        userId: alice,
+        date: DAY,
+        meal: "snack",
+        foodId: null,
+        foodName: "Старое",
+        kcal100: 100,
+        protein100: 0,
+        fat100: 0,
+        carbs100: 0,
+        grams: 100,
+        createdAt: new Date(Date.now() - QUICK.undoWindowMs - 1000),
+      })
+      .returning({ id: diaryEntries.id });
+    if (!old) throw new Error("no entry");
+    expect(await deleteOwnEntries(testDb, alice, [old.id])).toBe(0);
+    expect(await getDayEntries(testDb, alice, DAY)).toHaveLength(1);
+  });
+});
+
 describe("just-kcal entries", () => {
   it("counts exactly the typed kcal and macros", async () => {
     const alice = await newUserId("alice@mail.com");
@@ -224,6 +251,15 @@ describe("toggleFavorite", () => {
     expect(await isFavorite(testDb, alice, food)).toBe(true);
     expect(await toggleFavorite(testDb, alice, food)).toBe("removed");
     expect(await isFavorite(testDb, alice, food)).toBe(false);
+  });
+
+  it("does not count a deleted food's star against the cap", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const { id: gone } = await createOwnFood(alice, { ...oats, name: "Старое", fiber100: null });
+    const fresh = await insertSharedFood({ name: "Кефир" });
+    expect(await toggleFavorite(testDb, alice, gone, 1)).toBe("added");
+    await softDeleteOwnFood(testDb, alice, gone);
+    expect(await toggleFavorite(testDb, alice, fresh, 1)).toBe("added");
   });
 
   it("refuses another user's food and keeps the cap", async () => {
