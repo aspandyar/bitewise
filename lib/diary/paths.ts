@@ -26,6 +26,13 @@ export function editHref(entryId: string): string {
   return `/diary/entries/${entryId}/edit`;
 }
 
-export function addFoodHref(foodId: string, date: IsoDate, meal: Meal): string {
-  return `/diary/add/${foodId}?${diarySearch(date, meal)}`;
+// "from" names the dish the amount screen was opened from, so Back returns there.
+export function addFoodHref(
+  foodId: string,
+  date: IsoDate,
+  meal: Meal,
+  from?: { recipeId: string },
+): string {
+  const href = `/diary/add/${foodId}?${diarySearch(date, meal)}`;
+  return from ? `${href}&from=${from.recipeId}` : href;
 }

@@ -12,9 +12,11 @@ import { ConfirmDeleteButton } from "@/components/ui/confirm-delete-button";
 import { PageLoading } from "@/components/ui/page-loading";
 import { requireUserId } from "@/lib/auth/session";
 import { isFavorite } from "@/lib/diary/quick-repo";
-import { DIARY_DEFAULT_MEAL, RECIPE_LIMITS } from "@/lib/config";
+import { RECIPE_LIMITS } from "@/lib/config";
+import { hourInTimeZone } from "@/lib/date";
+import { mealForHour } from "@/lib/diary/quick";
 import { addFoodHref } from "@/lib/diary/paths";
-import { getUserToday } from "@/lib/diary/today";
+import { getUserTimeZone, getUserToday } from "@/lib/diary/today";
 import { ru } from "@/lib/i18n/ru";
 import { parseId } from "@/lib/ids";
 import { calcEntryNutrients, calcRecipe, calcServingPortionGrams } from "@/lib/nutrition";
@@ -33,6 +35,8 @@ async function RecipeContent({ params }: Pick<PageProps<"/recipes/[id]">, "param
   ]);
   if (!recipe) notFound();
   const starred = await isFavorite(db, userId, recipe.foodId);
+  // Logged right after cooking or eating: the meal follows the hour, and can be changed there.
+  const mealNow = mealForHour(hourInTimeZone(new Date(), await getUserTimeZone()));
 
   const result = calcRecipe(recipe.items, recipe.cookedWeightG);
   const servingGrams = calcServingPortionGrams(result.weightG, recipe.servings);
@@ -62,7 +66,7 @@ async function RecipeContent({ params }: Pick<PageProps<"/recipes/[id]">, "param
       {/* An empty dish is 0 kcal: there is nothing to log until it has ingredients. */}
       {recipe.items.length > 0 ? (
         <Link
-          href={addFoodHref(recipe.foodId, today, DIARY_DEFAULT_MEAL)}
+          href={addFoodHref(recipe.foodId, today, mealNow, { recipeId: recipe.id })}
           className="flex min-h-11 items-center justify-center rounded-lg bg-foreground px-4 font-medium text-background"
         >
           {ru.recipes.toDiary}

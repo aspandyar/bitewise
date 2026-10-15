@@ -14,6 +14,8 @@ import { getUserToday } from "@/lib/diary/today";
 import { getVisibleFood, listVisiblePortions } from "@/lib/foods/repo";
 import { formatDayLabel, formatKcal } from "@/lib/format";
 import { ru } from "@/lib/i18n/ru";
+import { recipeHref } from "@/lib/recipes/paths";
+import { getRecipeIdByFoodId } from "@/lib/recipes/repo";
 import { calcEntryNutrients } from "@/lib/nutrition";
 
 async function AmountContent({
@@ -33,6 +35,12 @@ async function AmountContent({
     countDayEntries(db, userId, date),
   ]);
   if (!food) notFound();
+  // Opened from a dish: Back returns to it, but only to the user's own dish for this food.
+  const fromRecipe = parseId(query.from);
+  const backHref =
+    fromRecipe && (await getRecipeIdByFoodId(db, userId, food.id)) === fromRecipe
+      ? recipeHref(fromRecipe)
+      : addHref(date, meal);
   const options: PortionOption[] = portions.map((portion) => ({
     id: portion.id,
     label: portion.label,
@@ -41,7 +49,7 @@ async function AmountContent({
   }));
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
-      <BackLink href={addHref(date, meal)} />
+      <BackLink href={backHref} />
       <div className="flex flex-col gap-1">
         {/* The meal can be changed below, the day cannot: a past day must not go unnoticed. */}
         {date === today ? null : (

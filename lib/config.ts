@@ -183,10 +183,6 @@ export const DIARY_LIMITS = {
   minDate: "2000-01-01",
 } as const;
 
-// The diary's amount screen needs a meal; links from outside the day view (a recipe) open on lunch,
-// and the meal can still be changed on that screen.
-export const DIARY_DEFAULT_MEAL: Meal = "lunch";
-
 export const QUICK = {
   // Enough for a week of breakfasts without scrolling on a phone.
   recentLimit: 8,
