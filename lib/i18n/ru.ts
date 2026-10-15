@@ -226,6 +226,7 @@ export const ru = {
       `Повторить: ${names.join(", ")}${more > 0 ? ` и ещё ${n(more)}` : ""} · ${kcal}${NBSP}ккал`,
     quickKcal: "Калории, ккал",
     quickName: "Что это (необязательно)",
+    quickMacrosHint: "Белки, жиры и углеводы — необязательно",
     quickProtein: "Б, г",
     quickFat: "Ж, г",
     quickCarbs: "У, г",

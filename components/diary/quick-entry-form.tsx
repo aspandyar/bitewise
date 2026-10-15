@@ -51,6 +51,7 @@ export function QuickEntryForm({
         defaultValue={initial && initial.name !== ru.diary.quickDefaultName ? initial.name : ""}
         error={errors.name}
       />
+      <p className="text-sm text-foreground/60">{ru.diary.quickMacrosHint}</p>
       <div className="grid grid-cols-3 gap-2">
         {macroFields.map((field) => (
           <TextField

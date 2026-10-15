@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { notFound, redirect } from "next/navigation";
+import { notFound, redirect, RedirectType } from "next/navigation";
 import { db } from "@/db/client";
 import { requireUserId } from "@/lib/auth/session";
 import { FOOD_LIMITS, PORTION_LIMITS } from "@/lib/config";
@@ -35,10 +35,16 @@ export async function createFoodAction(_prev: FormState, formData: FormData): Pr
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
   const created = await createFood(db, userId, parsed.data);
   if (created === "limit") return { formError: ru.foods.foodLimit(FOOD_LIMITS.maxOwnFoods) };
-  // Started from the diary search: back to logging it, not to the food card.
+  // Started from the diary search: back to logging it, not to the food card. The form's history
+  // entry is replaced, so system Back cannot reopen it and save the same food twice.
   const entry = parseEntryContext(raw.date, raw.meal, await getUserToday(new Date()));
-  if (entry) redirect(withToast(addFoodHref(created.id, entry.date, entry.meal), "saved"));
-  redirect(withToast(`/foods/${created.id}`, "saved"));
+  if (entry) {
+    redirect(
+      withToast(addFoodHref(created.id, entry.date, entry.meal), "saved"),
+      RedirectType.replace,
+    );
+  }
+  redirect(withToast(`/foods/${created.id}`, "saved"), RedirectType.replace);
 }
 
 export async function updateFoodAction(
