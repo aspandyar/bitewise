@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { DIARY_LIMITS, NUTRIENT_STORAGE_SCALE } from "@/lib/config";
 import type { PortionValues } from "@/lib/foods/types";
-import { decimalField } from "@/lib/forms";
+import { decimalField, readDecimalInput } from "@/lib/forms";
 import { ru } from "@/lib/i18n/ru";
-import { calcPortionGrams } from "@/lib/nutrition";
+import { calcEntryNutrients, calcPortionGrams, type Per100g } from "@/lib/nutrition";
 
 // Diary entries and recipe ingredients store the same amount: grams, or a portion snapshot × count.
 // Kept free of DB imports so client components can use these types.
@@ -115,4 +115,19 @@ export function toUpdatedAmountColumns(
 // The portion to look up for an edit: only when a grams amount switches to a picked portion.
 export function portionToPick(amount: UpdateAmount, snapshotGrams: number | null): string | null {
   return amount.mode === "portion" && snapshotGrams === null ? (amount.portionId ?? null) : null;
+}
+
+export type AmountPreview =
+  | { mode: "grams"; grams: string }
+  | { mode: "portion"; portionGrams: number | null; count: string };
+
+// The amount screen shows kcal while typing; null until the typed amount is a positive number.
+export function previewKcal(per100g: Per100g, amount: AmountPreview): number | null {
+  if (amount.mode === "grams") {
+    const grams = readDecimalInput(amount.grams);
+    return grams !== null && grams > 0 ? calcEntryNutrients(per100g, grams).kcal : null;
+  }
+  const count = readDecimalInput(amount.count);
+  if (amount.portionGrams === null || count === null || count <= 0) return null;
+  return calcEntryNutrients(per100g, calcPortionGrams(amount.portionGrams, count)).kcal;
 }

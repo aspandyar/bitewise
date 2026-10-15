@@ -58,7 +58,10 @@ export function formatEntryAmount(entry: {
   grams: number;
   portionLabel: string | null;
   portionCount: number | null;
+  // Null marks a "just kcal" entry: its 100 g are bookkeeping, not food weighed.
+  foodId?: string | null;
 }): string {
+  if (entry.foodId === null) return "";
   const grams = formatGrams(entry.grams);
   if (entry.portionLabel === null || entry.portionCount === null) {
     return ru.diary.amountGrams(grams);

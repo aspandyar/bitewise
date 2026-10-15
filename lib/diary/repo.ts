@@ -1,20 +1,22 @@
-import { and, asc, count, eq, sql } from "drizzle-orm";
+import { and, asc, count, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { lockUserWrites } from "@/db/locks";
 import { diaryEntries, foods } from "@/db/schema";
 import type { Db } from "@/db/types";
 import {
+  NO_PORTION,
   isStorableGrams,
   portionToPick,
   toAmountColumns,
   toUpdatedAmountColumns,
 } from "@/lib/amount";
-import { DIARY_LIMITS } from "@/lib/config";
+import { DIARY_LIMITS, NUTRIENT_BASE_GRAMS, QUICK, type Meal } from "@/lib/config";
 import type { IsoDate } from "@/lib/date";
 import { getVisiblePortion, visibleTo } from "@/lib/foods/repo";
 import type { PortionValues } from "@/lib/foods/types";
+import type { QuickEntryValues } from "./quick-entry";
 import type { AddEntryInput, DiaryEntry, UpdateEntryInput } from "./types";
 
-const entryColumns = {
+export const entryColumns = {
   id: diaryEntries.id,
   date: diaryEntries.date,
   meal: diaryEntries.meal,
@@ -66,12 +68,34 @@ export async function getEntry(
   return row ?? null;
 }
 
+export type EntryLimits = { maxEntriesPerDay: number; maxEntriesTotal: number };
+
+// Called under lockUserWrites: parallel submits cannot all pass the caps.
+export async function checkEntryLimits(
+  tx: Db,
+  userId: string,
+  date: IsoDate,
+  adding: number,
+  limits: EntryLimits,
+): Promise<"limit" | "total_limit" | null> {
+  const [counts] = await tx
+    .select({
+      total: count(),
+      day: sql<number>`count(*) FILTER (WHERE ${diaryEntries.date} = ${date})`.mapWith(Number),
+    })
+    .from(diaryEntries)
+    .where(eq(diaryEntries.userId, userId));
+  if ((counts?.day ?? 0) + adding > limits.maxEntriesPerDay) return "limit";
+  if ((counts?.total ?? 0) + adding > limits.maxEntriesTotal) return "total_limit";
+  return null;
+}
+
 export async function addEntry(
   db: Db,
   userId: string,
   input: AddEntryInput,
   // Injectable so tests can reach the caps without inserting a hundred thousand rows.
-  limits: { maxEntriesPerDay: number; maxEntriesTotal: number } = DIARY_LIMITS,
+  limits: EntryLimits = DIARY_LIMITS,
 ): Promise<"ok" | "not_found" | "limit" | "total_limit" | "grams_out_of_range"> {
   return db.transaction(async (tx) => {
     await lockUserWrites(tx, userId);
@@ -95,17 +119,8 @@ export async function addEntry(
     }
     const columns = toAmountColumns(amount, portion);
     if (!isStorableGrams(columns.grams)) return "grams_out_of_range";
-    const [counts] = await tx
-      .select({
-        total: count(),
-        day: sql<number>`count(*) FILTER (WHERE ${diaryEntries.date} = ${input.date})`.mapWith(
-          Number,
-        ),
-      })
-      .from(diaryEntries)
-      .where(eq(diaryEntries.userId, userId));
-    if ((counts?.day ?? 0) >= limits.maxEntriesPerDay) return "limit";
-    if ((counts?.total ?? 0) >= limits.maxEntriesTotal) return "total_limit";
+    const capped = await checkEntryLimits(tx, userId, input.date, 1, limits);
+    if (capped) return capped;
     await tx.insert(diaryEntries).values({
       userId,
       date: input.date,
@@ -138,7 +153,8 @@ export async function updateEntry(
       .from(diaryEntries)
       .where(ownEntry(userId, entryId))
       .limit(1);
-    if (!entry) return null;
+    // A "just kcal" entry has no amount to edit; it has its own form and update.
+    if (!entry || entry.foodId === null) return null;
     const { amount } = input;
     const pick = portionToPick(amount, entry.portionGrams);
     const picked = pick ? await getVisiblePortion(tx, userId, entry.foodId, pick) : null;
@@ -161,6 +177,75 @@ export async function deleteEntry(
   const [row] = await db
     .delete(diaryEntries)
     .where(ownEntry(userId, entryId))
+    .returning({ date: diaryEntries.date });
+  return row ?? null;
+}
+
+// Undo of a quick add or a repeat: ids come from the URL, so only the user's own entries, and only
+// ones created within the undo window, are touched.
+export async function deleteOwnEntries(
+  db: Db,
+  userId: string,
+  ids: readonly string[],
+): Promise<number> {
+  if (ids.length === 0) return 0;
+  const rows = await db
+    .delete(diaryEntries)
+    .where(
+      and(
+        eq(diaryEntries.userId, userId),
+        inArray(diaryEntries.id, [...ids]),
+        gt(diaryEntries.createdAt, sql`now() - ${QUICK.undoWindowMs} * interval '1 millisecond'`),
+      ),
+    )
+    .returning({ id: diaryEntries.id });
+  return rows.length;
+}
+
+// A "just kcal" entry is stored as 100 g of something with the typed numbers per 100 g, so day
+// totals go through calcEntryNutrients like every other entry.
+function quickEntryColumns(values: QuickEntryValues) {
+  return {
+    foodId: null,
+    foodName: values.name,
+    kcal100: values.kcal,
+    protein100: values.proteinG,
+    fat100: values.fatG,
+    carbs100: values.carbsG,
+    grams: NUTRIENT_BASE_GRAMS,
+    ...NO_PORTION,
+  };
+}
+
+export async function addQuickEntry(
+  db: Db,
+  userId: string,
+  input: { date: IsoDate; meal: Meal; values: QuickEntryValues },
+  limits: EntryLimits = DIARY_LIMITS,
+): Promise<{ id: string } | "limit" | "total_limit"> {
+  return db.transaction(async (tx) => {
+    await lockUserWrites(tx, userId);
+    const capped = await checkEntryLimits(tx, userId, input.date, 1, limits);
+    if (capped) return capped;
+    const [row] = await tx
+      .insert(diaryEntries)
+      .values({ userId, date: input.date, meal: input.meal, ...quickEntryColumns(input.values) })
+      .returning({ id: diaryEntries.id });
+    if (!row) throw new Error("quick entry insert returned no row");
+    return row;
+  });
+}
+
+export async function updateQuickEntry(
+  db: Db,
+  userId: string,
+  entryId: string,
+  input: { meal: Meal; values: QuickEntryValues },
+): Promise<{ date: IsoDate } | null> {
+  const [row] = await db
+    .update(diaryEntries)
+    .set({ meal: input.meal, ...quickEntryColumns(input.values), updatedAt: sql`now()` })
+    .where(and(ownEntry(userId, entryId), isNull(diaryEntries.foodId)))
     .returning({ date: diaryEntries.date });
   return row ?? null;
 }

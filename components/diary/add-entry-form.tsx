@@ -5,6 +5,7 @@ import { FormError, SubmitButton, usePreservingFormAction } from "@/components/u
 import { DIARY_LIMITS, type Meal } from "@/lib/config";
 import type { IsoDate } from "@/lib/date";
 import { ru } from "@/lib/i18n/ru";
+import type { Per100g } from "@/lib/nutrition";
 import { AmountFields, type PortionOption } from "./amount-fields";
 import { MealPicker } from "./meal-picker";
 
@@ -13,11 +14,13 @@ export function AddEntryForm({
   foodId,
   meal,
   portions,
+  per100g,
 }: {
   date: IsoDate;
   foodId: string;
   meal: Meal;
   portions: PortionOption[];
+  per100g: Per100g;
 }) {
   const {
     state,
@@ -39,6 +42,7 @@ export function AddEntryForm({
           grams: DIARY_LIMITS.grams.default,
         }}
         errors={errors}
+        per100g={per100g}
       />
       <MealPicker defaultValue={meal} error={errors.meal} />
       <FormError message={state.formError} />

@@ -5,19 +5,29 @@ import { BackLink } from "@/components/ui/back-link";
 import { PageLoading } from "@/components/ui/page-loading";
 import { ResetOnHide } from "@/components/ui/reset-on-hide";
 import { requireUserId } from "@/lib/auth/session";
+import { addHref } from "@/lib/diary/paths";
+import { parseEntryContext } from "@/lib/diary/schema";
+import { getUserToday } from "@/lib/diary/today";
 import { parseDraftName } from "@/lib/foods/schema";
 import { ru } from "@/lib/i18n/ru";
 
 async function NewFoodContent({ searchParams }: Pick<PageProps<"/foods/new">, "searchParams">) {
   await requireUserId();
-  const draftName = parseDraftName((await searchParams).name);
+  const params = await searchParams;
+  const draftName = parseDraftName(params.name);
+  const entry = parseEntryContext(params.date, params.meal, await getUserToday(new Date()));
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
-      <BackLink href="/foods" />
+      <BackLink href={entry ? addHref(entry.date, entry.meal) : "/foods"} />
       <h1 className="text-2xl font-semibold">{ru.foods.newTitle}</h1>
       <ResetOnHide>
         {/* Keyed by the draft: a cached screen opened from another search shows that query. */}
-        <FoodForm key={draftName} action={createFoodAction} draftName={draftName} />
+        <FoodForm
+          key={`${draftName}:${entry?.date}:${entry?.meal}`}
+          action={createFoodAction}
+          draftName={draftName}
+          entry={entry ?? undefined}
+        />
       </ResetOnHide>
     </main>
   );

@@ -8,6 +8,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -170,9 +171,8 @@ export const diaryEntries = pgTable(
     date: date("date").notNull(),
     meal: mealEnum("meal").notNull(),
     // No cascade: foods are only soft-deleted, so history keeps pointing at them.
-    foodId: uuid("food_id")
-      .notNull()
-      .references(() => foods.id),
+    // Null is a "just kcal" entry: its numbers live only in the snapshot below.
+    foodId: uuid("food_id").references(() => foods.id),
     // Snapshot: renaming or editing the food later never rewrites past days.
     foodName: text("food_name").notNull(),
     kcal100: nutrient("kcal_100"),
@@ -202,9 +202,32 @@ export const diaryEntries = pgTable(
       sql`(${t.portionLabel} IS NULL) = (${t.portionGrams} IS NULL) AND (${t.portionGrams} IS NULL) = (${t.portionCount} IS NULL)`,
     ),
     check(
+      "diary_entries_quick_has_no_portion",
+      sql`${t.foodId} IS NOT NULL OR ${t.portionLabel} IS NULL`,
+    ),
+    check(
       "diary_entries_portion_positive",
       sql`(${t.portionGrams} IS NULL OR ${t.portionGrams} > 0) AND (${t.portionCount} IS NULL OR ${t.portionCount} > 0)`,
     ),
+  ],
+);
+
+// A star on a food or dish: kept on the add screen above recent foods.
+export const favorites = pgTable(
+  "favorites",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    foodId: uuid("food_id")
+      .notNull()
+      .references(() => foods.id, { onDelete: "cascade" }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.foodId] }),
+    // Lets the FK check on a cascaded food delete use an index instead of a full scan.
+    index("favorites_food_id_idx").on(t.foodId),
   ],
 );
 

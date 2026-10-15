@@ -1,9 +1,14 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { db } from "@/db/client";
-import { deleteEntryAction, updateEntryAction } from "@/app/(app)/diary/actions";
+import {
+  deleteEntryAction,
+  updateEntryAction,
+  updateQuickEntryAction,
+} from "@/app/(app)/diary/actions";
 import type { AmountInitial, PortionOption } from "@/components/diary/amount-fields";
 import { EditEntryForm } from "@/components/diary/edit-entry-form";
+import { QuickEntryForm } from "@/components/diary/quick-entry-form";
 import { BackLink } from "@/components/ui/back-link";
 import { ConfirmDeleteButton } from "@/components/ui/confirm-delete-button";
 import { PageLoading } from "@/components/ui/page-loading";
@@ -28,6 +33,33 @@ async function EditEntryContent({ params }: Pick<PageProps<"/diary/entries/[id]/
     getUserToday(new Date()),
   ]);
   if (!entry) notFound();
+  if (entry.foodId === null) {
+    return (
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
+        <BackLink href={dayHref(entry.date, today)} />
+        <div className="flex flex-col gap-1">
+          <p className="text-sm text-foreground/60">{ru.diary.editTitle}</p>
+          <h1 className="text-2xl font-semibold [overflow-wrap:anywhere]">{entry.foodName}</h1>
+        </div>
+        <ResetOnHide>
+          <QuickEntryForm
+            key={`${entry.id}:${entry.meal}:${entry.kcal100}:${entry.protein100}:${entry.fat100}:${entry.carbs100}:${entry.foodName}`}
+            action={updateQuickEntryAction.bind(null, entry.id)}
+            meal={entry.meal}
+            initial={{
+              name: entry.foodName,
+              kcal: entry.kcal100,
+              proteinG: entry.protein100,
+              fatG: entry.fat100,
+              carbsG: entry.carbs100,
+            }}
+            submitLabel={ru.common.save}
+          />
+        </ResetOnHide>
+        <ConfirmDeleteButton action={deleteEntryAction.bind(null, entry.id)} />
+      </main>
+    );
+  }
 
   // A portion entry counts its snapshot; a grams entry may switch to a portion of its food,
   // priced with the entry's own snapshot so the preview matches what is saved.
@@ -71,6 +103,12 @@ async function EditEntryContent({ params }: Pick<PageProps<"/diary/entries/[id]/
       <ResetOnHide>
         <EditEntryForm
           key={`${entry.id}:${entry.meal}:${entry.grams}:${entry.portionCount}`}
+          per100g={{
+            kcal100: entry.kcal100,
+            protein100: entry.protein100,
+            fat100: entry.fat100,
+            carbs100: entry.carbs100,
+          }}
           action={updateEntryAction.bind(null, entry.id)}
           meal={entry.meal}
           portions={portions}

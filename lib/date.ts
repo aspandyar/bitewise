@@ -35,6 +35,20 @@ export function todayInTimeZone(now: Date, timeZone: string): IsoDate {
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
+// h23 keeps midnight at 0: the default h24 cycle in some engines reports it as 24.
+export function hourInTimeZone(now: Date, timeZone: string): number {
+  const hour = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour: "numeric",
+    hourCycle: "h23",
+  })
+    .formatToParts(now)
+    .find((part) => part.type === "hour")?.value;
+  const parsed = Number(hour);
+  // Never seen in practice; UTC beats NaN, which would silently pick the late meal.
+  return Number.isFinite(parsed) ? parsed : now.getUTCHours();
+}
+
 // Calendar arithmetic in UTC: no zone means no daylight-saving hour to skip a day over.
 export function addDays(date: IsoDate, days: number): IsoDate {
   const parsed = parseIsoDate(date);

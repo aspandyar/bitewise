@@ -183,9 +183,30 @@ export const DIARY_LIMITS = {
   minDate: "2000-01-01",
 } as const;
 
-// The diary's amount screen needs a meal; links from outside the day view (a recipe) open on lunch,
-// and the meal can still be changed on that screen.
-export const DIARY_DEFAULT_MEAL: Meal = "lunch";
+export const QUICK = {
+  // Enough for a week of breakfasts without scrolling on a phone.
+  recentLimit: 8,
+  // Recent foods are picked from this many latest entries: weeks of eating, one cheap query.
+  recentScanEntries: 500,
+  maxFavorites: 100,
+  // Long enough to notice a wrong tap and undo it, short enough not to cover the day for long.
+  undoMs: 5000,
+  // "Отменить" deletes only entries this fresh: a crafted ?undo= link cannot wipe older history.
+  // Wider than undoMs to cover a slow network and a server action round trip.
+  undoWindowMs: 120_000,
+  // The repeat button names this many foods, then "и ещё N", to stay on one line at 375 px.
+  repeatNames: 2,
+  // One "just kcal" entry; more is a typo, not a meal.
+  kcal: { min: 1, max: 5000 },
+} as const;
+
+// "В дневник" from a dish picks the meal by the hour in the user's zone.
+export const MEAL_BY_HOUR = [
+  { untilHour: 11, meal: "breakfast" },
+  { untilHour: 16, meal: "lunch" },
+  { untilHour: 21, meal: "dinner" },
+] as const satisfies readonly { untilHour: number; meal: Meal }[];
+export const LATE_MEAL: Meal = "snack";
 
 export const RECIPE_LIMITS = {
   // Keeps the ingredient list scannable on a phone; real dishes rarely pass 20.
@@ -197,6 +218,8 @@ export const RECIPE_LIMITS = {
 
 // A confirmation after a redirect travels in this query parameter and hides after a few seconds.
 export const TOAST_PARAM = "toast";
+// Entries a quick add or a repeat just created, so the toast can offer to undo them.
+export const UNDO_PARAM = "undo";
 export const TOAST_DURATION_MS = 3000;
 
 // Credited on the foods screen: the seed's shared foods come from there (public domain).

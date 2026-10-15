@@ -64,6 +64,12 @@ async function EditIngredientContent({
       <ResetOnHide>
         <ItemAmountForm
           key={`${item.id}:${item.grams}:${item.portionCount}`}
+          per100g={{
+            kcal100: item.per100g.kcal100,
+            protein100: item.per100g.protein100,
+            fat100: item.per100g.fat100,
+            carbs100: item.per100g.carbs100,
+          }}
           action={updateItemAction.bind(null, recipe.id, item.id)}
           portions={portions}
           initial={initial}

@@ -9,8 +9,9 @@ import { DIARY_LIMITS, FOOD_LIMITS, RECIPE_LIMITS } from "@/lib/config";
 import { formatGramsAtLeast } from "@/lib/format";
 import { firstFieldErrors, type FormState } from "@/lib/forms";
 import { ru } from "@/lib/i18n/ru";
+import { withToast } from "@/lib/toast";
 import { parseId } from "@/lib/ids";
-import { RECIPES_HREF, recipeHref } from "@/lib/recipes/paths";
+import { RECIPES_HREF, ingredientSearchHref, recipeHref } from "@/lib/recipes/paths";
 import {
   addItem,
   createRecipe,
@@ -96,7 +97,7 @@ export async function addItemAction(
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
   const result = await addItem(db, userId, id, { foodId: food, amount: toAddAmount(parsed.data) });
   if (result !== "ok") return itemFailure(result);
-  redirect(recipeHref(id));
+  redirect(withToast(ingredientSearchHref(id), "added"));
 }
 
 export async function updateItemAction(

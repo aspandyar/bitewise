@@ -1,3 +1,4 @@
+import { DIARY_LIMITS } from "@/lib/config";
 import { formatNumber as n, LOCALE } from "./number";
 
 // Phrases reused across entries; the object below cannot refer to itself while it is built.
@@ -128,6 +129,9 @@ export const ru = {
     sourceLabel: "Источник:",
     copiedFrom: (source: string) => ` · копия: ${source}`,
     attribution: "Данные о продуктах:",
+    favorite: "В избранное",
+    favoriteOn: "★",
+    favoriteOff: "☆",
     edit: "Изменить",
     copy: "Скопировать к себе",
     copyHint: "Общий продукт нельзя изменить — скопируйте его и правьте копию.",
@@ -210,8 +214,31 @@ export const ru = {
     addTo: (meal: string) => `Добавить: ${meal}`,
     addTitle: (meal: string, day: string) => `${meal} · ${day}`,
     entryDay: (day: string) => `Запись в день: ${day}`,
+    quickDefaultName: "Быстрый ввод",
+    favoritesTitle: "Избранное",
+    recentTitle: "Недавние",
+    quickAmount: (amount: string, kcal: string) => `${amount} · ${kcal}${NBSP}ккал`,
+    otherAmount: (name: string) => `Другое количество: ${name}`,
+    otherAmountSymbol: "…",
+    quickKcalLink: "Ввести только калории",
+    quickTitle: "Только калории",
+    repeat: (names: readonly string[], more: number, kcal: string) =>
+      `Повторить: ${names.join(", ")}${more > 0 ? ` и ещё ${n(more)}` : ""} · ${kcal}${NBSP}ккал`,
+    quickKcal: "Калории, ккал",
+    quickName: "Что это (необязательно)",
+    quickMacrosHint: "Белки, жиры и углеводы — необязательно",
+    quickProtein: "Б, г",
+    quickFat: "Ж, г",
+    quickCarbs: "У, г",
+    daySwitch: "День записи",
+    addErrors: {
+      limit: `Не больше ${n(DIARY_LIMITS.maxEntriesPerDay)} записей за день`,
+      totalLimit: `Не больше ${n(DIARY_LIMITS.maxEntriesTotal)} записей в дневнике`,
+      gone: "Этого продукта больше нет — выберите другой",
+    },
     submitAdd: "Добавить",
     amountLegend: "Сколько",
+    amountKcal: (kcal: string) => `= ${kcal}${NBSP}ккал`,
     modeGrams: "Граммы",
     modePortions: "Порции",
     grams: "Граммы",
@@ -237,6 +264,11 @@ export const ru = {
     saved: "Сохранено",
     deleted: "Удалено",
     copied: "Копия создана — можно править",
+    added: "Добавлено",
+    addedMany: (count: number) => `Добавлено записей: ${n(count)}`,
+    undo: "Отменить",
+    alreadyFilled: "Этот приём пищи уже заполнен",
+    dayFull: `Не больше ${n(DIARY_LIMITS.maxEntriesPerDay)} записей за день`,
   },
   recipes: {
     title: "Блюда",

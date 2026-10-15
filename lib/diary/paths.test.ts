@@ -21,3 +21,11 @@ describe("addFoodHref", () => {
     );
   });
 });
+
+describe("addFoodHref from a dish", () => {
+  it("carries the dish, so Back returns to it", () => {
+    expect(addFoodHref("f1", "2026-10-12", "lunch", { recipeId: "r1" })).toBe(
+      "/diary/add/f1?date=2026-10-12&meal=lunch&from=r1",
+    );
+  });
+});

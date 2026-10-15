@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TOAST_PARAM } from "@/lib/config";
+import { TOAST_PARAM, UNDO_PARAM } from "@/lib/config";
 import { parseToast, withoutToast, withToast } from "./toast";
 
 describe("withToast", () => {
@@ -12,8 +12,34 @@ describe("withToast", () => {
   });
 });
 
+describe("withToast and undo", () => {
+  const a = "6f1c1a0e-1111-4c1a-9a0e-000000000001";
+  const b = "6f1c1a0e-1111-4c1a-9a0e-000000000002";
+
+  it("carries the ids to undo", () => {
+    expect(withToast("/", "added", [a])).toBe(`/?${TOAST_PARAM}=added&${UNDO_PARAM}=${a}`);
+    expect(withToast("/?date=2026-10-14", "addedMany", [a, b])).toBe(
+      `/?date=2026-10-14&${TOAST_PARAM}=addedMany&${UNDO_PARAM}=${a},${b}`,
+    );
+  });
+
+  it("drops the undo ids together with the toast", () => {
+    expect(
+      withoutToast("/", new URLSearchParams(`date=x&${TOAST_PARAM}=added&${UNDO_PARAM}=${a}`)),
+    ).toBe("/?date=x");
+  });
+});
+
 describe("parseToast", () => {
-  it.each(["saved", "deleted", "copied"] as const)("reads %s", (toast) => {
+  it.each([
+    "saved",
+    "deleted",
+    "copied",
+    "added",
+    "addedMany",
+    "alreadyFilled",
+    "dayFull",
+  ] as const)("reads %s", (toast) => {
     expect(parseToast(toast)).toBe(toast);
   });
 

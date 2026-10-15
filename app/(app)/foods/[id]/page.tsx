@@ -4,10 +4,13 @@ import { Suspense } from "react";
 import { db } from "@/db/client";
 import { CopyFoodButton, DeleteFoodButton } from "@/components/foods/food-actions";
 import { Portions } from "@/components/foods/portions";
+import { toggleFavoriteAction } from "@/app/(app)/diary/actions";
+import { FavoriteButton } from "@/components/foods/favorite-button";
 import { BackLink } from "@/components/ui/back-link";
 import { PageLoading } from "@/components/ui/page-loading";
 import { ResetOnHide } from "@/components/ui/reset-on-hide";
 import { requireUserId } from "@/lib/auth/session";
+import { isFavorite } from "@/lib/diary/quick-repo";
 import { formatGrams, formatKcal } from "@/lib/format";
 import { getVisibleFood, listVisiblePortions } from "@/lib/foods/repo";
 import { parseFoodId } from "@/lib/foods/schema";
@@ -21,9 +24,10 @@ async function FoodContent({ params }: { params: Promise<{ id: string }> }) {
   const userId = await requireUserId();
   const foodId = parseFoodId((await params).id);
   if (!foodId) notFound();
-  const [food, portions] = await Promise.all([
+  const [food, portions, starred] = await Promise.all([
     getVisibleFood(db, userId, foodId),
     listVisiblePortions(db, userId, foodId),
+    isFavorite(db, userId, foodId),
   ]);
   if (!food) notFound();
   // A dish found in search opens as a recipe: its numbers are edited through the ingredients.
@@ -44,7 +48,10 @@ async function FoodContent({ params }: { params: Promise<{ id: string }> }) {
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8">
       <BackLink href="/foods" />
-      <h1 className="text-2xl font-semibold [overflow-wrap:anywhere]">{food.name}</h1>
+      <div className="flex items-start justify-between gap-2">
+        <h1 className="text-2xl font-semibold [overflow-wrap:anywhere]">{food.name}</h1>
+        <FavoriteButton active={starred} action={toggleFavoriteAction.bind(null, food.id)} />
+      </div>
       <section className="flex flex-col gap-3 rounded-2xl border border-foreground/10 p-5">
         <p className="text-3xl font-semibold">
           {formatKcal(food.kcal100)}{" "}

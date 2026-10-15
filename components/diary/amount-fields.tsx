@@ -2,12 +2,14 @@
 
 import { useId, useState } from "react";
 import { TextField } from "@/components/ui/form";
+import { previewKcal } from "@/lib/amount";
 import { DIARY_LIMITS } from "@/lib/config";
 import { formatAmount, formatGrams, formatKcal } from "@/lib/format";
 import { ru } from "@/lib/i18n/ru";
-import { calcPortionGrams } from "@/lib/nutrition";
+import { calcPortionGrams, type Per100g } from "@/lib/nutrition";
 
-// kcal is computed by the server page: the client never derives nutrients itself.
+// Portion kcal come from the server page; the live total is a preview through the same
+// lib/nutrition functions, and the server recomputes what is saved.
 export type PortionOption = { id: string | null; label: string; grams: number; kcal: number };
 
 type AmountMode = "grams" | "portion";
@@ -37,10 +39,13 @@ export function AmountFields({
   portions,
   initial,
   errors,
+  per100g,
 }: {
   portions: PortionOption[];
   initial: AmountInitial;
   errors: Record<string, string>;
+  // The numbers the entry will be snapshotted with, for the live kcal line.
+  per100g: Per100g;
 }) {
   const countId = useId();
   const portionErrorId = `${countId}-portion-error`;
@@ -51,18 +56,36 @@ export function AmountFields({
     initial.grams === null ? "" : formatAmount(initial.grams),
   );
   const current = parseCount(count);
+  // Grams stay an uncontrolled field (it keeps its select-on-focus); its text is mirrored here.
+  const [gramsText, setGramsText] = useState(gramsDefault);
+  const kcal = previewKcal(
+    per100g,
+    mode === "grams"
+      ? { mode: "grams", grams: gramsText }
+      : { mode: "portion", portionGrams: portions[portionIndex]?.grams ?? null, count },
+  );
 
   // Switching from portions carries the amount over, so saving grams keeps what was picked.
   function selectMode(next: AmountMode) {
     const portion = portions[portionIndex];
     if (next === "grams" && mode === "portion" && portion && current !== null && current > 0) {
-      setGramsDefault(formatAmount(calcPortionGrams(portion.grams, current)));
+      const carried = formatAmount(calcPortionGrams(portion.grams, current));
+      setGramsDefault(carried);
+      setGramsText(carried);
     }
     setMode(next);
   }
 
   return (
-    <fieldset className="flex flex-col gap-3">
+    <fieldset
+      className="flex flex-col gap-3"
+      onInput={(event) => {
+        const { target } = event;
+        if (target instanceof HTMLInputElement && target.name === "grams") {
+          setGramsText(target.value);
+        }
+      }}
+    >
       <legend className="mb-1 text-sm font-medium">{ru.diary.amountLegend}</legend>
       <input type="hidden" name="mode" value={mode} />
       {portions.length > 0 ? (
@@ -178,6 +201,9 @@ export function AmountFields({
           </div>
         </>
       )}
+      <p aria-live="polite" className="text-sm font-medium">
+        {kcal === null ? null : ru.diary.amountKcal(formatKcal(kcal))}
+      </p>
     </fieldset>
   );
 }

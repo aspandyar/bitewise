@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { addDays, isValidTimeZone, parseIsoDate, todayInTimeZone, todayIsoDate } from "./date";
+import {
+  addDays,
+  hourInTimeZone,
+  isValidTimeZone,
+  parseIsoDate,
+  todayInTimeZone,
+  todayIsoDate,
+} from "./date";
 
 describe("parseIsoDate", () => {
   it("parses a valid calendar date", () => {
@@ -66,5 +73,18 @@ describe("isValidTimeZone", () => {
 
   it.each(["Mars/Base", "", "Asia/Almaty; path=/"])("rejects %j", (zone) => {
     expect(isValidTimeZone(zone)).toBe(false);
+  });
+});
+
+describe("hourInTimeZone", () => {
+  const now = new Date("2026-10-15T05:30:00Z");
+
+  it("reads the hour in the given zone", () => {
+    expect(hourInTimeZone(now, "Asia/Almaty")).toBe(10);
+    expect(hourInTimeZone(now, "Europe/Moscow")).toBe(8);
+  });
+
+  it("counts midnight as 0, not 24", () => {
+    expect(hourInTimeZone(new Date("2026-10-15T00:10:00Z"), "UTC")).toBe(0);
   });
 });
