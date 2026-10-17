@@ -101,6 +101,78 @@ export const TIME_ZONE_COOKIE = {
   maxLength: 64,
 } as const;
 
+export const THEMES = ["system", "light", "dark"] as const;
+export type Theme = (typeof THEMES)[number];
+
+// "graphite" is the original black-and-white look: anyone who never opens the setting sees no change.
+export const ACCENTS = ["graphite", "green", "blue", "violet", "orange", "pink"] as const;
+export type Accent = (typeof ACCENTS)[number];
+
+export type ColorMode = "light" | "dark";
+
+// Each accent has a shade per theme so text on a button and links on the page both stay readable;
+// a test holds every pair to minContrast (WCAG AA for body text). Red is left out: it means
+// "over target" and errors.
+export const APPEARANCE = {
+  cookies: { theme: "theme", accent: "accent" },
+  maxAgeSec: 365 * SECONDS_PER_DAY,
+  defaults: { theme: "system", accent: "graphite" },
+  base: {
+    light: { background: "#ffffff", foreground: "#171717" },
+    dark: { background: "#0a0a0a", foreground: "#ededed" },
+  },
+  accents: {
+    graphite: {
+      light: { accent: "#171717", onAccent: "#ffffff" },
+      dark: { accent: "#ededed", onAccent: "#0a0a0a" },
+    },
+    green: {
+      light: { accent: "#15803d", onAccent: "#ffffff" },
+      dark: { accent: "#4ade80", onAccent: "#0a0a0a" },
+    },
+    blue: {
+      light: { accent: "#1d4ed8", onAccent: "#ffffff" },
+      dark: { accent: "#60a5fa", onAccent: "#0a0a0a" },
+    },
+    violet: {
+      light: { accent: "#6d28d9", onAccent: "#ffffff" },
+      dark: { accent: "#a78bfa", onAccent: "#0a0a0a" },
+    },
+    orange: {
+      light: { accent: "#c2410c", onAccent: "#ffffff" },
+      dark: { accent: "#fb923c", onAccent: "#0a0a0a" },
+    },
+    pink: {
+      light: { accent: "#be185d", onAccent: "#ffffff" },
+      dark: { accent: "#f472b6", onAccent: "#0a0a0a" },
+    },
+  },
+  minContrast: 4.5,
+} as const satisfies {
+  cookies: { theme: string; accent: string };
+  maxAgeSec: number;
+  defaults: { theme: Theme; accent: Accent };
+  base: Record<ColorMode, { background: string; foreground: string }>;
+  accents: Record<Accent, Record<ColorMode, { accent: string; onAccent: string }>>;
+  minContrast: number;
+};
+
+export const PWA = {
+  // The icon background and the splash screen behind it.
+  brandColor: "#171717",
+  markColor: "#ffffff",
+  iconSizes: [192, 512],
+  appleIconSize: 180,
+  faviconSize: 32,
+  // Android crops maskable icons to a circle of 80 % of the side; the mark shrinks to stay inside.
+  maskableScale: 0.7,
+  iconsPath: "/pwa-icons",
+  offlinePath: "/offline",
+  serviceWorkerPath: "/sw.js",
+  // Bump when the offline page or icons change: the worker deletes caches with any other name.
+  cacheName: "bitewise-v1",
+} as const;
+
 // OWASP scrypt profile (N=2^15, r=8, p=3): ~32 MB per hash keeps a small VPS responsive.
 export const PASSWORD_HASH = {
   N: 2 ** 15,
