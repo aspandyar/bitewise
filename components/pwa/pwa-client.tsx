@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { PWA } from "@/lib/config";
+import { listenForInstallPrompt } from "@/lib/pwa/install-prompt";
 
 export function PwaClient() {
   useEffect(() => {
@@ -12,5 +13,6 @@ export function PwaClient() {
       // Without a worker the app still works online; nothing to tell the user.
       .catch(() => undefined);
   }, []);
+  useEffect(() => listenForInstallPrompt(window), []);
   return null;
 }

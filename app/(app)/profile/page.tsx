@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { db } from "@/db/client";
+import { InstallRow } from "@/components/pwa/install-row";
 import { BackLink } from "@/components/ui/back-link";
 import { PageLoading } from "@/components/ui/page-loading";
 import { ProfileForm } from "@/components/profile/profile-form";
@@ -26,6 +27,7 @@ async function ProfileContent() {
           {ru.appearance.title}
           <span aria-hidden>{ru.profile.openArrow}</span>
         </Link>
+        <InstallRow />
       </nav>
     </main>
   );
