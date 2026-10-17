@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { AppearanceSync } from "@/components/appearance-sync";
+import { PwaClient } from "@/components/pwa/pwa-client";
 import { TimeZoneCookie } from "@/components/time-zone-cookie";
 import { ToastHost } from "@/components/ui/toast";
 import { appearanceCss, appearanceScript, themeColorViewport } from "@/lib/appearance";
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="flex min-h-full flex-col">
         <AppearanceSync />
+        <PwaClient />
         <TimeZoneCookie />
         {children}
         {/* Reads the URL at request time, so it waits behind its own boundary. */}
