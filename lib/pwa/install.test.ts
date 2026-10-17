@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { installHint, isIos } from "./install";
+import { PWA } from "@/lib/config";
+import { installHint, installPromptScript, isIos } from "./install";
+import { getInstallPrompt, listenForInstallPrompt } from "./install-prompt";
 
 const IPHONE =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1";
@@ -40,5 +42,41 @@ describe("installHint", () => {
     expect(
       installHint({ standalone: false, canPrompt: false, userAgent: ANDROID, maxTouchPoints: 5 }),
     ).toBeNull();
+  });
+});
+
+type FakeWindow = Record<string, unknown> & {
+  addEventListener(type: string, listener: (event: Event) => void): void;
+  removeEventListener(): void;
+  fire(type: string, event: Event): void;
+};
+
+function fakeWindow(): FakeWindow {
+  const listeners = new Map<string, ((event: Event) => void)[]>();
+  return {
+    addEventListener: (type, listener) => listeners.set(type, [...(listeners.get(type) ?? []), listener]),
+    removeEventListener: () => undefined,
+    fire: (type, event) => listeners.get(type)?.forEach((listener) => listener(event)),
+  };
+}
+
+describe("install prompt before hydration", () => {
+  it("the head script keeps an early prompt event and stops the browser's own bar", () => {
+    const win = fakeWindow();
+    new Function("window", installPromptScript())(win);
+    const event = new Event("beforeinstallprompt", { cancelable: true });
+    win.fire("beforeinstallprompt", event);
+    expect(event.defaultPrevented).toBe(true);
+    expect(win[PWA.installPromptGlobal]).toBe(event);
+  });
+
+  it("the store picks up an event caught before it started listening", () => {
+    const win = fakeWindow();
+    const early = Object.assign(new Event("beforeinstallprompt"), { prompt: async () => undefined });
+    win[PWA.installPromptGlobal] = early;
+    const stop = listenForInstallPrompt(win as unknown as Window);
+    expect(getInstallPrompt()).toBe(early);
+    expect(win[PWA.installPromptGlobal]).toBeUndefined();
+    stop();
   });
 });

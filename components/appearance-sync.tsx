@@ -1,15 +1,19 @@
 "use client";
 
 import { useLayoutEffect } from "react";
-import { applyAppearance, readAppearanceCookie, syncThemeColor } from "@/lib/appearance";
+import { applyAppearance, keepThemeColor, readAppearanceCookie } from "@/lib/appearance";
 
 // In dev, Strict Mode remounts <html> and drops the attributes the head script set; this puts them
-// back before paint. It also points the status bar color at a forced theme. A no-op otherwise.
+// back before paint. It also keeps the status bar color on a forced theme across navigations.
 export function AppearanceSync() {
   useLayoutEffect(() => {
-    const appearance = readAppearanceCookie(document.cookie);
-    applyAppearance(document.documentElement, appearance);
-    syncThemeColor(document, appearance.theme);
+    applyAppearance(document.documentElement, readAppearanceCookie(document.cookie));
+    // The cookie is read on every change: the appearance screen rewrites it while mounted.
+    return keepThemeColor(
+      document,
+      () => readAppearanceCookie(document.cookie).theme,
+      MutationObserver,
+    );
   }, []);
   return null;
 }

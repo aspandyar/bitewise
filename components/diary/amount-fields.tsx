@@ -31,7 +31,7 @@ function parseCount(value: string): number | null {
 }
 
 const segment =
-  "min-h-11 flex-1 rounded-lg border border-foreground/40 px-3 aria-pressed:border-foreground aria-pressed:bg-foreground/10 aria-pressed:font-medium";
+  "min-h-11 flex-1 rounded-lg border border-foreground/40 px-3 aria-pressed:border-accent aria-pressed:bg-accent/10 aria-pressed:font-medium";
 const stepper =
   "flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-foreground/40 text-xl disabled:opacity-30";
 

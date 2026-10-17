@@ -114,7 +114,8 @@ export type ColorMode = "light" | "dark";
 // a test holds every pair to minContrast (WCAG AA for body text). Red is left out: it means
 // "over target" and errors.
 export const APPEARANCE = {
-  cookies: { theme: "theme", accent: "accent" },
+  // Prefixed: cookies are not separated by port, and "theme" is a common name on localhost.
+  cookies: { theme: "bw-theme", accent: "bw-accent" },
   maxAgeSec: 365 * SECONDS_PER_DAY,
   defaults: { theme: "system", accent: "graphite" },
   base: {
@@ -169,6 +170,8 @@ export const PWA = {
   iconsPath: "/pwa-icons",
   offlinePath: "/offline",
   serviceWorkerPath: "/sw.js",
+  // Where the head script parks a beforeinstallprompt that fires before React hydrates.
+  installPromptGlobal: "__bitewiseInstallPrompt",
   // Bump when the offline page or icons change: the worker deletes caches with any other name.
   cacheName: "bitewise-v1",
 } as const;

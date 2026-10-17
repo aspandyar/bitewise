@@ -6,6 +6,7 @@ import {
   appearanceScript,
   applyAppearance,
   contrastRatio,
+  keepThemeColor,
   parseAppearance,
   readAppearanceCookie,
   syncThemeColor,
@@ -42,14 +43,21 @@ describe("parseAppearance", () => {
 
 describe("readAppearanceCookie", () => {
   it("reads both cookies among others", () => {
-    expect(readAppearanceCookie("tz=Asia/Almaty; theme=light; accent=blue")).toEqual({
+    expect(readAppearanceCookie("tz=Asia/Almaty; bw-theme=light; bw-accent=blue")).toEqual({
       theme: "light",
       accent: "blue",
     });
   });
 
+  it("takes the first of repeated names, like the head script does", () => {
+    expect(readAppearanceCookie("bw-theme=dark; bw-theme=light")).toEqual({
+      theme: "dark",
+      accent: APPEARANCE.defaults.accent,
+    });
+  });
+
   it("ignores a name that only ends with the cookie name", () => {
-    expect(readAppearanceCookie("xtheme=dark")).toEqual(APPEARANCE.defaults);
+    expect(readAppearanceCookie("xbw-theme=dark; theme=dark")).toEqual(APPEARANCE.defaults);
   });
 });
 
@@ -86,17 +94,18 @@ describe("contrastRatio", () => {
 
 describe("appearanceScript", () => {
   it("sets known theme and accent", () => {
-    expect(runScript("theme=dark; accent=green")).toEqual({
+    expect(runScript("bw-theme=dark; bw-accent=green")).toEqual({
       "data-theme": "dark",
       "data-accent": "green",
     });
   });
 
   it("sets nothing for defaults and unknown or forged values", () => {
-    expect(runScript("theme=system; accent=graphite")).toEqual({});
-    expect(runScript('theme=dark"><script>; accent=red')).toEqual({});
-    expect(runScript("xtheme=dark")).toEqual({});
+    expect(runScript("bw-theme=system; bw-accent=graphite")).toEqual({});
+    expect(runScript('bw-theme=dark"><script>; bw-accent=red')).toEqual({});
+    expect(runScript("xbw-theme=dark; theme=dark")).toEqual({});
     expect(runScript("")).toEqual({});
+    expect(runScript("bw-theme=dark; bw-theme=light")).toEqual({ "data-theme": "dark" });
   });
 });
 
@@ -148,5 +157,37 @@ describe("theme color", () => {
       APPEARANCE.base.dark.background,
       APPEARANCE.base.dark.background,
     ]);
+  });
+});
+
+describe("keepThemeColor", () => {
+  it("rewrites theme-color again whenever the head changes", () => {
+    let content = "";
+    let onMutation: () => void = () => undefined;
+    const meta = {
+      getAttribute: (name: string) => (name === "media" ? "(prefers-color-scheme: light)" : null),
+      setAttribute: (_name: string, value: string) => {
+        content = value;
+      },
+    };
+    let disconnected = false;
+    class FakeObserver {
+      constructor(callback: () => void) {
+        onMutation = callback;
+      }
+      observe() {}
+      disconnect() {
+        disconnected = true;
+      }
+    }
+    const doc = { head: {}, querySelectorAll: () => [meta] };
+    const stop = keepThemeColor(doc, () => "dark", FakeObserver);
+    expect(content).toBe(APPEARANCE.base.dark.background);
+    // Next re-renders the viewport metas with server colors on every navigation.
+    content = APPEARANCE.base.light.background;
+    onMutation();
+    expect(content).toBe(APPEARANCE.base.dark.background);
+    stop();
+    expect(disconnected).toBe(true);
   });
 });

@@ -17,13 +17,15 @@ export function parseAppearance(raw: { theme?: string; accent?: string }): Appea
   };
 }
 
-export function readAppearanceCookie(documentCookie: string): Appearance {
-  const values = new Map(
-    documentCookie.split("; ").map((item) => {
-      const at = item.indexOf("=");
-      return [item.slice(0, at), item.slice(at + 1)] as const;
-    }),
-  );
+// A repeated name (a cookie from a parent domain, another app on the same host) resolves to the
+// first value everywhere: the head script, this reader and the appearance screen agree.
+export function readAppearanceCookie(cookieHeader: string): Appearance {
+  const values = new Map<string, string>();
+  for (const item of cookieHeader.split(/;\s*/)) {
+    const at = item.indexOf("=");
+    const name = item.slice(0, at);
+    if (at > 0 && !values.has(name)) values.set(name, item.slice(at + 1));
+  }
   return parseAppearance({
     theme: values.get(APPEARANCE.cookies.theme),
     accent: values.get(APPEARANCE.cookies.accent),
@@ -118,6 +120,24 @@ export function syncThemeColor(
   for (const meta of doc.querySelectorAll('meta[name="theme-color"]')) {
     meta.setAttribute("content", themeColorFor(theme, meta.getAttribute("media") ?? ""));
   }
+}
+
+type HeadObserver = {
+  observe(target: object, options: { childList: boolean }): void;
+  disconnect(): void;
+};
+
+// Next renders the viewport metas again (with system colors) on every navigation and server
+// action, so a forced theme has to win again each time the head changes.
+export function keepThemeColor(
+  doc: { head: object; querySelectorAll(selector: string): Iterable<MetaLike> },
+  readTheme: () => Theme,
+  Observer: new (callback: () => void) => HeadObserver,
+): () => void {
+  syncThemeColor(doc, readTheme());
+  const observer = new Observer(() => syncThemeColor(doc, readTheme()));
+  observer.observe(doc.head, { childList: true });
+  return () => observer.disconnect();
 }
 
 export function themeColorViewport(): { media: string; color: string }[] {

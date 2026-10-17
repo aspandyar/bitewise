@@ -7,6 +7,7 @@ import { OfflineBanner } from "@/components/ui/offline-banner";
 import { ToastHost } from "@/components/ui/toast";
 import { appearanceCss, appearanceScript, themeColorViewport } from "@/lib/appearance";
 import { ru } from "@/lib/i18n/ru";
+import { installPromptScript } from "@/lib/pwa/install";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* Built from config, not user input: the palette and the list of accepted cookie values. */}
         <style dangerouslySetInnerHTML={{ __html: appearanceCss() }} />
         <script dangerouslySetInnerHTML={{ __html: appearanceScript() }} />
+        <script dangerouslySetInnerHTML={{ __html: installPromptScript() }} />
       </head>
       <body className="flex min-h-full flex-col">
         <AppearanceSync />

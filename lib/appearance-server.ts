@@ -1,12 +1,9 @@
-import { cookies } from "next/headers";
-import { parseAppearance, type Appearance } from "@/lib/appearance";
-import { APPEARANCE } from "@/lib/config";
+import { headers } from "next/headers";
+import { readAppearanceCookie, type Appearance } from "@/lib/appearance";
 
-// Request-time: only the appearance screen calls it, inside its <Suspense> boundary.
+// Request-time: only the appearance screen calls it, inside its <Suspense> boundary. Reads the raw
+// header rather than cookies(), which keeps the last of repeated names while the head script keeps
+// the first.
 export async function getAppearance(): Promise<Appearance> {
-  const store = await cookies();
-  return parseAppearance({
-    theme: store.get(APPEARANCE.cookies.theme)?.value,
-    accent: store.get(APPEARANCE.cookies.accent)?.value,
-  });
+  return readAppearanceCookie((await headers()).get("cookie") ?? "");
 }

@@ -1,5 +1,7 @@
-// Chrome fires beforeinstallprompt once, often before the profile screen exists; the root layout
-// catches it here and the install row reads it when it mounts.
+import { PWA } from "@/lib/config";
+
+// Chrome fires beforeinstallprompt once, often before the profile screen exists; the head script
+// or the root layout catches it here and the install row reads it when it mounts.
 type InstallPromptEvent = Event & { prompt(): Promise<void> };
 
 let deferred: InstallPromptEvent | null = null;
@@ -10,6 +12,14 @@ function notify() {
 }
 
 export function listenForInstallPrompt(target: Window): () => void {
+  const parked = target as unknown as Record<string, unknown>;
+  const early = parked[PWA.installPromptGlobal];
+  // Taken once: a remount must not bring back an event the dialog already used.
+  delete parked[PWA.installPromptGlobal];
+  if (early instanceof Event) {
+    deferred = early as InstallPromptEvent;
+    notify();
+  }
   const onPrompt = (event: Event) => {
     // Keeps the browser's own mini-bar away; the profile offers the dialog instead.
     event.preventDefault();
