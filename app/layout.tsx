@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { AppearanceSync } from "@/components/appearance-sync";
 import { PwaClient } from "@/components/pwa/pwa-client";
 import { TimeZoneCookie } from "@/components/time-zone-cookie";
+import { OfflineBanner } from "@/components/ui/offline-banner";
 import { ToastHost } from "@/components/ui/toast";
 import { appearanceCss, appearanceScript, themeColorViewport } from "@/lib/appearance";
 import { ru } from "@/lib/i18n/ru";
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <PwaClient />
         <TimeZoneCookie />
         {children}
+        <OfflineBanner />
         {/* Reads the URL at request time, so it waits behind its own boundary. */}
         <Suspense fallback={null}>
           <ToastHost />

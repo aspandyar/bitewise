@@ -18,6 +18,11 @@ const nextConfig: NextConfig = {
   // and turning it off later is easier than migrating to it once screens exist.
   cacheComponents: true,
   partialPrefetching: true,
+  experimental: {
+    // A navigation or server action that hits a dropped connection waits and retries once the
+    // network is back instead of failing; useOffline drives the banner. Experimental in Next 16.
+    useOffline: true,
+  },
   // Tailwind v4 under Turbopack needs its own CSS loader instead of PostCSS.
   turbopack: {
     rules: {
