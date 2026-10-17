@@ -67,7 +67,7 @@ async function RecipeContent({ params }: Pick<PageProps<"/recipes/[id]">, "param
       {recipe.items.length > 0 ? (
         <Link
           href={addFoodHref(recipe.foodId, today, mealNow, { recipeId: recipe.id })}
-          className="flex min-h-11 items-center justify-center rounded-lg bg-foreground px-4 font-medium text-background"
+          className="flex min-h-11 items-center justify-center rounded-lg bg-accent px-4 font-medium text-on-accent"
         >
           {ru.recipes.toDiary}
         </Link>

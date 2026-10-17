@@ -31,7 +31,7 @@ async function FoodsContent() {
           href={USDA_FDC_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex min-h-11 items-center underline"
+          className="inline-flex min-h-11 items-center underline text-accent-text"
         >
           {ru.foods.sourceNames.usda}
         </a>

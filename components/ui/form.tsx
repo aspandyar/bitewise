@@ -166,7 +166,7 @@ export function ChoiceGroup<T extends string>({
         {options.map((option) => (
           <label
             key={option.value}
-            className="flex min-h-11 cursor-pointer flex-col justify-center rounded-lg border border-foreground/40 px-3 py-2 has-[:checked]:border-foreground has-[:checked]:bg-foreground/10 has-[:checked]:font-medium has-[:checked]:ring-2 has-[:checked]:ring-foreground has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-blue-500"
+            className="flex min-h-11 cursor-pointer flex-col justify-center rounded-lg border border-foreground/40 px-3 py-2 has-[:checked]:border-accent has-[:checked]:bg-accent/10 has-[:checked]:font-medium has-[:checked]:ring-2 has-[:checked]:ring-accent has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent-text"
           >
             <input
               type="radio"
@@ -194,7 +194,7 @@ export function SubmitButton({ pending, children }: { pending: boolean; children
     <button
       type="submit"
       disabled={pending}
-      className="min-h-11 rounded-lg bg-foreground px-4 font-medium text-background disabled:opacity-60"
+      className="min-h-11 rounded-lg bg-accent px-4 font-medium text-on-accent disabled:opacity-60"
     >
       {children}
     </button>

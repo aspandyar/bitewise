@@ -53,7 +53,7 @@ export function IngredientList({
       {canAdd ? (
         <Link
           href={ingredientSearchHref(recipeId)}
-          className="flex min-h-11 w-fit items-center text-sm underline"
+          className="flex min-h-11 w-fit items-center text-sm underline text-accent-text"
         >
           {ru.recipes.addIngredient}
         </Link>

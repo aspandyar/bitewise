@@ -137,7 +137,7 @@ export function AmountFields({
               ) : (
                 <label
                   key={portion.id}
-                  className="flex min-h-11 cursor-pointer items-center rounded-lg border border-foreground/40 px-3 py-2 has-[:checked]:border-foreground has-[:checked]:bg-foreground/10 has-[:checked]:font-medium has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-blue-500"
+                  className="flex min-h-11 cursor-pointer items-center rounded-lg border border-foreground/40 px-3 py-2 has-[:checked]:border-accent has-[:checked]:bg-accent/10 has-[:checked]:font-medium has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent-text"
                 >
                   <input
                     type="radio"

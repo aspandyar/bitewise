@@ -11,7 +11,7 @@ function Star({ active }: { active: boolean }) {
       disabled={pending}
       aria-pressed={active}
       aria-label={ru.foods.favorite}
-      className="flex size-11 shrink-0 items-center justify-center rounded-lg text-2xl disabled:opacity-60"
+      className={`flex size-11 shrink-0 items-center justify-center rounded-lg text-2xl disabled:opacity-60 ${active ? "text-accent-text" : ""}`}
     >
       {active ? ru.foods.favoriteOn : ru.foods.favoriteOff}
     </button>
