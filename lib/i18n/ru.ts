@@ -65,6 +65,23 @@ export const ru = {
     goal: "Цель",
     goals: { lose: "Похудеть", maintain: "Держать вес", gain: "Набрать" },
     submitOnboarding: "Посчитать норму",
+    deviceTitle: "Это устройство",
+    openArrow: "›",
+  },
+  appearance: {
+    title: "Оформление",
+    theme: "Тема",
+    themes: { system: "Системная", light: "Светлая", dark: "Тёмная" },
+    accent: "Цвет",
+    checkMark: "✓",
+    accents: {
+      graphite: "Графит",
+      green: "Зелёный",
+      blue: "Синий",
+      violet: "Фиолетовый",
+      orange: "Оранжевый",
+      pink: "Розовый",
+    },
   },
   targets: {
     defaultName: "По умолчанию",
