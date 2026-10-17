@@ -72,6 +72,8 @@ Postgres 17 (+ pg_trgm)                            db/schema.ts → db/migration
 - Чистая логика живёт отдельно от ввода-вывода: `lib/nutrition.ts`, `lib/date.ts`, `lib/format.ts`, zod-схемы, `handleFoodSearch`. Её покрывают unit-тесты; repo покрывают db-тесты.
 - `cacheComponents` держит скрытые экраны живыми. Поэтому формы получают `key` из данных или обёртку `ResetOnHide`, а кнопка удаления сбрасывает подтверждение при уходе с экрана.
 - «Сегодня» берётся из часового пояса браузера: cookie `tz` ставит `TimeZoneCookie`, без неё — `Asia/Almaty`.
+- **Тема и акцентный цвет** — cookie `bw-theme` и `bw-accent` на устройстве. Корневой layout их не читает (под `cacheComponents` это сделало бы все экраны «по запросу»): inline-скрипт в `<head>` (`appearanceScript`) до первой отрисовки ставит `data-theme` / `data-accent` на `<html>`, CSS-переменные тем собирает `appearanceCss` из `APPEARANCE` в `lib/config.ts`. Классы — `bg-accent`, `text-on-accent`, `text-accent-text`; вариант `dark:` учитывает и выбор, и систему.
+- **PWA.** `/manifest.webmanifest` (`app/manifest.ts`), иконки `/icon`, `/apple-icon`, `/pwa-icons/*` рисует `next/og` при сборке. Service worker `/sw.js` (из `lib/pwa/service-worker.ts`) трогает только навигации: без сети отдаёт `/offline`. Обрыв посреди работы — `experimental.useOffline`: переходы и server actions ждут сеть и повторяются, плашка — `OfflineBanner`.
 
 ## Безопасность (коротко)
 - **Сессии и пароли.** Сессия — JWT Auth.js. Пароли — scrypt (N = 2^15). При неизвестном email считается фиктивный хеш, чтобы время ответа было тем же.
@@ -126,13 +128,16 @@ bitewise/
 ├── app/
 │   ├── (auth)/          # login, register (+ registerAction)
 │   ├── (app)/           # главная-дневник, onboarding, profile, targets, foods/**, diary/**, recipes/** + actions.ts
-│   └── api/             # foods/search, auth/[...nextauth]
-├── components/          # ui/ (формы, удаление в два тапа, ResetOnHide), auth/, diary/, foods/, recipes/, profile/, targets/
+│   ├── api/             # foods/search, auth/[...nextauth]
+│   └── manifest.ts, icon.tsx, apple-icon.tsx, pwa-icons/, sw.js/, offline/   # PWA
+├── components/          # ui/ (формы, удаление в два тапа, ResetOnHide, плашка «Нет сети»), auth/, diary/, foods/, recipes/, profile/, targets/, pwa/, brand/
 ├── lib/
 │   ├── config.ts        # все константы и лимиты
 │   ├── nutrition.ts     # все расчёты (+ тесты)
 │   ├── amount.ts        # количество: граммы или порция × N (дневник и состав блюда)
 │   ├── date.ts, format.ts, forms.ts, ids.ts, env.ts, i18n/ru.ts
+│   ├── appearance.ts    # тема и акцент: палитра → CSS, скрипт в <head>, контраст
+│   ├── pwa/             # иконки, service worker, офлайн-страница, подсказка установки
 │   ├── auth/            # Auth.js, пароли, лимиты, регистрация, роли
 │   ├── foods/ diary/ recipes/ profile/ targets/ users/   # repo.ts · schema.ts · types.ts (+ тесты)
 │   └── ai/              # этапы 9–12
