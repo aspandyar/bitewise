@@ -14,7 +14,7 @@ function Bar({ progress }: { progress: NutrientProgress }) {
   return (
     <div aria-hidden className="h-2 overflow-hidden rounded-full bg-foreground/10">
       <div
-        className={`h-full origin-left rounded-full ${over ? "bg-red-500" : "bg-foreground"}`}
+        className={`h-full origin-left rounded-full ${over ? "bg-red-500" : "bg-accent"}`}
         style={{ transform: `scaleX(${Math.min(progress.share, 1)})` }}
       />
     </div>

@@ -57,7 +57,7 @@ export function RegisterForm() {
       />
       <FormError message={failure?.formError} />
       <SubmitButton pending={pending}>{ru.auth.registerSubmit}</SubmitButton>
-      <Link href="/login" className="flex min-h-11 items-center justify-center text-sm underline">
+      <Link href="/login" className="flex min-h-11 items-center justify-center text-sm underline text-accent-text">
         {ru.auth.toLogin}
       </Link>
     </form>

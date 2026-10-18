@@ -53,7 +53,7 @@ async function AddContent({ searchParams }: Pick<PageProps<"/diary/add">, "searc
         </p>
       ) : null}
       <DaySwitch date={date} today={today} meal={meal} />
-      <Link href={quickKcalHref(date, meal)} className="flex min-h-11 w-fit items-center underline">
+      <Link href={quickKcalHref(date, meal)} className="flex min-h-11 w-fit items-center underline text-accent-text">
         {ru.diary.quickKcalLink}
       </Link>
       {/* cacheComponents keeps this screen alive with its query; a new key after every add

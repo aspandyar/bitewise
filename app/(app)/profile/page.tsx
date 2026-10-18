@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { db } from "@/db/client";
+import { InstallRow } from "@/components/pwa/install-row";
 import { BackLink } from "@/components/ui/back-link";
 import { PageLoading } from "@/components/ui/page-loading";
 import { ProfileForm } from "@/components/profile/profile-form";
@@ -17,6 +19,16 @@ async function ProfileContent() {
       <BackLink />
       <h1 className="text-2xl font-semibold">{ru.profile.editTitle}</h1>
       <ProfileForm defaults={profile} submitLabel={ru.common.save} />
+      <nav
+        aria-label={ru.profile.deviceTitle}
+        className="flex flex-col border-t border-foreground/10 pt-4"
+      >
+        <Link href="/profile/appearance" className="flex min-h-11 items-center justify-between">
+          {ru.appearance.title}
+          <span aria-hidden>{ru.profile.openArrow}</span>
+        </Link>
+        <InstallRow />
+      </nav>
     </main>
   );
 }

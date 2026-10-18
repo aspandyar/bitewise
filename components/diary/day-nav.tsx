@@ -39,7 +39,7 @@ export function DayNav({ date, today }: { date: IsoDate; today: IsoDate }) {
           <Link
             href="/"
             aria-label={ru.diary.backToToday(label)}
-            className="flex min-h-11 items-center underline decoration-foreground/30"
+            className="flex min-h-11 items-center underline text-accent-text decoration-foreground/30"
           >
             {label}
           </Link>

@@ -67,7 +67,7 @@ export function ToastHost() {
       className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4"
     >
       {shown ? (
-        <p className="flex items-center gap-3 rounded-full bg-foreground py-1 pr-1 pl-4 text-sm font-medium text-background shadow-lg">
+        <p className="flex items-center gap-3 rounded-full bg-accent py-1 pr-1 pl-4 text-sm font-medium text-on-accent shadow-lg ring-2 ring-background">
           <span className="py-1">{message(shown)}</span>
           {shown.undo ? (
             <button

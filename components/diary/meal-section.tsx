@@ -65,7 +65,7 @@ export function MealSection({
       <Link
         href={addHref(date, meal)}
         aria-label={ru.diary.addTo(title)}
-        className="flex min-h-11 w-fit items-center text-sm underline"
+        className="flex min-h-11 w-fit items-center text-sm underline text-accent-text"
       >
         {ru.diary.add}
       </Link>

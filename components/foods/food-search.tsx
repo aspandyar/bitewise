@@ -204,7 +204,7 @@ export function FoodSearch({
       ) : current.items.length === 0 ? (
         <div className="flex flex-col gap-2">
           <p>{ru.foods.nothingFound}</p>
-          <Link href={newFoodHref} className="flex min-h-11 w-fit items-center underline">
+          <Link href={newFoodHref} className="flex min-h-11 w-fit items-center underline text-accent-text">
             {ru.foods.addOwnInstead}
           </Link>
         </div>

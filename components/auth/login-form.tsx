@@ -56,7 +56,7 @@ export function LoginForm() {
       <SubmitButton pending={pending}>{ru.auth.loginSubmit}</SubmitButton>
       <Link
         href="/register"
-        className="flex min-h-11 items-center justify-center text-sm underline"
+        className="flex min-h-11 items-center justify-center text-sm underline text-accent-text"
       >
         {ru.auth.toRegister}
       </Link>

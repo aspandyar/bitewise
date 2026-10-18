@@ -15,7 +15,7 @@ function DeletePortionButton({ label }: { label: string }) {
       type="submit"
       disabled={pending}
       aria-label={`${ru.foods.deletePortion}: ${label}`}
-      className="min-h-11 px-2 text-sm underline disabled:opacity-60"
+      className="min-h-11 px-2 text-sm underline text-accent-text disabled:opacity-60"
     >
       {ru.foods.deletePortion}
     </button>
