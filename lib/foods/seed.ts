@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNotNull, isNull, notInArray, sql } from "drizzle-orm";
 import { foodPortions, foods } from "@/db/schema";
 import type { Db } from "@/db/types";
-import { recomputeRecipesUsingFoods } from "@/lib/recipes/recompute";
+import { recomputeRecipesEach, staleRecipesUsingSharedFoods } from "@/lib/recipes/recompute";
 import type { PortionValues } from "./types";
 import type { SeedFood } from "./seed-schema";
 
@@ -37,13 +37,13 @@ async function syncSharedPortions(db: Db, foodId: string, wanted: readonly Porti
   }
 }
 
-// One transaction: a half-applied seed would leave foods without their portions.
+// Foods and portions in one transaction: a half-applied seed would leave foods without their
+// portions. Recipes follow after the commit, each on its own (#23).
 export async function loadFoodSeed(
   db: Db,
   seed: readonly SeedFood[],
-): Promise<{ upserted: number; retired: number }> {
-  return db.transaction(async (tx) => {
-    const changedIds: string[] = [];
+): Promise<{ upserted: number; retired: number; recomputed: number; failed: number }> {
+  const written = await db.transaction(async (tx) => {
     for (const { key, portions, ...values } of seed) {
       const [changed] = await tx
         .insert(foods)
@@ -57,7 +57,6 @@ export async function loadFoodSeed(
             IS DISTINCT FROM (excluded.name, excluded.kcal_100, excluded.protein_100, excluded.fat_100, excluded.carbs_100, excluded.fiber_100, excluded.source, excluded.source_url, NULL::timestamptz)`,
         })
         .returning({ id: foods.id });
-      if (changed) changedIds.push(changed.id);
       // A skipped update returns no row, so the id is looked up instead.
       const [row] = changed
         ? [changed]
@@ -79,8 +78,13 @@ export async function loadFoodSeed(
         ),
       )
       .returning({ id: foods.id });
-    // Users' recipes made of shared foods follow the seed's corrections.
-    await recomputeRecipesUsingFoods(tx, changedIds);
     return { upserted: seed.length, retired: retired.length };
   });
+  // Users' recipes made of shared foods follow the seed's corrections, including any left behind
+  // by an earlier run that failed or stopped after its commit.
+  const { recomputed, failed } = await recomputeRecipesEach(
+    db,
+    await staleRecipesUsingSharedFoods(db),
+  );
+  return { upserted: written.upserted, retired: written.retired, recomputed, failed };
 }

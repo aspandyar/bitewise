@@ -1,0 +1,5 @@
+# Install on the server: crontab docker/crontab  (as the deploy user, from /opt/bitewise)
+# Nightly backup at 03:30, restore check on the 1st of each month at 05:00. Logs go to
+# /opt/bitewise/backups (created first, so a cron job installed before any release still runs).
+30 3 * * * cd /opt/bitewise && mkdir -p -m 700 backups && docker/scripts/backup.sh >> backups/backup.log 2>&1
+0 5 1 * * cd /opt/bitewise && mkdir -p -m 700 backups && docker/scripts/restore-check.sh >> backups/restore-check.log 2>&1

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ru } from "@/lib/i18n/ru";
 import { createRateLimiter } from "./rate-limit";
 import { registerUser, type RegisterDeps } from "./register";
+import { BusyError } from "./semaphore";
 import { UNKNOWN_IP } from "./request";
 
 function makeDeps(overrides: Partial<RegisterDeps> = {}): RegisterDeps {
@@ -48,6 +49,18 @@ describe("registerUser", () => {
     const hashPassword = vi.fn(async (password: string) => `hashed:${password}`);
     await registerUser(valid, "1.1.1.1", makeDeps({ hashPassword, createUser: async () => null }));
     expect(hashPassword).toHaveBeenCalledTimes(1);
+  });
+
+  it("asks to try later when the server is busy hashing other passwords", async () => {
+    const createUser = vi.fn(async () => ({ id: "u1" }));
+    const hashPassword = async () => {
+      throw new BusyError();
+    };
+    expect(await registerUser(valid, "1.1.1.1", makeDeps({ hashPassword, createUser }))).toEqual({
+      ok: false,
+      formError: ru.auth.tooManyAttempts,
+    });
+    expect(createUser).not.toHaveBeenCalled();
   });
 
   it("stops after the rate limit is exhausted", async () => {

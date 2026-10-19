@@ -3,6 +3,7 @@ import { ru } from "@/lib/i18n/ru";
 import type { RateLimiter } from "./rate-limit";
 import { UNKNOWN_IP } from "./request";
 import { credentialsSchema } from "./schema";
+import { BusyError } from "./semaphore";
 
 export type RegisterDeps = {
   limiter: RateLimiter;
@@ -30,6 +31,14 @@ export async function registerUser(
     return { ok: false, formError: ru.auth.tooManyAttempts };
   }
   // The hash runs before the insert, so a taken email answers as slowly as a new one.
-  const created = await deps.createUser(email, await deps.hashPassword(password));
+  let passwordHash: string;
+  try {
+    passwordHash = await deps.hashPassword(password);
+  } catch (error) {
+    // Too many hashes in flight: the same answer as a rate limit, the form can be sent again.
+    if (error instanceof BusyError) return { ok: false, formError: ru.auth.tooManyAttempts };
+    throw error;
+  }
+  const created = await deps.createUser(email, passwordHash);
   return created ? { ok: true } : { ok: false, formError: ru.auth.registerFailed };
 }
