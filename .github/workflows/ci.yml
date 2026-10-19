@@ -3,6 +3,8 @@ name: CI
 on:
   push:
   pull_request:
+  # Reused by release.yml, so an image is only built from a green commit.
+  workflow_call:
 
 jobs:
   lint-and-test:
