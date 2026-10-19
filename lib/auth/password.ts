@@ -63,6 +63,13 @@ let dummyHash: Promise<string> | undefined;
 // Login compares against this when the email is unknown, so response time does not reveal
 // which emails are registered.
 export function getDummyPasswordHash(): Promise<string> {
-  dummyHash ??= hashPassword(randomBytes(PASSWORD_HASH.saltBytes).toString("hex"));
+  // A failure (full hashing queue) is not kept: a cached rejection would make every unknown-email
+  // login answer instantly from then on, and timing would reveal which emails exist.
+  dummyHash ??= hashPassword(randomBytes(PASSWORD_HASH.saltBytes).toString("hex")).catch(
+    (error: unknown) => {
+      dummyHash = undefined;
+      throw error;
+    },
+  );
   return dummyHash;
 }
