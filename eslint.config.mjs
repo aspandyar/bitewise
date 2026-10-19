@@ -15,6 +15,9 @@ const eslintConfig = defineConfig([
     "coverage/**",
     "next-env.d.ts",
     "db/migrations/**",
+    // Bundles built by `pnpm ops:build`, not source.
+    "ops/**",
+    ".local-prod/**",
   ]),
 ]);
 

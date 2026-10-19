@@ -8,3 +8,5 @@ docs/
 CLAUDE.md
 AGENTS.md
 db/seed/foods.json
+ops/
+.local-prod/
