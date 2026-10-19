@@ -1,0 +1,16 @@
+# Only what the build needs goes into the context; secrets never do.
+node_modules
+.next
+.git
+.github
+.env
+.env.*
+!.env.example
+.local-prod
+.superpowers
+.claude
+.cache
+docs
+coverage
+ops
+*.md
