@@ -1,7 +1,7 @@
 export type HealthResult = { status: 200 | 503; body: { ok: boolean } };
 
-// Public and unauthenticated (the container healthcheck and nginx call it), so it says only
-// "ok" or not: no error text, hosts or versions.
+// Unauthenticated: the container healthcheck and release.sh call it inside the container (nginx
+// does not pass it through), and it says only "ok" or not — no error text, hosts or versions.
 export async function handleHealth(
   ping: () => Promise<void>,
   timeoutMs: number,

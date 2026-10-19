@@ -14,3 +14,10 @@ docs
 coverage
 ops
 *.md
+# Stack state and data when it ran from this checkout: dumps hold every user's diary.
+backups
+*.dump
+*.pem
+*.key
+.release-tag*
+.nginx-templates.sum

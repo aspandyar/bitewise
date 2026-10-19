@@ -9,6 +9,10 @@ health_wait_sec="${HEALTH_WAIT_SEC:-60}"
 current_file=".release-tag"
 previous_tag="$(cat "$current_file" 2> /dev/null || true)"
 
+if [ ! -f "$ENV_FILE" ]; then
+  log "$ENV_FILE not found (see docs/deploy.md, step 6)"
+  exit 1
+fi
 # The env file holds the database password and auth secret (#21).
 perm="$(stat -c %a "$ENV_FILE" 2> /dev/null || stat -f %Lp "$ENV_FILE")"
 if [ "$perm" != "600" ]; then
@@ -26,6 +30,18 @@ rollback() {
     IMAGE_TAG="$previous_tag" "${COMPOSE[@]}" up -d app || true
   else
     log "release $tag failed; no previous tag to return to"
+  fi
+}
+
+# nginx renders its templates only when the container starts; after rsync brings new ones it has
+# to be recreated, or it keeps serving the old limits and headers.
+restart_nginx_if_changed() {
+  local sum_file=".nginx-templates.sum" sum
+  sum="$(cat docker/nginx/* | cksum)"
+  if [ "$sum" != "$(cat "$sum_file" 2> /dev/null || true)" ]; then
+    "${COMPOSE[@]}" up -d --force-recreate nginx
+    echo "$sum" > "$sum_file"
+    log "nginx recreated with the new templates"
   fi
 }
 
@@ -48,8 +64,12 @@ IMAGE_TAG="$tag" "${COMPOSE[@]}" up -d app
 for ((i = 0; i < health_wait_sec; i++)); do
   if "${COMPOSE[@]}" exec -T app wget -qO- http://127.0.0.1:3000/api/health > /dev/null 2>&1; then
     trap - ERR
-    [ -n "$previous_tag" ] && echo "$previous_tag" > "$current_file.prev"
+    # A re-run of the same tag keeps the older one as the rollback target.
+    if [ -n "$previous_tag" ] && [ "$previous_tag" != "$tag" ]; then
+      echo "$previous_tag" > "$current_file.prev"
+    fi
     echo "$tag" > "$current_file"
+    restart_nginx_if_changed
     log "release $tag is live"
     exit 0
   fi

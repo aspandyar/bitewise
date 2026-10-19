@@ -6,8 +6,16 @@
 # or the pgdata volume.
 name: bitewise-prod
 
+# Container logs rotate: on a small VPS an unbounded nginx access log eventually fills the disk.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
   db:
+    logging: *logging
     image: docker.io/library/postgres:17-alpine
     restart: unless-stopped
     environment:
@@ -24,6 +32,7 @@ services:
       retries: 10
 
   app:
+    logging: *logging
     image: ghcr.io/aspandyar/bitewise:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: ${APP_ENV_FILE:-.env}
@@ -33,6 +42,7 @@ services:
     # No ports: nginx is the only way in, so every request carries the proxy's X-Forwarded-For.
 
   nginx:
+    logging: *logging
     image: docker.io/library/nginx:1.29-alpine
     restart: unless-stopped
     ports:
@@ -56,6 +66,7 @@ services:
       - 'while :; do sleep 6h; nginx -s reload; done & exec /docker-entrypoint.sh nginx -g "daemon off;"'
 
   certbot:
+    logging: *logging
     image: docker.io/certbot/certbot:latest
     # Off locally (DOMAIN=localhost uses a self-signed certificate); on the server: --profile tls.
     profiles: ["tls"]

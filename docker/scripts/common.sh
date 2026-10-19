@@ -1,6 +1,7 @@
 # Shared by the release scripts: run from the stack root (/opt/bitewise or the repo).
 # COMPOSE_ENV_FILE / APP_ENV_FILE point the local run at .local-prod/app.env instead of .env.
-set -euo pipefail
+# -E: the ERR trap (release rollback) also fires for failures inside functions.
+set -Eeuo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 
 ENV_FILE="${COMPOSE_ENV_FILE:-.env}"

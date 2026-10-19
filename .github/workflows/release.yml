@@ -4,17 +4,24 @@ name: Release image
 on:
   workflow_dispatch:
 
+# Only the image job may publish: tests and dependency installs run without that right.
 permissions:
   contents: read
-  packages: write
 
 jobs:
   checks:
     uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
 
   image:
     needs: checks
+    # Images (and :latest) come from master only, never from a branch someone dispatched.
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3

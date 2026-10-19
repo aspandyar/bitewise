@@ -26,13 +26,13 @@ tags:
    ```bash
    rsync -av docker-compose.prod.yml docker deploy@<host>:/opt/bitewise/
    ```
-6. **`.env`** на сервере из `.env.example`: секция «Production» плюс `POSTGRES_*`, `DATABASE_URL=postgres://bitewise:<пароль>@db:5432/bitewise`, `NEXTAUTH_SECRET` (`openssl rand -base64 32`), `NEXTAUTH_URL=https://<домен>`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` (`openssl rand -base64 24`), `DOMAIN`, `CERTBOT_EMAIL`. Затем `chmod 600 .env`. Файл не попадает ни в git, ни в образ, ни в бэкапы; его копия — в менеджере паролей.
-7. **Доступ к образу:** на GitHub — fine-grained или classic токен только с `read:packages`; на сервере `docker login ghcr.io -u <github-логин>`.
-8. **DNS:** A-запись домена на IP сервера; дождаться, пока `dig +short <домен>` покажет IP.
-9. **TLS:** `docker/scripts/init-tls.sh` — временный сертификат, nginx, настоящий сертификат Let's Encrypt, продление каждые 12 ч.
+6. **`.env`** на сервере из `.env.example`: секция «Production» плюс `POSTGRES_*` (пароль — `openssl rand -hex 24`: он стоит внутри URL, а `/` из base64 ломает разбор), `DATABASE_URL=postgres://bitewise:<пароль>@db:5432/bitewise`, `NEXTAUTH_SECRET` (`openssl rand -base64 32`), `NEXTAUTH_URL=https://<домен>`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` (`openssl rand -base64 24`), `DOMAIN`, `CERTBOT_EMAIL`. В значениях не должно быть `$` (compose подставляет переменные). Затем `chmod 600 .env`. Файл не попадает ни в git, ни в образ, ни в бэкапы; его копия — в менеджере паролей.
+7. **Доступ к образу:** на GitHub — classic-токен только с `read:packages` (fine-grained GHCR не принимает); на сервере `docker login ghcr.io -u <github-логин>`.
+8. **DNS:** A-запись домена на IP сервера; дождаться, пока `dig +short <домен>` покажет IP. AAAA-запись не заводить, пока в Docker не включён IPv6: иначе docker-proxy подменит адрес IPv6-клиентов адресом шлюза, и все они окажутся в одной корзине лимитов.
+9. **TLS:** `docker/scripts/init-tls.sh` — временный сертификат, nginx, настоящий сертификат Let's Encrypt, продление каждые 12 ч. Если выпуск упал (DNS ещё не обновился), запустить скрипт снова, когда `dig` покажет IP; часто не повторять — у Let's Encrypt лимит 5 одинаковых сертификатов в неделю.
 10. **Cron:** `crontab docker/crontab` (бэкап 03:30, проверка восстановления 1-го числа в 05:00; логи — `backups/*.log`).
 11. **Первый релиз** — `/deploy` с ноутбука (или вручную: запустить `Release image`, затем на сервере `docker/scripts/release.sh <sha>`).
-12. **Проверка:** `https://<домен>` открывается, вход админом, на телефоне — «Установить на телефон».
+12. **Проверка:** `https://<домен>` открывается, вход админом, на телефоне — «Установить на телефон»; в `logs nginx` видны настоящие IP клиентов, а не адрес шлюза Docker.
 
 ## Обычный релиз
 `/deploy` в Claude Code: lint/test/build → список коммитов → «ок» → `gh workflow run release.yml` → rsync файлов стека → `release.sh <sha>` по ssh → проверка → тег `deploy-<дата>`.
@@ -42,6 +42,7 @@ tags:
 ssh deploy@<host> 'cd /opt/bitewise && docker/scripts/release.sh "$(cat .release-tag.prev)"'
 ```
 Миграции только добавляются, поэтому старый образ работает на новой схеме, пока миграция не удаляет то, что он читает. Перед такой миграцией — отдельный план.
+Откат запускает и старый сид: продукты, исправленные в новом сиде, временно вернутся к прежним цифрам и вернутся к новым при следующем релизе.
 
 ## Восстановление из бэкапа
 ```bash
@@ -52,6 +53,10 @@ docker compose -p bitewise-prod -f docker-compose.prod.yml --env-file .env exec 
   < backups/bitewise-<дата>.dump
 docker compose -p bitewise-prod -f docker-compose.prod.yml --env-file .env start app
 ```
+
+## Изменения стека
+- Шаблоны nginx: `release.sh` сам пересоздаёт nginx, если `docker/nginx/*` изменились после rsync.
+- `docker-compose.prod.yml` для `db` и `certbot`: `docker compose -p bitewise-prod -f docker-compose.prod.yml --env-file .env up -d db` (и `--profile tls up -d certbot`) после rsync.
 
 ## Логи
 - Приложение: `docker compose -p bitewise-prod -f docker-compose.prod.yml logs -f app`.
@@ -73,3 +78,4 @@ SKIP_PULL=1 docker/scripts/release.sh local
 ## Известное
 - Страница «не найдено» внутри `<Suspense>` отвечает 200 (стриминг Next), но показывает «Страница не найдена» и `noindex`; несуществующий адрес — 404 (#24).
 - Бэкапы только на сервере (решение владельца): сервер пропадёт — пропадут и они.
+- Логи контейнеров ротируются: 5 файлов по 10 МБ на сервис.

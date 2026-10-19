@@ -33,3 +33,4 @@ coverage/
 /.release-tag
 /.release-tag.prev
 /backups/
+/.nginx-templates.sum
