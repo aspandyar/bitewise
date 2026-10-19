@@ -101,6 +101,29 @@ export const TIME_ZONE_COOKIE = {
   maxLength: 64,
 } as const;
 
+// The health check answers within this or reports the database as down.
+export const HEALTH = { timeoutMs: 2000 } as const;
+
+// One policy for every environment. 'unsafe-inline' scripts: Next injects per-request inline
+// scripts that a hash cannot cover, and a nonce would make every screen request-time (#18).
+export const SECURITY_HEADERS = {
+  csp: {
+    "default-src": ["'self'"],
+    "script-src": ["'self'", "'unsafe-inline'"],
+    "style-src": ["'self'", "'unsafe-inline'"],
+    "img-src": ["'self'", "data:", "blob:"],
+    "connect-src": ["'self'"],
+    "worker-src": ["'self'"],
+    "manifest-src": ["'self'"],
+    "object-src": ["'none'"],
+    "base-uri": ["'self'"],
+    "form-action": ["'self'"],
+    "frame-ancestors": ["'none'"],
+  },
+  // The camera is for the barcode scanner (stage 7); nothing else is ever asked for.
+  permissions: { camera: "(self)", microphone: "()", geolocation: "()" },
+} as const;
+
 export const THEMES = ["system", "light", "dark"] as const;
 export type Theme = (typeof THEMES)[number];
 
