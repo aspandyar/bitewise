@@ -1,12 +1,20 @@
 import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { PASSWORD_HASH } from "@/lib/config";
+import { createSemaphore } from "./semaphore";
 
 type ScryptParams = { N: number; r: number; p: number; keyLength: number };
 
 const PREFIX = "scrypt";
 const PARTS = 6;
 
+// One gate per server process: login, registration and the dummy hash all share it.
+const scryptGate = createSemaphore(PASSWORD_HASH);
+
 function deriveKey(password: string, salt: Buffer, params: ScryptParams): Promise<Buffer> {
+  return scryptGate.run(() => scryptKey(password, salt, params));
+}
+
+function scryptKey(password: string, salt: Buffer, params: ScryptParams): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     scrypt(
       password,
@@ -44,7 +52,8 @@ export async function verifyPassword(password: string, stored: string): Promise<
     const key = await deriveKey(password, parsed.salt, parsed);
     return timingSafeEqual(key, parsed.hash);
   } catch {
-    // Invalid scrypt parameters in a corrupted row mean "no match", not a 500.
+    // Invalid scrypt parameters in a corrupted row, or a full hashing queue, mean "no match", not
+    // a 500: login answers with its usual generic failure.
     return false;
   }
 }

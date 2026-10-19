@@ -184,6 +184,9 @@ export const PASSWORD_HASH = {
   keyLength: 64,
   saltBytes: 16,
   maxmemBytes: 64 * 1024 * 1024,
+  // Two hashes at once keep a 1–2 GB VPS responsive; past the queue sign-ins fail fast (#20).
+  maxConcurrent: 2,
+  maxQueued: 20,
 } as const;
 
 // ~100 bytes per key, so the cap costs ~10 MB; reaching it takes a botnet, not one script.
