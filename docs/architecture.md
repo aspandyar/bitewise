@@ -75,9 +75,16 @@ Postgres 17 (+ pg_trgm)                            db/schema.ts → db/migration
 - **Тема и акцентный цвет** — cookie `bw-theme` и `bw-accent` на устройстве. Корневой layout их не читает (под `cacheComponents` это сделало бы все экраны «по запросу»): inline-скрипт в `<head>` (`appearanceScript`) до первой отрисовки ставит `data-theme` / `data-accent` на `<html>`, CSS-переменные тем собирает `appearanceCss` из `APPEARANCE` в `lib/config.ts`. Классы — `bg-accent`, `text-on-accent`, `text-accent-text`; вариант `dark:` учитывает и выбор, и систему.
 - **PWA.** `/manifest.webmanifest` (`app/manifest.ts`), иконки `/icon`, `/apple-icon`, `/pwa-icons/*` рисует `next/og` при сборке. Service worker `/sw.js` (из `lib/pwa/service-worker.ts`) трогает только навигации: без сети отдаёт `/offline`. Обрыв посреди работы — `experimental.useOffline`: переходы и server actions ждут сеть и повторяются, плашка — `OfflineBanner`.
 
+## Прод
+- Отдельный VPS, `docker-compose.prod.yml` (проект `bitewise-prod`): `db` и `app` без опубликованных портов, `nginx` (TLS, HSTS, gzip, `limit_req` на вход и регистрацию, 503 + `Retry-After` во время перезапуска), `certbot` (продление).
+- Образ — Next standalone + `ops/*.js` (esbuild: мигратор drizzle-orm с проверками БД, сид, админ). Собирает GitHub Actions по кнопке в GHCR; сервер только скачивает.
+- Релиз — `docker/scripts/release.sh`: бэкап → миграции → сид → админ → новый контейнер → `/api/health`; ошибка — откат на прошлый тег.
+- Заголовки — `lib/security-headers.ts` (CSP с `'unsafe-inline'` для скриптов Next, `Permissions-Policy`); HSTS — в nginx.
+- Подробно: [[Projects/Bitewise/deploy|deploy]].
+
 ## Безопасность (коротко)
 - **Сессии и пароли.** Сессия — JWT Auth.js. Пароли — scrypt (N = 2^15). При неизвестном email считается фиктивный хеш, чтобы время ответа было тем же.
-- **Rate limit в памяти** (fail-closed, до 100 тыс. ключей): вход — 10 за 15 минут, регистрация — 5 в час с IP, поиск — 120 в минуту.
+- **Rate limit в памяти** (fail-closed, до 100 тыс. ключей): вход — 10 за 15 минут, регистрация — 5 в час с IP, поиск — 120 в минуту. Снаружи — `limit_req` nginx. Хеширование паролей — не больше 2 одновременно, очередь до 20 (семафор).
 - **Роли.** Новые аккаунты всегда `user`. `admin` появляется только через `pnpm admin:bootstrap`; привилегированные действия читают роль из БД.
 - **Доступ.** Каждый repo-запрос ограничен `user_id` из сессии. Чужое → 404.
 - **Лимиты объёма:** 1000 своих продуктов и блюд, 20 порций на продукт, 50 ингредиентов в блюде, 100 записей дневника в день и 100 000 на аккаунт.
@@ -144,6 +151,8 @@ bitewise/
 ├── db/                  # schema.ts, migrations/, seed/ (foods.json + sources/), client.ts
 ├── docker/postgres/     # init-скрипт тестовой базы
 ├── scripts/             # build-food-seed.ts, bootstrap-admin.ts
+├── docker/              # postgres init, nginx-шаблон, скрипты релиза и бэкапа, crontab
+├── Dockerfile, docker-compose.prod.yml   # прод-образ и стек
 ├── tests/               # testDb, хелперы, global-setup, fixtures
 ├── docs/                # план, функционал, архитектура, API, разработка, процесс, решения, superpowers/
 └── .claude/             # rules, skills, agents, settings
