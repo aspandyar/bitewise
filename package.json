@@ -14,7 +14,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "node --env-file-if-exists=.env --import tsx db/seed/index.ts",
     "seed:build": "node --import tsx scripts/build-food-seed.ts",
-    "admin:bootstrap": "node --env-file-if-exists=.env --import tsx scripts/bootstrap-admin.ts"
+    "admin:bootstrap": "node --env-file-if-exists=.env --import tsx scripts/bootstrap-admin.ts",
+    "ops:build": "esbuild migrate=db/ops/migrate.ts seed=db/seed/index.ts bootstrap-admin=scripts/bootstrap-admin.ts --bundle --platform=node --target=node24 --format=cjs --outdir=ops --log-level=warning"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.3",
@@ -31,6 +32,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "drizzle-kit": "^0.31.11",
+    "esbuild": "^0.28.2",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
     "eslint-config-prettier": "^10.1.8",

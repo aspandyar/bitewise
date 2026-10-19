@@ -23,3 +23,8 @@ coverage/
 .DS_Store
 *.pem
 .pnpm-debug.log*
+
+# release scripts bundled by `pnpm ops:build` (built into the image)
+/ops/
+# local run of the production stack (secrets, certs, backups)
+/.local-prod/
