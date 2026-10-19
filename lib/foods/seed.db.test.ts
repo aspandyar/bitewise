@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { foodPortions, foods } from "@/db/schema";
 import { closeTestDb, resetDb, testDb } from "@/tests/db";
@@ -183,6 +183,41 @@ describe("loadFoodSeed and recipes", () => {
     expect(result).toMatchObject({ recomputed: 1, failed: 0 });
   });
 
+  it("retries a recipe whose recompute failed on the next seed run, even with no seed changes", async () => {
+    const alice = await newUserId("alice@mail.com");
+    await loadFoodSeed(testDb, [buckwheat]);
+    const created = await createRecipe(testDb, alice, { name: "Каша", cookedWeightG: null, servings: null });
+    if (created === "limit") throw new Error("cap");
+    await addItem(testDb, alice, created.id, {
+      foodId: await idOf(buckwheat.key),
+      amount: { mode: "grams", grams: 100 },
+    });
+    // The seed changed the food, then the process died before the recipe followed.
+    await testDb
+      .update(foods)
+      .set({ kcal100: 350, updatedAt: sql`now() + interval '1 second'` })
+      .where(eq(foods.seedKey, buckwheat.key));
+
+    const result = await loadFoodSeed(testDb, [{ ...buckwheat, kcal100: 350 }]);
+
+    const recipe = await getRecipe(testDb, alice, created.id);
+    const food = recipe && (await getVisibleFood(testDb, alice, recipe.foodId));
+    expect(food?.kcal100).toBe(350);
+    expect(result).toMatchObject({ recomputed: 1, failed: 0 });
+  });
+
+  it("leaves up-to-date recipes alone on a re-run", async () => {
+    const alice = await newUserId("alice@mail.com");
+    await loadFoodSeed(testDb, [buckwheat]);
+    const created = await createRecipe(testDb, alice, { name: "Каша", cookedWeightG: null, servings: null });
+    if (created === "limit") throw new Error("cap");
+    await addItem(testDb, alice, created.id, {
+      foodId: await idOf(buckwheat.key),
+      amount: { mode: "grams", grams: 100 },
+    });
+    expect(await loadFoodSeed(testDb, [buckwheat])).toMatchObject({ recomputed: 0, failed: 0 });
+  });
+
   it("one failing recipe does not undo the seed or the other recipes", async () => {
     const alice = await newUserId("alice@mail.com");
     await loadFoodSeed(testDb, [buckwheat]);
@@ -201,7 +236,7 @@ describe("loadFoodSeed and recipes", () => {
     await testDb.update(foods).set({ kcal100: 1 }).where(eq(foods.ownerId, alice));
 
     const failing = recipeIds[0];
-    const result = await recomputeRecipesEach(testDb, [buckwheatId], (tx, id) =>
+    const result = await recomputeRecipesEach(testDb, recipeIds, (tx, id) =>
       id === failing ? Promise.reject(new Error("boom")) : recomputeRecipe(tx, id),
     );
 
