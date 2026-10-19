@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Monthly from cron: restores the newest dump into a throwaway database and counts key rows.
 source "$(dirname "$0")/common.sh"
+wait_for_db
 
 backup_dir="${BACKUP_DIR:-$(env_value BACKUP_DIR)}"
 backup_dir="${backup_dir:-backups}"

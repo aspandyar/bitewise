@@ -28,3 +28,8 @@ coverage/
 /ops/
 # local run of the production stack (secrets, certs, backups)
 /.local-prod/
+
+# release state and backups when the stack runs from a checkout
+/.release-tag
+/.release-tag.prev
+/backups/

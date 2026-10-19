@@ -1,6 +1,10 @@
 # Production stack (stage 6b). Lives in /opt/bitewise on the server next to .env (chmod 600).
 # Release steps: docker/scripts/release.sh. Runbook: docs/deploy.md.
-# Locally: COMPOSE_ENV_FILE=.local-prod/app.env APP_ENV_FILE=.local-prod/app.env (ports 8080/8443).
+# Locally: DOCKER=podman COMPOSE_ENV_FILE=.local-prod/app.env docker/scripts/... (ports from that file).
+
+# Own project name: next to the dev compose (project "bitewise") it must never share containers
+# or the pgdata volume.
+name: bitewise-prod
 
 services:
   db:

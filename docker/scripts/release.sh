@@ -30,6 +30,7 @@ rollback() {
 }
 
 "${COMPOSE[@]}" up -d db
+wait_for_db
 docker/scripts/backup.sh
 
 if [ -z "${SKIP_PULL:-}" ]; then
@@ -44,7 +45,7 @@ run_app node ops/seed.js
 run_app node ops/bootstrap-admin.js
 IMAGE_TAG="$tag" "${COMPOSE[@]}" up -d app
 
-for _ in $(seq 1 "$health_wait_sec"); do
+for ((i = 0; i < health_wait_sec; i++)); do
   if "${COMPOSE[@]}" exec -T app wget -qO- http://127.0.0.1:3000/api/health > /dev/null 2>&1; then
     trap - ERR
     [ -n "$previous_tag" ] && echo "$previous_tag" > "$current_file.prev"
