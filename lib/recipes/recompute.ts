@@ -2,6 +2,7 @@ import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { foodPortions, foods, recipeItems, recipes } from "@/db/schema";
 import type { Db } from "@/db/types";
 import { ru } from "@/lib/i18n/ru";
+import { loggableError } from "@/lib/log";
 import { calcRecipe, calcServingPortionGrams, type RecipeItemValues } from "@/lib/nutrition";
 
 export const per100gColumns = {
@@ -77,11 +78,8 @@ export async function recomputeRecipe(db: Db, recipeId: string): Promise<void> {
 
 // Only live recipes: deleted ones keep nothing to recompute. Sorted so that two transactions
 // recomputing overlapping recipes lock them in the same order and cannot deadlock.
-export async function recomputeRecipesUsingFoods(
-  db: Db,
-  foodIds: readonly string[],
-): Promise<number> {
-  if (foodIds.length === 0) return 0;
+async function liveRecipesUsingFoods(db: Db, foodIds: readonly string[]): Promise<string[]> {
+  if (foodIds.length === 0) return [];
   const rows = await db
     .selectDistinct({ recipeId: recipeItems.recipeId })
     .from(recipeItems)
@@ -89,6 +87,34 @@ export async function recomputeRecipesUsingFoods(
     .innerJoin(foods, eq(foods.id, recipes.foodId))
     .where(and(inArray(recipeItems.foodId, [...foodIds]), isNull(foods.deletedAt)))
     .orderBy(asc(recipeItems.recipeId));
-  for (const { recipeId } of rows) await recomputeRecipe(db, recipeId);
-  return rows.length;
+  return rows.map((row) => row.recipeId);
+}
+
+export async function recomputeRecipesUsingFoods(
+  db: Db,
+  foodIds: readonly string[],
+): Promise<number> {
+  const recipeIds = await liveRecipesUsingFoods(db, foodIds);
+  for (const recipeId of recipeIds) await recomputeRecipe(db, recipeId);
+  return recipeIds.length;
+}
+
+// After the seed commits: each recipe in its own short transaction (same row lock as edits), so
+// the seed never holds every user's recipe at once and one bad recipe does not undo the rest.
+export async function recomputeRecipesEach(
+  db: Db,
+  foodIds: readonly string[],
+  recompute: (tx: Db, recipeId: string) => Promise<void> = recomputeRecipe,
+): Promise<{ recomputed: number; failed: number }> {
+  const recipeIds = await liveRecipesUsingFoods(db, foodIds);
+  let failed = 0;
+  for (const recipeId of recipeIds) {
+    try {
+      await db.transaction((tx) => recompute(tx, recipeId));
+    } catch (error) {
+      failed += 1;
+      console.error("recipe recompute failed", loggableError(error));
+    }
+  }
+  return { recomputed: recipeIds.length - failed, failed };
 }

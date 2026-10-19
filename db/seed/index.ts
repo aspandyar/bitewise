@@ -8,8 +8,12 @@ import { seedFileSchema } from "@/lib/foods/seed-schema";
 async function main() {
   try {
     const seed = seedFileSchema.parse(JSON.parse(readFileSync("db/seed/foods.json", "utf8")));
-    const { upserted, retired } = await loadFoodSeed(db, seed);
-    console.log(`Seeded ${upserted} foods, retired ${retired}.`);
+    const { upserted, retired, recomputed, failed } = await loadFoodSeed(db, seed);
+    console.log(
+      `Seeded ${upserted} foods, retired ${retired}, recomputed ${recomputed} recipes (${failed} failed).`,
+    );
+    // The foods are in; a failed recipe is logged above and fails the release step to be looked at.
+    if (failed > 0) process.exitCode = 1;
   } catch (error) {
     console.error(error);
     process.exitCode = 1;

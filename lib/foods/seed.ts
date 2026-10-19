@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNotNull, isNull, notInArray, sql } from "drizzle-orm";
 import { foodPortions, foods } from "@/db/schema";
 import type { Db } from "@/db/types";
-import { recomputeRecipesUsingFoods } from "@/lib/recipes/recompute";
+import { recomputeRecipesEach } from "@/lib/recipes/recompute";
 import type { PortionValues } from "./types";
 import type { SeedFood } from "./seed-schema";
 
@@ -37,12 +37,13 @@ async function syncSharedPortions(db: Db, foodId: string, wanted: readonly Porti
   }
 }
 
-// One transaction: a half-applied seed would leave foods without their portions.
+// Foods and portions in one transaction: a half-applied seed would leave foods without their
+// portions. Recipes follow after the commit, each on its own (#23).
 export async function loadFoodSeed(
   db: Db,
   seed: readonly SeedFood[],
-): Promise<{ upserted: number; retired: number }> {
-  return db.transaction(async (tx) => {
+): Promise<{ upserted: number; retired: number; recomputed: number; failed: number }> {
+  const written = await db.transaction(async (tx) => {
     const changedIds: string[] = [];
     for (const { key, portions, ...values } of seed) {
       const [changed] = await tx
@@ -79,8 +80,9 @@ export async function loadFoodSeed(
         ),
       )
       .returning({ id: foods.id });
-    // Users' recipes made of shared foods follow the seed's corrections.
-    await recomputeRecipesUsingFoods(tx, changedIds);
-    return { upserted: seed.length, retired: retired.length };
+    return { upserted: seed.length, retired: retired.length, changedIds };
   });
+  // Users' recipes made of shared foods follow the seed's corrections.
+  const { recomputed, failed } = await recomputeRecipesEach(db, written.changedIds);
+  return { upserted: written.upserted, retired: written.retired, recomputed, failed };
 }
