@@ -9,7 +9,7 @@ import { loginLimiter } from "./limiters";
 import { getDummyPasswordHash, verifyPassword } from "./password";
 import { clientIpFromForwardedFor, forwardedForHeader } from "./request";
 import { checkToken } from "./token";
-import { trustedDeviceId } from "./device";
+import { isTrustedDevice } from "./device";
 
 const env = readAuthEnv();
 const deviceOptions = {
@@ -42,8 +42,8 @@ export const authOptions: NextAuthOptions = {
           getDummyPasswordHash,
           limiter: loginLimiter,
           nowMs: Date.now(),
-          trustedDeviceId: (account) =>
-            trustedDeviceId(cookieHeader(req.headers?.cookie), account, {
+          isTrustedDevice: (account) =>
+            isTrustedDevice(cookieHeader(req.headers?.cookie), account, {
               ...deviceOptions,
               nowMs: Date.now(),
             }),

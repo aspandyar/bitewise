@@ -12,7 +12,7 @@ function makeDeps(overrides: Partial<AuthorizeDeps> = {}): AuthorizeDeps {
     getDummyPasswordHash: async () => "dummy",
     limiter: createRateLimiter({ max: 100, windowMs: 1000, maxKeys: 100 }),
     nowMs: 0,
-    trustedDeviceId: () => null,
+    isTrustedDevice: () => false,
     ...overrides,
   };
 }
@@ -27,26 +27,22 @@ describe("authorizeCredentials", () => {
       await authorizeCredentials(wrong, ip, makeDeps({ limiter }));
     }
     expect(await authorizeCredentials(right, "3.3.3.3", makeDeps({ limiter }))).toBeNull();
-    const owner = makeDeps({
-      limiter,
-      trustedDeviceId: (account) => (account.id === "u1" ? "phone" : null),
-    });
+    const owner = makeDeps({ limiter, isTrustedDevice: (account) => account.id === "u1" });
     expect(await authorizeCredentials(right, "3.3.3.3", owner)).toMatchObject({ id: "u1" });
   });
 
-  it("gives each trusted device its own bucket, so one leaked mark cannot drain another", async () => {
+  it("shares one bucket among trusted devices, so minting marks buys no extra guesses", async () => {
     const limiter = createRateLimiter({ max: 2, windowMs: 1000, maxKeys: 100 });
     const wrong = { email: "me@mail.com", password: "wrong-pass" };
-    const leaked = makeDeps({ limiter, trustedDeviceId: () => "leaked" });
-    await authorizeCredentials(wrong, "5.5.5.1", leaked);
-    await authorizeCredentials(wrong, "5.5.5.2", leaked);
-    const phone = makeDeps({ limiter, trustedDeviceId: () => "phone" });
-    expect(await authorizeCredentials(right, "5.5.5.3", phone)).toMatchObject({ id: "u1" });
+    await authorizeCredentials(wrong, "5.5.5.1", makeDeps({ limiter, isTrustedDevice: () => true }));
+    await authorizeCredentials(wrong, "5.5.5.2", makeDeps({ limiter, isTrustedDevice: () => true }));
+    const another = makeDeps({ limiter, isTrustedDevice: () => true });
+    expect(await authorizeCredentials(right, "5.5.5.3", another)).toBeNull();
   });
 
   it("still limits guesses from a trusted device, in their own bucket", async () => {
     const limiter = createRateLimiter({ max: 2, windowMs: 1000, maxKeys: 100 });
-    const trusted = makeDeps({ limiter, trustedDeviceId: () => "phone" });
+    const trusted = makeDeps({ limiter, isTrustedDevice: () => true });
     const wrong = { email: "me@mail.com", password: "wrong-pass" };
     await authorizeCredentials(wrong, "4.4.4.1", trusted);
     await authorizeCredentials(wrong, "4.4.4.2", trusted);

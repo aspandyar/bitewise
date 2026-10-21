@@ -13,8 +13,8 @@ export type AuthorizeDeps = {
   getDummyPasswordHash(): Promise<string>;
   limiter: RateLimiter;
   nowMs: number;
-  // The id of this account's valid device mark on the request, if any (lib/auth/device.ts).
-  trustedDeviceId(account: { id: string; tokenVersion: number }): string | null;
+  // Whether the request carries a valid device mark of this account (lib/auth/device.ts).
+  isTrustedDevice(account: { id: string; tokenVersion: number }): boolean;
 };
 
 // Every failure returns null so the caller shows one message and leaks nothing about why.
@@ -37,10 +37,9 @@ export async function authorizeCredentials(
     const user = await deps.findUserByEmail(email);
     // Counting only real accounts keeps junk emails from filling the limiter; the per-account
     // limit stops guessing one password from many IPs.
-    // A browser the account signed in from before counts in its own bucket, one per device:
-    // strangers guessing the password use up theirs and cannot lock the owner out (#30).
-    const device = user ? deps.trustedDeviceId(user) : null;
-    const bucket = device ? `device:${email}:${device}` : `email:${email}`;
+    // Browsers the account signed in from before share their own bucket: strangers guessing the
+    // password use up theirs and cannot lock the owner out (#30).
+    const bucket = user && deps.isTrustedDevice(user) ? `device:${email}` : `email:${email}`;
     const accountAllowed = user ? deps.limiter.hit(bucket, deps.nowMs) : true;
     if (user && accountAllowed) accountKey = bucket;
     // Always pay for one hash check, so a rate-limited or unknown account answers as slowly as a

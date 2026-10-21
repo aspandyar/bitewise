@@ -34,13 +34,14 @@ export function deviceCookie(account: Account, { secret, https, nowMs }: DeviceO
   };
 }
 
-// The mark's own id when it is valid for this account now, else null. Each device gets its own
-// login bucket from it, so one leaked mark cannot use up the attempts of the owner's others.
-export function trustedDeviceId(
+// Whether the request carries a mark valid for this account now. All trusted devices of an
+// account share one login bucket: marks can be minted by any signed-in session, so per-mark
+// buckets would turn a stolen session into unlimited guesses at the password.
+export function isTrustedDevice(
   cookieHeader: string,
   account: Account,
   options: DeviceOptions,
-): string | null {
+): boolean {
   const prefix = `${deviceCookieName(options.https)}=`;
   const value = cookieHeader
     .split(/;\s*/)
@@ -48,10 +49,10 @@ export function trustedDeviceId(
     ?.slice(prefix.length);
   const [issued, mac] = value?.split(".") ?? [];
   const issuedMs = Number(issued);
-  if (!mac || !Number.isSafeInteger(issuedMs)) return null;
+  if (!mac || !Number.isSafeInteger(issuedMs)) return false;
   const ageMs = options.nowMs - issuedMs;
-  if (ageMs < 0 || ageMs > AUTH.deviceMaxAgeSec * MS_PER_SECOND) return null;
+  if (ageMs < 0 || ageMs > AUTH.deviceMaxAgeSec * MS_PER_SECOND) return false;
   const expected = Buffer.from(sign(account, issuedMs, options.secret));
   const given = Buffer.from(mac);
-  return given.length === expected.length && timingSafeEqual(given, expected) ? mac : null;
+  return given.length === expected.length && timingSafeEqual(given, expected);
 }
