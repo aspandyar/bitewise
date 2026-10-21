@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AUTH } from "@/lib/config";
+import { AUTH, type UserRole } from "@/lib/config";
 import { firstFieldErrors } from "@/lib/forms";
 import { ru } from "@/lib/i18n/ru";
 import type { RateLimiter } from "./rate-limit";
@@ -9,7 +9,9 @@ import { BusyError } from "./semaphore";
 export type ChangePasswordDeps = {
   limiter: RateLimiter;
   nowMs: number;
-  findPasswordHash(userId: string): Promise<{ email: string; passwordHash: string } | null>;
+  findPasswordHash(
+    userId: string,
+  ): Promise<{ email: string; passwordHash: string; role: UserRole } | null>;
   verifyPassword(password: string, stored: string): Promise<boolean>;
   hashPassword(password: string): Promise<string>;
   updatePasswordHash(userId: string, passwordHash: string): Promise<void>;
@@ -32,9 +34,10 @@ const changePasswordSchema = z.object({
 // the caller signs this device in again with the email returned here.
 export async function changePassword(
   raw: unknown,
-  userId: string,
+  account: { id: string; tokenVersion: number },
   deps: ChangePasswordDeps,
 ): Promise<ChangePasswordResult> {
+  const userId = account.id;
   const parsed = changePasswordSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, fieldErrors: firstFieldErrors(parsed.error) };
   const { currentPassword, newPassword } = parsed.data;
@@ -42,11 +45,16 @@ export async function changePassword(
     return { ok: false, fieldErrors: { newPassword: ru.auth.samePassword } };
   }
   // A stolen session must not turn into unlimited guesses at the password it does not know.
-  if (!deps.limiter.hit(`user:${userId}`, deps.nowMs)) {
+  // Keyed by the token version too: after "sign out everywhere" the owner gets a fresh budget,
+  // so a thief who used it up cannot keep the owner from changing the password.
+  if (!deps.limiter.hit(`user:${userId}:${account.tokenVersion}`, deps.nowMs)) {
     return { ok: false, formError: ru.auth.tooManyAttempts };
   }
   try {
     const user = await deps.findPasswordHash(userId);
+    // The admin's password lives in ADMIN_PASSWORD: bootstrap would restore it on the next
+    // deploy, silently undoing a change made here.
+    if (user?.role === "admin") return { ok: false, formError: ru.auth.adminPasswordFromEnv };
     if (!user || !(await deps.verifyPassword(currentPassword, user.passwordHash))) {
       return { ok: false, fieldErrors: { currentPassword: ru.auth.wrongCurrentPassword } };
     }

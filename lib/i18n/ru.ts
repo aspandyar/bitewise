@@ -48,6 +48,8 @@ export const ru = {
     newPassword: "Новый пароль",
     wrongCurrentPassword: "Неверный текущий пароль",
     samePassword: "Новый пароль совпадает с текущим",
+    adminPasswordFromEnv:
+      "Пароль администратора задаётся в ADMIN_PASSWORD на сервере и меняется при деплое",
     changePasswordTitle: "Сменить пароль",
     changePasswordSubmit: "Сменить пароль",
     signOutEverywhere: "Выйти на всех устройствах",

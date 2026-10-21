@@ -101,9 +101,9 @@ export async function findAuthState(
 export async function findPasswordHash(
   db: Db,
   id: string,
-): Promise<{ email: string; passwordHash: string } | null> {
+): Promise<{ email: string; passwordHash: string; role: UserRole } | null> {
   const [row] = await db
-    .select({ email: users.email, passwordHash: users.passwordHash })
+    .select({ email: users.email, passwordHash: users.passwordHash, role: users.role })
     .from(users)
     .where(eq(users.id, id))
     .limit(1);

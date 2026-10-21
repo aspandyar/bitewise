@@ -32,6 +32,15 @@ export async function requireActionUser(formData: FormData | undefined): Promise
   return userId;
 }
 
+// For the actions that end a stolen session (#29): no write cap, since a thief who keeps the
+// cap used up must not stop the owner from signing out everywhere or changing the password.
+// Replays under another account are still refused.
+export async function requireAccountUser(formData: FormData | undefined): Promise<string> {
+  const userId = await requireUserId();
+  if (isForeignRequest(formData, userId)) redirect(withToast("/", "otherAccount"));
+  return userId;
+}
+
 // For actions that write without a form (deletes, Undo): the same per-user write cap (#31).
 export async function requireWriteUser(): Promise<string> {
   const userId = await requireUserId();

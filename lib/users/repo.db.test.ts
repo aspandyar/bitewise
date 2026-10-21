@@ -67,6 +67,7 @@ describe("users repo", () => {
     expect(await findPasswordHash(testDb, a?.id ?? "")).toEqual({
       email: "a@example.com",
       passwordHash: "h",
+      role: "user",
     });
     expect(await findAuthState(testDb, "00000000-0000-4000-8000-000000000000")).toBeNull();
     expect(await findPasswordHash(testDb, "00000000-0000-4000-8000-000000000000")).toBeNull();
