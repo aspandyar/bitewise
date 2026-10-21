@@ -76,7 +76,10 @@ export const authOptions: NextAuthOptions = {
     },
     session({ session, token }) {
       // A token without a role predates roles; treating it as "user" never grants extra rights.
-      return { ...session, user: { id: token.sub ?? "", role: token.role ?? "user" } };
+      return {
+        ...session,
+        user: { id: token.sub ?? "", role: token.role ?? "user", tokenVersion: token.ver ?? 0 },
+      };
     },
   },
 };

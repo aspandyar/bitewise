@@ -8,14 +8,12 @@ import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { requireAccountUser, requireActionUser } from "@/lib/auth/session";
 import { todayIsoDate } from "@/lib/date";
 import { firstFieldErrors, type FormState } from "@/lib/forms";
-import { ru } from "@/lib/i18n/ru";
 import { resetTargetToAuto, saveProfile } from "@/lib/profile/repo";
 import { makeProfileSchema } from "@/lib/profile/schema";
 import { setManualTarget } from "@/lib/targets/repo";
 import { targetsSchema } from "@/lib/targets/schema";
 import {
   bumpTokenVersion,
-  findAuthState,
   findPasswordHash,
   updatePasswordHash,
 } from "@/lib/users/repo";
@@ -50,10 +48,7 @@ export async function resetTargetAction(formData?: FormData): Promise<void> {
 
 // Every other session ends with the old password (#29); the form signs this device in again.
 export async function changePasswordAction(formData: FormData): Promise<ChangePasswordResult> {
-  const userId = await requireAccountUser(formData);
-  const state = await findAuthState(db, userId);
-  if (!state) return { ok: false, formError: ru.auth.wrongCurrentPassword };
-  const account = { id: userId, tokenVersion: state.tokenVersion };
+  const account = await requireAccountUser(formData);
   return changePassword(Object.fromEntries(formData), account, {
     limiter: passwordChangeLimiter,
     nowMs: Date.now(),
@@ -66,6 +61,6 @@ export async function changePasswordAction(formData: FormData): Promise<ChangePa
 
 // Ends every session of the account, this one included; the button signs out right after (#29).
 export async function signOutEverywhereAction(formData?: FormData): Promise<void> {
-  const userId = await requireAccountUser(formData);
-  await bumpTokenVersion(db, userId);
+  const { id } = await requireAccountUser(formData);
+  await bumpTokenVersion(db, id);
 }
