@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect } from "react";
-import { setRequestUser } from "@/lib/request-id";
+import { requestUserCookie } from "@/lib/request-id";
 
-// Tells stampRequestId whose page this is, so a form replayed later under another session is
-// refused by the server (#107). The id is the viewer's own and goes nowhere but their requests.
+function writeCookie(userId: string | null) {
+  document.cookie = requestUserCookie(userId, { https: window.location.protocol === "https:" });
+}
+
+// Tells stampRequestId who is signed in, so a form replayed later under another session is
+// refused by the server (#107). A cookie, not tab memory: every tab stamps the latest session,
+// and only a replay still carries the old one.
 export function RequestUserMark({ userId }: { userId: string | null }) {
-  useEffect(() => {
-    setRequestUser(userId);
-  }, [userId]);
+  useEffect(() => writeCookie(userId), [userId]);
   return null;
 }

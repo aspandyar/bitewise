@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { REQUEST_ID } from "@/lib/config";
-import { isForeignRequest, readRequestId, setRequestUser, stampRequestId } from "./request-id";
+import { isForeignRequest, readRequestId, requestUserCookie, stampRequestId } from "./request-id";
 
 function form(value?: string) {
   const data = new FormData();
@@ -46,21 +46,48 @@ describe("the user a request was made for", () => {
   const alice = "0b6f3f0e-5a7c-4c1e-9d2a-3f4b5c6d7e8f";
   const bob = "1c7a4f1f-6b8d-4d2f-8e3b-4a5c6d7e8f90";
 
-  afterEach(() => setRequestUser(null));
+  // The cookie every tab shares: the latest rendered page set it for the current session.
+  function signedIn(userId: string | null) {
+    vi.stubGlobal("document", {
+      cookie: userId ? `tz=Asia/Almaty; ${REQUEST_ID.userCookie}=${userId}` : "tz=Asia/Almaty",
+    });
+  }
 
   it("stamps the signed-in user next to the key", () => {
-    setRequestUser(alice);
+    signedIn(alice);
     expect(isForeignRequest(stampRequestId(new FormData()), alice)).toBe(false);
   });
 
   it("flags a replay that arrives under another session", () => {
-    setRequestUser(alice);
-    expect(isForeignRequest(stampRequestId(new FormData()), bob)).toBe(true);
+    signedIn(alice);
+    const replayed = stampRequestId(new FormData());
+    signedIn(bob);
+    expect(isForeignRequest(replayed, bob)).toBe(true);
   });
 
-  it("lets through a form without a user (no JS, page before this release)", () => {
+  it("stamps a fresh submit from an old tab with the current user, so the tab is not stuck", () => {
+    signedIn(bob);
+    expect(isForeignRequest(stampRequestId(new FormData()), bob)).toBe(false);
+  });
+
+  it("lets through a form without a user (signed out, no JS, page before this release)", () => {
+    signedIn(null);
     expect(isForeignRequest(stampRequestId(new FormData()), bob)).toBe(false);
     expect(isForeignRequest(new FormData(), bob)).toBe(false);
     expect(isForeignRequest(undefined, bob)).toBe(false);
+  });
+});
+
+describe("requestUserCookie", () => {
+  it("sets the user for the whole site, Secure over https", () => {
+    expect(requestUserCookie("abc", { https: true })).toBe(
+      `${REQUEST_ID.userCookie}=abc; path=/; samesite=lax; secure`,
+    );
+  });
+
+  it("clears it when nobody is signed in", () => {
+    expect(requestUserCookie(null, { https: false })).toBe(
+      `${REQUEST_ID.userCookie}=; path=/; max-age=0; samesite=lax`,
+    );
   });
 });

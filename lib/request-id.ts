@@ -3,13 +3,23 @@ import { REQUEST_ID } from "@/lib/config";
 
 const requestIdSchema = z.uuid();
 
-// Client-side module state: set by RequestUser in the root layout for the session the page
-// was rendered with. A replay re-sends the FormData stamped at submit, so it keeps this value
-// even if the cookie now belongs to someone else.
-let requestUser: string | null = null;
+// Set by RequestUserMark for the session the page was rendered with; not httpOnly, since the
+// browser stamps it into forms. It is the viewer's own id and grants nothing on its own.
+export function requestUserCookie(userId: string | null, { https }: { https: boolean }): string {
+  const secure = https ? "; secure" : "";
+  return userId
+    ? `${REQUEST_ID.userCookie}=${userId}; path=/; samesite=lax${secure}`
+    : `${REQUEST_ID.userCookie}=; path=/; max-age=0; samesite=lax${secure}`;
+}
 
-export function setRequestUser(userId: string | null): void {
-  requestUser = userId;
+function currentRequestUser(): string | null {
+  if (typeof document === "undefined") return null;
+  const prefix = `${REQUEST_ID.userCookie}=`;
+  const value = document.cookie
+    .split("; ")
+    .find((item) => item.startsWith(prefix))
+    ?.slice(prefix.length);
+  return value || null;
 }
 
 // No key (a page loaded before this release) or a broken one is not an error: the request still
@@ -27,7 +37,9 @@ export function stampRequestId(formData: FormData): FormData {
   // randomUUID exists only in secure contexts; over plain http (a phone on the dev server's LAN
   // address) the form still goes, just without replay protection.
   if (typeof crypto.randomUUID === "function") formData.set(REQUEST_ID.field, crypto.randomUUID());
-  if (requestUser !== null) formData.set(REQUEST_ID.userField, requestUser);
+  // Read at submit, not at render: a replay re-sends this FormData with the user it was sent as.
+  const user = currentRequestUser();
+  if (user !== null) formData.set(REQUEST_ID.userField, user);
   return formData;
 }
 
