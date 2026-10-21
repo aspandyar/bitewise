@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { ACCENTS, APPEARANCE } from "@/lib/config";
 import {
+  appearanceCookies,
   appearanceCss,
-  appearanceSchema,
   appearanceScript,
   applyAppearance,
   contrastRatio,
@@ -13,8 +13,9 @@ import {
   themeColorFor,
 } from "./appearance";
 
-function runScript(cookie: string) {
+function runScript(cookie: string, metas: { media: string; content: string }[] = []) {
   const attrs: Record<string, string> = {};
+  const listeners: (() => void)[] = [];
   const fakeDocument = {
     cookie,
     documentElement: {
@@ -22,8 +23,17 @@ function runScript(cookie: string) {
         attrs[name] = value;
       },
     },
+    querySelectorAll: () =>
+      metas.map((meta) => ({
+        getAttribute: (name: string) => (name === "media" ? meta.media : null),
+        setAttribute: (_name: string, value: string) => {
+          meta.content = value;
+        },
+      })),
+    addEventListener: (_type: string, listener: () => void) => listeners.push(listener),
   };
   new Function("document", appearanceScript())(fakeDocument);
+  for (const listener of listeners) listener();
   return attrs;
 }
 
@@ -58,14 +68,6 @@ describe("readAppearanceCookie", () => {
 
   it("ignores a name that only ends with the cookie name", () => {
     expect(readAppearanceCookie("xbw-theme=dark; theme=dark")).toEqual(APPEARANCE.defaults);
-  });
-});
-
-describe("appearanceSchema", () => {
-  it("rejects values outside the lists", () => {
-    expect(appearanceSchema.safeParse({ theme: "dark", accent: "red" }).success).toBe(false);
-    expect(appearanceSchema.safeParse({ theme: "<b>", accent: "green" }).success).toBe(false);
-    expect(appearanceSchema.safeParse({ theme: "light", accent: "pink" }).success).toBe(true);
   });
 });
 
@@ -106,6 +108,46 @@ describe("appearanceScript", () => {
     expect(runScript("xbw-theme=dark; theme=dark")).toEqual({});
     expect(runScript("")).toEqual({});
     expect(runScript("bw-theme=dark; bw-theme=light")).toEqual({ "data-theme": "dark" });
+  });
+});
+
+describe("appearanceScript theme color", () => {
+  const systemMetas = () => [
+    { media: "(prefers-color-scheme: light)", content: APPEARANCE.base.light.background },
+    { media: "(prefers-color-scheme: dark)", content: APPEARANCE.base.dark.background },
+  ];
+
+  it("gives a forced theme its status bar color before React hydrates (#97)", () => {
+    const metas = systemMetas();
+    runScript("bw-theme=dark", metas);
+    expect(metas.map((meta) => meta.content)).toEqual([
+      APPEARANCE.base.dark.background,
+      APPEARANCE.base.dark.background,
+    ]);
+  });
+
+  it("leaves the system metas alone without a forced theme", () => {
+    const metas = systemMetas();
+    runScript("bw-theme=system", metas);
+    expect(metas).toEqual(systemMetas());
+  });
+});
+
+describe("appearanceCookies", () => {
+  const choice = { theme: "dark", accent: "green" } as const;
+
+  it("writes both cookies for the whole site, readable by the head script", () => {
+    const cookies = appearanceCookies(choice, { https: true });
+    expect(cookies).toEqual([
+      `${APPEARANCE.cookies.theme}=dark; path=/; max-age=${APPEARANCE.maxAgeSec}; samesite=lax; secure`,
+      `${APPEARANCE.cookies.accent}=green; path=/; max-age=${APPEARANCE.maxAgeSec}; samesite=lax; secure`,
+    ]);
+  });
+
+  it("drops Secure over plain http, where the browser would refuse the cookie", () => {
+    for (const cookie of appearanceCookies(choice, { https: false })) {
+      expect(cookie).not.toContain("secure");
+    }
   });
 });
 

@@ -339,6 +339,8 @@ export const TOAST_PARAM = "toast";
 // Entries a quick add or a repeat just created, so the toast can offer to undo them.
 export const UNDO_PARAM = "undo";
 export const TOAST_DURATION_MS = 3000;
+// A toast raised in the browser without a navigation (the appearance picker, #97).
+export const TOAST_EVENT = "bitewise:toast";
 
 // Credited on the foods screen: the seed's shared foods come from there (public domain).
 export const USDA_FDC_URL = "https://fdc.nal.usda.gov/";

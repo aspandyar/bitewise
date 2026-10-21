@@ -1,12 +1,15 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
-import { startTransition, useState, type CSSProperties } from "react";
-import { saveAppearanceAction } from "@/app/(app)/actions";
-import { applyAppearance, syncThemeColor, type Appearance } from "@/lib/appearance";
+import { useState, type CSSProperties } from "react";
+import { showToast } from "@/components/ui/toast";
+import {
+  appearanceCookies,
+  applyAppearance,
+  syncThemeColor,
+  type Appearance,
+} from "@/lib/appearance";
 import { ACCENTS, APPEARANCE, THEMES } from "@/lib/config";
 import { ru } from "@/lib/i18n/ru";
-import { withToast } from "@/lib/toast";
 
 const tileClass =
   "flex min-h-11 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-foreground/40 px-2 py-2 text-center has-[:checked]:border-accent has-[:checked]:bg-accent/10 has-[:checked]:font-medium has-[:checked]:ring-2 has-[:checked]:ring-accent has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent-text";
@@ -22,27 +25,30 @@ function swatchStyle(accent: (typeof ACCENTS)[number]): CSSProperties {
   } as CSSProperties;
 }
 
+function saveCookies(next: Appearance) {
+  for (const cookie of appearanceCookies(next, { https: window.location.protocol === "https:" })) {
+    document.cookie = cookie;
+  }
+}
+
 export function AppearancePicker({ initial }: { initial: Appearance }) {
-  const router = useRouter();
-  const pathname = usePathname();
   const [value, setValue] = useState(initial);
 
-  // The page recolors at once; the cookie is only what the next visit starts from.
+  // The page recolors at once; the cookie is only what the next visit starts from. Nothing goes
+  // to the server, so fast taps cannot be undone by a late answer (#97).
   function choose(next: Appearance) {
     setValue(next);
     applyAppearance(document.documentElement, next);
     syncThemeColor(document, next.theme);
-    startTransition(async () => {
-      await saveAppearanceAction(next);
-      router.replace(withToast(pathname, "saved"), { scroll: false });
-    });
+    saveCookies(next);
+    showToast("saved");
   }
 
   return (
     <div className="flex flex-col gap-6">
       <fieldset className="flex flex-col gap-1">
         <legend className="mb-1 text-sm font-medium">{ru.appearance.theme}</legend>
-        <div role="radiogroup" className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {THEMES.map((theme) => (
             <label key={theme} className={tileClass}>
               <input
@@ -60,7 +66,7 @@ export function AppearancePicker({ initial }: { initial: Appearance }) {
       </fieldset>
       <fieldset className="flex flex-col gap-1">
         <legend className="mb-1 text-sm font-medium">{ru.appearance.accent}</legend>
-        <div role="radiogroup" className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {ACCENTS.map((accent) => (
             <label key={accent} className={tileClass}>
               <input

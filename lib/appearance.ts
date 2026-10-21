@@ -5,7 +5,6 @@ export type Appearance = { theme: Theme; accent: Accent };
 
 export const themeSchema = z.enum(THEMES);
 export const accentSchema = z.enum(ACCENTS);
-export const appearanceSchema = z.object({ theme: themeSchema, accent: accentSchema });
 
 // Cookies are client-controlled: anything outside the lists means "not chosen".
 export function parseAppearance(raw: { theme?: string; accent?: string }): Appearance {
@@ -85,8 +84,25 @@ export function appearanceCss(): string {
 export function appearanceScript(): string {
   const themes = JSON.stringify(THEMES.filter((theme) => theme !== APPEARANCE.defaults.theme));
   const accents = JSON.stringify(otherAccents);
+  const colors = JSON.stringify({
+    light: APPEARANCE.base.light.background,
+    dark: APPEARANCE.base.dark.background,
+  });
   const { theme, accent } = APPEARANCE.cookies;
-  return `(function(){try{var d=document.documentElement,c="; "+document.cookie;function g(n){var p=c.split("; "+n+"=");return p.length>1?p[1].split(";")[0]:null}var t=g(${JSON.stringify(theme)}),a=g(${JSON.stringify(accent)});if(${themes}.indexOf(t)>=0)d.setAttribute("data-theme",t);if(${accents}.indexOf(a)>=0)d.setAttribute("data-accent",a)}catch(e){}})()`;
+  // A forced theme also recolors the theme-color metas, now and once the head is parsed: until
+  // React's keepThemeColor takes over, Android would paint the system color in the status bar.
+  return `(function(){try{var d=document.documentElement,c="; "+document.cookie;function g(n){var p=c.split("; "+n+"=");return p.length>1?p[1].split(";")[0]:null}var t=g(${JSON.stringify(theme)}),a=g(${JSON.stringify(accent)}),k=${colors};if(${themes}.indexOf(t)>=0)d.setAttribute("data-theme",t);if(${accents}.indexOf(a)>=0)d.setAttribute("data-accent",a);if(k.hasOwnProperty(t)){var m=function(){var l=document.querySelectorAll('meta[name="theme-color"]');for(var i=0;i<l.length;i++)l[i].setAttribute("content",k[t])};m();document.addEventListener("DOMContentLoaded",m)}}catch(e){}})()`;
+}
+
+// Written by the browser, not a server action (#97): no round trip whose late answer could
+// re-render the picker with an older choice, and Secure follows the page's own protocol, so a
+// production build opened over http://192.168.x.x still remembers the choice.
+export function appearanceCookies(
+  { theme, accent }: Appearance,
+  { https }: { https: boolean },
+): string[] {
+  const options = `; path=/; max-age=${APPEARANCE.maxAgeSec}; samesite=lax${https ? "; secure" : ""}`;
+  return [`${APPEARANCE.cookies.theme}=${theme}${options}`, `${APPEARANCE.cookies.accent}=${accent}${options}`];
 }
 
 type AttributeTarget = {
