@@ -65,8 +65,8 @@ export function AmountFields({
       : { mode: "portion", portionGrams: portions[portionIndex]?.grams ?? null, count },
   );
 
-  // Switching carries the amount over both ways, so saving keeps what was picked: 60 g with
-  // "1 шт = 50 г" becomes 1,2 шт, not 1 (#81).
+  // Switching carries the amount over both ways, so saving keeps what was picked: 60 g with a
+  // 50 g portion becomes 1.2 portions, not 1 (#81).
   function selectMode(next: AmountMode) {
     const portion = portions[portionIndex];
     if (next === "grams" && mode === "portion" && portion && current !== null && current > 0) {

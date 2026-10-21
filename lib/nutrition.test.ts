@@ -269,7 +269,7 @@ describe("calcPortionGrams", () => {
 
 describe("calcPortionCount", () => {
   it("turns grams into portions", () => {
-    // 60 g ÷ 50 g = 1.2 шт
+    // 60 g ÷ 50 g = 1.2 pcs
     expect(calcPortionCount(60, 50)).toBe(1.2);
   });
 
@@ -278,10 +278,11 @@ describe("calcPortionCount", () => {
     expect(calcPortionCount(100, 30)).toBe(3.33);
   });
 
-  it("keeps the count inside the allowed portion range", () => {
-    // 1 g ÷ 50 g = 0.02 → the minimum 0.25; 5000 g ÷ 10 g = 500 → the maximum 50
-    expect(calcPortionCount(1, 50)).toBe(0.25);
-    expect(calcPortionCount(5000, 10)).toBe(50);
+  it("does not clamp: a count outside the portion range is the form's error, not a new weight", () => {
+    // 1 g ÷ 50 g = 0.02; 5000 g ÷ 10 g = 500. Clamping to 0.25 or 50 would silently save 12.5 g
+    // or 500 g instead.
+    expect(calcPortionCount(1, 50)).toBe(0.02);
+    expect(calcPortionCount(5000, 10)).toBe(500);
   });
 
   it.each([

@@ -157,6 +157,9 @@ export const APPEARANCE = {
   // Prefixed: cookies are not separated by port, and "theme" is a common name on localhost.
   cookies: { theme: "bw-theme", accent: "bw-accent" },
   maxAgeSec: 365 * SECONDS_PER_DAY,
+  // Marks the theme-color meta the head script adds for a forced theme before React hydrates;
+  // the server's own metas are left alone, since React matches them by content (#97).
+  earlyThemeColorAttr: "data-early",
   defaults: { theme: "system", accent: "graphite" },
   base: {
     light: { background: "#ffffff", foreground: "#171717" },
@@ -192,6 +195,7 @@ export const APPEARANCE = {
 } as const satisfies {
   cookies: { theme: string; accent: string };
   maxAgeSec: number;
+  earlyThemeColorAttr: string;
   defaults: { theme: Theme; accent: Accent };
   base: Record<ColorMode, { background: string; foreground: string }>;
   accents: Record<Accent, Record<ColorMode, { accent: string; onAccent: string }>>;

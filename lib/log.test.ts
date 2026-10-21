@@ -131,3 +131,13 @@ describe("errors the scrubber cannot fully walk or that drizzle did not wrap", (
     expect(logged).toContain("23505");
   });
 });
+
+describe("the digest Next shows the user", () => {
+  it("survives scrubbing, so a reported digest can be found in the logs", () => {
+    const error = Object.assign(
+      new DrizzleQueryError("select $1", ["user-123"], pgError()),
+      { digest: "2462667944" },
+    );
+    expect(loggableError(error)).toMatchObject({ code: "42P01", digest: "2462667944" });
+  });
+});

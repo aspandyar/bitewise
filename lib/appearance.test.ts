@@ -13,9 +13,11 @@ import {
   themeColorFor,
 } from "./appearance";
 
-function runScript(cookie: string, metas: { media: string; content: string }[] = []) {
+type FakeMeta = { attrs: Record<string, string> };
+
+function runScript(cookie: string) {
   const attrs: Record<string, string> = {};
-  const listeners: (() => void)[] = [];
+  const prepended: FakeMeta[] = [];
   const fakeDocument = {
     cookie,
     documentElement: {
@@ -23,18 +25,23 @@ function runScript(cookie: string, metas: { media: string; content: string }[] =
         attrs[name] = value;
       },
     },
-    querySelectorAll: () =>
-      metas.map((meta) => ({
-        getAttribute: (name: string) => (name === "media" ? meta.media : null),
-        setAttribute: (_name: string, value: string) => {
-          meta.content = value;
+    createElement: () => {
+      const meta: FakeMeta & { setAttribute(name: string, value: string): void } = {
+        attrs: {},
+        setAttribute(name, value) {
+          meta.attrs[name] = value;
         },
-      })),
-    addEventListener: (_type: string, listener: () => void) => listeners.push(listener),
+      };
+      return meta;
+    },
+    head: { prepend: (meta: FakeMeta) => prepended.push(meta) },
   };
   new Function("document", appearanceScript())(fakeDocument);
-  for (const listener of listeners) listener();
-  return attrs;
+  return Object.assign(attrs, { prepended });
+}
+
+function attrsOf(result: ReturnType<typeof runScript>) {
+  return Object.fromEntries(Object.entries(result).filter(([key]) => key !== "prepended"));
 }
 
 describe("parseAppearance", () => {
@@ -96,40 +103,37 @@ describe("contrastRatio", () => {
 
 describe("appearanceScript", () => {
   it("sets known theme and accent", () => {
-    expect(runScript("bw-theme=dark; bw-accent=green")).toEqual({
+    expect(attrsOf(runScript("bw-theme=dark; bw-accent=green"))).toEqual({
       "data-theme": "dark",
       "data-accent": "green",
     });
   });
 
   it("sets nothing for defaults and unknown or forged values", () => {
-    expect(runScript("bw-theme=system; bw-accent=graphite")).toEqual({});
-    expect(runScript('bw-theme=dark"><script>; bw-accent=red')).toEqual({});
-    expect(runScript("xbw-theme=dark; theme=dark")).toEqual({});
-    expect(runScript("")).toEqual({});
-    expect(runScript("bw-theme=dark; bw-theme=light")).toEqual({ "data-theme": "dark" });
+    expect(attrsOf(runScript("bw-theme=system; bw-accent=graphite"))).toEqual({});
+    expect(attrsOf(runScript('bw-theme=dark"><script>; bw-accent=red'))).toEqual({});
+    expect(attrsOf(runScript("xbw-theme=dark; theme=dark"))).toEqual({});
+    expect(attrsOf(runScript(""))).toEqual({});
+    expect(attrsOf(runScript("bw-theme=dark; bw-theme=light"))).toEqual({ "data-theme": "dark" });
   });
 });
 
 describe("appearanceScript theme color", () => {
-  const systemMetas = () => [
-    { media: "(prefers-color-scheme: light)", content: APPEARANCE.base.light.background },
-    { media: "(prefers-color-scheme: dark)", content: APPEARANCE.base.dark.background },
-  ];
-
-  it("gives a forced theme its status bar color before React hydrates (#97)", () => {
-    const metas = systemMetas();
-    runScript("bw-theme=dark", metas);
-    expect(metas.map((meta) => meta.content)).toEqual([
-      APPEARANCE.base.dark.background,
-      APPEARANCE.base.dark.background,
+  // The server metas stay as rendered: React matches them by content when it hydrates, and a
+  // rewritten one would be added a second time (#97 review).
+  it("puts its own status bar color first for a forced theme", () => {
+    const { prepended } = runScript("bw-theme=dark");
+    expect(prepended.map((meta) => meta.attrs)).toEqual([
+      {
+        name: "theme-color",
+        content: APPEARANCE.base.dark.background,
+        [APPEARANCE.earlyThemeColorAttr]: "",
+      },
     ]);
   });
 
-  it("leaves the system metas alone without a forced theme", () => {
-    const metas = systemMetas();
-    runScript("bw-theme=system", metas);
-    expect(metas).toEqual(systemMetas());
+  it("adds nothing without a forced theme", () => {
+    expect(runScript("bw-theme=system").prepended).toEqual([]);
   });
 });
 
@@ -192,6 +196,7 @@ describe("theme color", () => {
         setAttribute: (name: string, value: string) => {
           attrs[name] = value;
         },
+        remove: () => undefined,
       };
     });
     syncThemeColor({ querySelectorAll: () => metas }, "dark");
@@ -199,6 +204,21 @@ describe("theme color", () => {
       APPEARANCE.base.dark.background,
       APPEARANCE.base.dark.background,
     ]);
+  });
+});
+
+describe("syncThemeColor and the early meta", () => {
+  it("removes the head script's meta once React owns the head", () => {
+    let removed = false;
+    const early = {
+      getAttribute: (name: string) => (name === APPEARANCE.earlyThemeColorAttr ? "" : null),
+      setAttribute: () => undefined,
+      remove: () => {
+        removed = true;
+      },
+    };
+    syncThemeColor({ querySelectorAll: () => [early] }, "system");
+    expect(removed).toBe(true);
   });
 });
 
@@ -211,6 +231,7 @@ describe("keepThemeColor", () => {
       setAttribute: (_name: string, value: string) => {
         content = value;
       },
+      remove: () => undefined,
     };
     let disconnected = false;
     class FakeObserver {

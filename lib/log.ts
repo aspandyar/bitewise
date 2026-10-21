@@ -46,21 +46,29 @@ function isQueryIn(value: unknown, depth: number): boolean {
   return value instanceof Error && hasFailedQuery(value, depth);
 }
 
+// Next tags an error with the digest it shows the user; it holds no user data and is how a
+// reported error is found in the logs.
+function withDigest(error: Error, scrubbed: Record<string, unknown>): Record<string, unknown> {
+  return "digest" in error && typeof error.digest === "string"
+    ? { ...scrubbed, digest: error.digest }
+    : scrubbed;
+}
+
 function scrub(value: unknown, depth: number): unknown {
   if (typeof value === "string") return value.replace(FAILED_QUERY, "Failed query: [scrubbed]");
   if (!(value instanceof Error)) return value;
-  if (depth > LOG_SCRUB.maxDepth) return { name: value.name };
-  if (isFailedQuery(value)) return scrubQuery(value);
-  if (isDatabaseError(value)) return { name: value.name, code: value.code };
+  if (depth > LOG_SCRUB.maxDepth) return withDigest(value, { name: value.name });
+  if (isFailedQuery(value)) return withDigest(value, scrubQuery(value));
+  if (isDatabaseError(value)) return withDigest(value, { name: value.name, code: value.code });
   if (!hasFailedQuery(value, depth)) return value;
   // An error wrapping a failed query may repeat its text in its own message; keep only names.
-  return {
+  return withDigest(value, {
     name: value.name,
     cause: scrub(value.cause, depth + 1),
     ...(value instanceof AggregateError
       ? { errors: value.errors.map((item: unknown) => scrub(item, depth + 1)) }
       : {}),
-  };
+  });
 }
 
 // A failed query carries the SQL and its parameters (search text, user ids, emails), and

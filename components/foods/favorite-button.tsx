@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
+import { ResetOnHide } from "@/components/ui/reset-on-hide";
 import { QUICK } from "@/lib/config";
 import type { FavoriteState } from "@/lib/diary/quick";
 import { ru } from "@/lib/i18n/ru";
@@ -23,7 +24,20 @@ function Star({ active }: { active: boolean }) {
 }
 
 // A star next to a food or dish name: starred ones sit above recent foods on the add screen.
-export function FavoriteButton({
+// The cap message belongs to this visit: a screen kept alive and opened again starts without it,
+// since a star removed elsewhere may have made room.
+export function FavoriteButton(props: {
+  active: boolean;
+  action: (prev: FavoriteState, formData: FormData) => Promise<FavoriteState>;
+}) {
+  return (
+    <ResetOnHide>
+      <FavoriteForm {...props} />
+    </ResetOnHide>
+  );
+}
+
+function FavoriteForm({
   active,
   action,
 }: {
