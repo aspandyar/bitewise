@@ -1,23 +1,29 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { AUTH } from "@/lib/config";
 
-type DeviceOptions = { secret: string; https: boolean };
+type DeviceOptions = { secret: string; https: boolean; nowMs: number };
+type Account = { id: string; tokenVersion: number };
+
+const MS_PER_SECOND = 1000;
 
 // Over https the __Host- prefix keeps a sibling or parent domain from planting the cookie.
 function deviceCookieName(https: boolean): string {
   return https ? `__Host-${AUTH.deviceCookie}` : AUTH.deviceCookie;
 }
 
-// Proof that this browser once signed in to the account: only the server, holding the secret,
-// can make it, so an attacker guessing passwords elsewhere never has it (#30).
-function deviceToken(userId: string, secret: string): string {
-  return createHmac("sha256", secret).update(`device:${userId}`).digest("base64url");
+// Proof that this browser signed in to the account (#30): only the server, holding the secret,
+// can make it. It covers the token version, so a password change or "sign out everywhere"
+// revokes every mark, and the issue time, so a mark ages out even if a browser keeps it.
+function sign(account: Account, issuedMs: number, secret: string): string {
+  return createHmac("sha256", secret)
+    .update(`device:${account.id}:${account.tokenVersion}:${issuedMs}`)
+    .digest("base64url");
 }
 
-export function deviceCookie(userId: string, { secret, https }: DeviceOptions) {
+export function deviceCookie(account: Account, { secret, https, nowMs }: DeviceOptions) {
   return {
     name: deviceCookieName(https),
-    value: deviceToken(userId, secret),
+    value: `${nowMs}.${sign(account, nowMs, secret)}`,
     options: {
       httpOnly: true,
       secure: https,
@@ -28,14 +34,24 @@ export function deviceCookie(userId: string, { secret, https }: DeviceOptions) {
   };
 }
 
-export function isTrustedDevice(cookieHeader: string, userId: string, options: DeviceOptions): boolean {
+// The mark's own id when it is valid for this account now, else null. Each device gets its own
+// login bucket from it, so one leaked mark cannot use up the attempts of the owner's others.
+export function trustedDeviceId(
+  cookieHeader: string,
+  account: Account,
+  options: DeviceOptions,
+): string | null {
   const prefix = `${deviceCookieName(options.https)}=`;
   const value = cookieHeader
     .split(/;\s*/)
     .find((item) => item.startsWith(prefix))
     ?.slice(prefix.length);
-  if (!value) return false;
-  const expected = Buffer.from(deviceToken(userId, options.secret));
-  const given = Buffer.from(value);
-  return given.length === expected.length && timingSafeEqual(given, expected);
+  const [issued, mac] = value?.split(".") ?? [];
+  const issuedMs = Number(issued);
+  if (!mac || !Number.isSafeInteger(issuedMs)) return null;
+  const ageMs = options.nowMs - issuedMs;
+  if (ageMs < 0 || ageMs > AUTH.deviceMaxAgeSec * MS_PER_SECOND) return null;
+  const expected = Buffer.from(sign(account, issuedMs, options.secret));
+  const given = Buffer.from(mac);
+  return given.length === expected.length && timingSafeEqual(given, expected) ? mac : null;
 }

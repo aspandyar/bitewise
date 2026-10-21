@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useState, type FormEvent } from "react";
 import { changePasswordAction } from "@/app/(app)/actions";
+import { rememberDeviceAction } from "@/app/(auth)/login/actions";
 import { FormError, SubmitButton, TextField } from "@/components/ui/form";
 import type { ChangePasswordResult } from "@/lib/auth/change-password";
 import { ru } from "@/lib/i18n/ru";
@@ -31,6 +32,8 @@ export function ChangePasswordForm() {
         password: String(formData.get("newPassword") ?? ""),
         redirect: false,
       });
+      // The new password revoked this device's mark too; it gets a fresh one.
+      if (signedIn?.ok) await rememberDeviceAction().catch(() => undefined);
       router.push(signedIn?.ok ? withToast("/profile", "passwordChanged") : "/login");
       router.refresh();
     } catch {

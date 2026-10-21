@@ -9,7 +9,7 @@ import { loginLimiter } from "./limiters";
 import { getDummyPasswordHash, verifyPassword } from "./password";
 import { clientIpFromForwardedFor, forwardedForHeader } from "./request";
 import { checkToken } from "./token";
-import { isTrustedDevice } from "./device";
+import { trustedDeviceId } from "./device";
 
 const env = readAuthEnv();
 const deviceOptions = {
@@ -42,8 +42,11 @@ export const authOptions: NextAuthOptions = {
           getDummyPasswordHash,
           limiter: loginLimiter,
           nowMs: Date.now(),
-          isTrustedDevice: (userId) =>
-            isTrustedDevice(cookieHeader(req.headers?.cookie), userId, deviceOptions),
+          trustedDeviceId: (account) =>
+            trustedDeviceId(cookieHeader(req.headers?.cookie), account, {
+              ...deviceOptions,
+              nowMs: Date.now(),
+            }),
         });
         // Auth.js passes a thrown message to the client as `error`; this one is a fixed code.
         if (result === "busy") throw new Error(AUTH.busySignInError);
