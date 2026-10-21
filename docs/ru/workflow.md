@@ -8,6 +8,8 @@ tags:
 ---
 # Bitewise — как ведём работу
 
+[English](../en/workflow.md) · **Русский**
+
 > Наверх: [[Bitewise]] · связано: [[Projects/Bitewise/PROJECT_PLAN|PROJECT_PLAN]] · [[Projects/Bitewise/notes|notes]] · [[Projects/Bitewise/development|development]]
 
 Проект строится по этапам из [[Projects/Bitewise/PROJECT_PLAN|плана]]. Код пишет Claude Code, решения и «ок» — за владельцем. Всё, что Claude должен соблюдать, записано в репозитории: `CLAUDE.md`, `.claude/rules/`, `.claude/skills/`, `.claude/agents/`.
@@ -18,11 +20,11 @@ tags:
 | 1 | Чтение этапа в плане, `notes.md`, правил для затронутых путей | — |
 | 2 | Свежий `master` → ветка `ft/<этап>` | — |
 | 3 | Большой этап (новая таблица, экран, внешний API) → brainstorming: вопросы по одному, 2–3 подхода, дизайн по разделам | владелец отвечает на вопросы и выбирает подход |
-| 4 | Spec → `docs/superpowers/specs/`, план → `docs/superpowers/plans/` | **«ок» на spec и на план**; выбор исполнения: native или субагенты |
+| 4 | Spec → `docs/ru/superpowers/specs/`, план → `docs/ru/superpowers/plans/` | **«ок» на spec и на план**; выбор исполнения: native или субагенты |
 | 5 | Реализация по задачам плана: TDD (тест → красный → код → зелёный), коммит на задачу, журнал в `.superpowers/sdd/<план>/progress.md` | изменения схемы — **«ок» на SQL миграции** |
 | 6 | `pnpm lint && pnpm test` до зелёного | — |
 | 7 | Ревью субагентами, исправления — тоже через тест | — |
-| 8 | «Текущий статус» в плане, решения и открытые вопросы в `notes.md`, обновление spec | — |
+| 8 | «Текущий статус» в плане, решения и открытые вопросы в `notes.md`, обновление spec; изменённые справочные документы — и в `docs/en/` | — |
 | 9 | Коммиты (Conventional Commits), итог; push и PR — **только по просьбе** | владелец решает про PR и мерж |
 
 Исполнение плана бывает двух видов:
@@ -38,7 +40,7 @@ tags:
 | `nutrition.md` | `lib/nutrition*`, `lib/config.ts` | чистые функции, единицы в именах, тест с ручными числами, рецепт = сумма / вес готового × 100 |
 | `db.md` | `db/**`, `lib/**/repo*.ts` | схема только миграциями, `user_id` + индекс, снимок в дневнике, мягкое удаление, `numeric(8,2)` |
 | `ui.md` | `app/**`, `components/**` | 375 px, тап-зоны ≥ 44 px, тексты из `ru.ts`, клиент не считает нутриенты, `key` для форм при `cacheComponents` |
-| `api-security.md` | `app/api/**`, `lib/auth/**`, `actions.ts` | сессия первой строкой, чужое → 404, zod, rate limit, без секретов в ответах |
+| `api-security.md` | `app/api/**`, `lib/auth/**`, `actions.ts` | сессия первой строкой, чужое → 404, zod, rate limit, без секретов в ответах, ключ запроса, лимит записи |
 | `testing.md` | тесты | TDD для расчётов, без сети, db-тесты на отдельной базе, тесты не ослаблять |
 | `ai.md` | `lib/ai/**`, `app/api/ai/**` | AI возвращает только «что и сколько граммов», числа считает код (этапы 9–12) |
 | `deploy.md` | `docker/**`, `Dockerfile`, compose | правила прод-окружения (этап 6) |
@@ -99,5 +101,11 @@ tags:
 - журнал `progress.md` (вне git);
 - память Claude: например, «ветка только `master`», «`.env.example` веду я».
 
+## Документация на двух языках
+- `docs/ru/` — основная, по-русски; `docs/en/` — английская, те же имена файлов. В начале каждого файла — ссылка на пару.
+- Пары есть у справочных документов: `PROJECT_PLAN`, `features`, `architecture`, `api`, `development`, `deploy`, `workflow`. Меняется один — в том же коммите меняется и второй.
+- Только по-русски: `notes.md` (журнал решений) и спеки и планы этапов в `docs/ru/superpowers/`.
+- `README.md` — для посетителя GitHub, по-английски; `README.ru.md` — русская версия. Скриншоты — `docs/images/`.
+
 ## Obsidian
-`docs/*.md` — это заметки волта: frontmatter `type/status/review/tags`, строка «Наверх» и wiki-ссылки. Поэтому Prettier их не форматирует. `/sync-notes` переносит статус в волт вручную, путь к волту лежит в `CLAUDE.local.md`.
+`docs/ru/*.md` (кроме оглавления `README.md`) — это заметки волта: frontmatter `type/status/review/tags`, строка «Наверх» и wiki-ссылки. Поэтому Prettier их не форматирует. `/sync-notes` переносит статус в волт вручную, путь к волту лежит в `CLAUDE.local.md`.

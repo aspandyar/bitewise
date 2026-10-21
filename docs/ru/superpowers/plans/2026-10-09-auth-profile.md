@@ -8,7 +8,7 @@
 
 **Tech Stack:** Next.js 16.4 (App Router, `cacheComponents: true`), React 19, TypeScript strict, Tailwind v4, Drizzle ORM 0.45 + postgres.js, zod 4, next-auth 4.24, Vitest 5.
 
-**Spec:** `docs/superpowers/specs/2026-10-09-auth-profile-design.md`
+**Spec:** `docs/ru/superpowers/specs/2026-10-09-auth-profile-design.md`
 
 ## Global Constraints
 - Основная ветка — `master` (никогда `main`); работа в `ft/auth-profile`.
@@ -732,7 +732,7 @@ git commit -m "feat: add scrypt password hashing and in-memory rate limiter"
 ### Task 3: Схемы БД, миграция и тестовая база
 
 **Files:**
-- Modify: `db/schema.ts`, `db/client.ts`, `lib/env.ts`, `drizzle.config.ts`, `vitest.config.ts`, `package.json`, `.github/workflows/ci.yml`, `docs/architecture.md`
+- Modify: `db/schema.ts`, `db/client.ts`, `lib/env.ts`, `drizzle.config.ts`, `vitest.config.ts`, `package.json`, `.github/workflows/ci.yml`, `docs/ru/architecture.md`
 - Create: `db/types.ts`, `tests/db.ts`, `tests/global-setup.ts`, `lib/users/repo.ts`, `lib/users/repo.db.test.ts`
 - Generated: `db/migrations/0000_*.sql` (только через `pnpm db:generate`)
 
@@ -1047,12 +1047,12 @@ Run: `pnpm test && pnpm lint` → PASS (оба проекта).
       DATABASE_URL_TEST: postgres://bitewise:bitewise@localhost:5432/bitewise_test
 ```
 
-- [ ] **Step 10: Документация** — в `docs/architecture.md`, таблица «Модель данных»: строки `users`, `profiles`, `targets` заменить на фактические поля из Step 2 (включая `password_hash`, `weight_kg`, `mode`, частичный уникальный индекс).
+- [ ] **Step 10: Документация** — в `docs/ru/architecture.md`, таблица «Модель данных»: строки `users`, `profiles`, `targets` заменить на фактические поля из Step 2 (включая `password_hash`, `weight_kg`, `mode`, частичный уникальный индекс).
 
 - [ ] **Step 11: Commit**
 
 ```bash
-git add db lib/env.ts lib/users drizzle.config.ts vitest.config.ts package.json tests .github docs/architecture.md
+git add db lib/env.ts lib/users drizzle.config.ts vitest.config.ts package.json tests .github docs/ru/architecture.md
 git commit -m "feat: add users, profiles and targets tables with test database setup"
 ```
 
@@ -2715,12 +2715,12 @@ git commit -m "feat: add onboarding, home target card, profile and target editin
 ### Task 10: Ревью, статус и решения
 
 **Files:**
-- Modify: `docs/PROJECT_PLAN.md`, `docs/notes.md`, `docs/superpowers/specs/2026-10-09-auth-profile-design.md` (статус → «реализовано»)
+- Modify: `docs/ru/PROJECT_PLAN.md`, `docs/ru/notes.md`, `docs/ru/superpowers/specs/2026-10-09-auth-profile-design.md` (статус → «реализовано»)
 
 - [ ] **Step 1:** `pnpm lint && pnpm test && pnpm build` — всё зелёное.
 - [ ] **Step 2:** Субагенты `reviewer` и `security-reviewer` на `git diff master...HEAD`; `ui-checker` — сценарий из Task 9 Step 4 на 375 px. Исправить замечания отдельными коммитами `fix: …`.
-- [ ] **Step 3:** `docs/PROJECT_PLAN.md` «Текущий статус»: этап 1 готов, следующий — этап 2 (`ft/foods`).
-- [ ] **Step 4:** `docs/notes.md`: закрыть вопросы «better-auth или Auth.js» (→ Auth.js v4, Credentials + JWT) и «один пользователь или мульти» (→ мульти, регистрация по allowlist); записать решения: scrypt, in-memory rate limit, `targets.mode`, проверка сессии в страницах вместо layout из-за `cacheComponents`, `X-Forwarded-For` должен перезаписываться nginx на этапе 6; журнал.
+- [ ] **Step 3:** `docs/ru/PROJECT_PLAN.md` «Текущий статус»: этап 1 готов, следующий — этап 2 (`ft/foods`).
+- [ ] **Step 4:** `docs/ru/notes.md`: закрыть вопросы «better-auth или Auth.js» (→ Auth.js v4, Credentials + JWT) и «один пользователь или мульти» (→ мульти, регистрация по allowlist); записать решения: scrypt, in-memory rate limit, `targets.mode`, проверка сессии в страницах вместо layout из-за `cacheComponents`, `X-Forwarded-For` должен перезаписываться nginx на этапе 6; журнал.
 - [ ] **Step 5: Commit**
 
 ```bash

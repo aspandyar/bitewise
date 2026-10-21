@@ -8,6 +8,8 @@ tags:
 ---
 # Bitewise — прод и деплой
 
+[English](../en/deploy.md) · **Русский**
+
 > Наверх: [[Bitewise]] · связано: [[Projects/Bitewise/architecture|architecture]] · [[Projects/Bitewise/development|development]] · [[Projects/Bitewise/workflow|workflow]]
 
 ## Как устроено

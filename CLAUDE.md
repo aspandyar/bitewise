@@ -2,8 +2,8 @@
 
 PWA для учёта еды и калорий: дневник приёмов пищи, своя база продуктов и блюд,
 нормы ккал/БЖУ. Позже — сканер штрихкодов и AI-ввод (текст, фото).
-План и статус: docs/PROJECT_PLAN.md · фичи: docs/features.md · архитектура: docs/architecture.md
-Решения: docs/notes.md
+План и статус: docs/ru/PROJECT_PLAN.md · фичи: docs/ru/features.md · архитектура: docs/ru/architecture.md
+Решения: docs/ru/notes.md
 
 ## Стек
 Next.js (App Router), React, TypeScript (strict), Tailwind v4, Postgres, Drizzle ORM,
@@ -22,7 +22,10 @@ zod, Vitest. Деплой — Docker Compose на своём VPS за nginx. П�
 ## Соглашения
 - Комментарии в коде — только на английском; объясняют «почему», а не «что».
 - Идентификаторы, имена файлов, сообщения логов — на английском.
-- Документация в `docs/` — по-русски. Тексты интерфейса — через словарь `lib/i18n/ru.ts`.
+- Документация на двух языках: `docs/ru/` — русская (основная), `docs/en/` — английская, те же имена файлов. Меняешь справочный документ (PROJECT_PLAN, features, architecture, api, development, deploy, workflow) или README — обнови и пару на другом языке. `notes.md` и спеки/планы этапов — только по-русски.
+- Спеки и планы этапов — в `docs/ru/superpowers/specs/` и `docs/ru/superpowers/plans/`.
+- `README.md` — для посетителя GitHub, на английском; `README.ru.md` — его русская пара.
+- Тексты интерфейса — через словарь `lib/i18n/ru.ts`.
 - Коммиты и PR — по-английски, Conventional Commits (`feat:`, `fix:`, `chore:`, `test:`).
 - Без строк соавторства и атрибуции: никаких `Co-Authored-By:` в коммитах и «Generated with …» в описаниях PR.
 - Одна ветка = один этап плана (`ft/<этап>`), мерж в `master` после зелёных lint + test.
