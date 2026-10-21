@@ -3,6 +3,7 @@
 import { db, sql } from "@/db/client";
 import { bootstrapAdmin, BootstrapError } from "@/lib/auth/bootstrap-admin";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
+import { loggableError } from "@/lib/log";
 import { createAdmin, findUserByEmail, updatePasswordHash } from "@/lib/users/repo";
 
 const messages = {
@@ -26,7 +27,8 @@ async function main() {
     console.log(messages[result]);
   } catch (error) {
     // The message never contains the password: zod reports which field failed, not its value.
-    console.error(error instanceof BootstrapError ? error.message : error);
+    // A failed insert carries the admin's email and password hash in its query parameters (#76).
+    console.error(error instanceof BootstrapError ? error.message : loggableError(error));
     process.exitCode = 1;
   } finally {
     await sql.end();

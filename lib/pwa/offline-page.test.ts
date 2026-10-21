@@ -1,5 +1,6 @@
 import { expect, it } from "vitest";
-import { appearanceScript } from "@/lib/appearance";
+import { appearanceScript, themeColorViewport } from "@/lib/appearance";
+import { offlineIcon, pwaIconUrl } from "./icons";
 import { ru } from "@/lib/i18n/ru";
 import { offlinePageHtml } from "./offline-page";
 
@@ -12,5 +13,14 @@ it("is a self-contained Russian page that retries the same address", () => {
   // An empty href reloads the address the worker answered for, without inline handlers.
   expect(html).toContain('<a href="">');
   expect(html).toContain(appearanceScript());
-  expect(html).not.toMatch(/<link|src=/);
+  expect(html).not.toMatch(/src=/);
+});
+
+it("colors the status bar and shows the app icon the worker keeps offline (#96)", () => {
+  const html = offlinePageHtml();
+  for (const { media, color } of themeColorViewport()) {
+    expect(html).toContain(`<meta name="theme-color" media="${media}" content="${color}">`);
+  }
+  const links = [...html.matchAll(/<link [^>]*href="([^"]+)"/g)].map((match) => match[1]);
+  expect(links).toEqual([pwaIconUrl(offlineIcon())]);
 });

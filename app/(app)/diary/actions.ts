@@ -4,9 +4,10 @@ import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/db/client";
-import { requireUserId } from "@/lib/auth/session";
+import { requireActionUser, requireUserId } from "@/lib/auth/session";
 import { DIARY_LIMITS } from "@/lib/config";
 import { addFoodHref, addHref, dayHref } from "@/lib/diary/paths";
+import type { FavoriteState } from "@/lib/diary/quick";
 import { quickEntryFormSchema } from "@/lib/diary/quick-entry";
 import { quickAddEntry, repeatMeal, setFavorite } from "@/lib/diary/quick-repo";
 import {
@@ -49,7 +50,7 @@ const portionTotalError: FormState = {
 };
 
 export async function addEntryAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  const userId = await requireUserId();
+  const userId = await requireActionUser(formData);
   const today = await getUserToday(new Date());
   const raw = Object.fromEntries(formData);
   const date = parseDiaryDate(raw.date, today);
@@ -78,7 +79,7 @@ export async function updateEntryAction(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const userId = await requireUserId();
+  const userId = await requireActionUser(formData);
   const id = requireId(entryId);
   const parsed = updateEntryFormSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
@@ -115,7 +116,7 @@ export async function quickAddAction(
   rawMeal: string,
   formData?: FormData,
 ): Promise<void> {
-  const userId = await requireUserId();
+  const userId = await requireActionUser(formData);
   const { today, date, meal } = await requireDayAndMeal(rawDate, rawMeal);
   const id = requireId(foodId);
   const requestId = readRequestId(formData);
@@ -129,13 +130,19 @@ export async function quickAddAction(
   redirect(withToast(dayHref(date, today), "added", [result.id]));
 }
 
-export async function repeatMealAction(rawDate: string, rawMeal: string): Promise<void> {
-  const userId = await requireUserId();
+export async function repeatMealAction(
+  rawDate: string,
+  rawMeal: string,
+  formData?: FormData,
+): Promise<void> {
+  const userId = await requireActionUser(formData);
   const { today, date, meal } = await requireDayAndMeal(rawDate, rawMeal);
-  const result = await repeatMeal(db, userId, { date, meal });
+  const requestId = readRequestId(formData);
+  const result = await repeatMeal(db, userId, { date, meal, requestId });
   // The repeat button lives on the day, so every outcome returns there with its message.
   if (result === "not_empty") redirect(withToast(dayHref(date, today), "alreadyFilled"));
-  if (result === "nothing") redirect(dayHref(date, today));
+  // A key already spent on another meal: a tampered request, it just returns to the day.
+  if (result === "nothing" || result === "not_found") redirect(dayHref(date, today));
   if (result === "limit" || result === "total_limit") {
     redirect(withToast(dayHref(date, today), "dayFull"));
   }
@@ -157,7 +164,7 @@ export async function addQuickEntryAction(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const userId = await requireUserId();
+  const userId = await requireActionUser(formData);
   const raw = Object.fromEntries(formData);
   const { today, date } = await requireDayAndMeal(raw.date, raw.meal);
   const parsed = z.object({ meal: mealSchema }).and(quickEntryFormSchema).safeParse(raw);
@@ -183,7 +190,7 @@ export async function updateQuickEntryAction(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const userId = await requireUserId();
+  const userId = await requireActionUser(formData);
   const id = requireId(entryId);
   const parsed = z
     .object({ meal: mealSchema })
@@ -197,16 +204,23 @@ export async function updateQuickEntryAction(
 }
 
 // The star sends the state it should end in, not "toggle": a replay must not undo it (#95).
-export async function setFavoriteAction(foodId: string, starred: unknown): Promise<void> {
-  const userId = await requireUserId();
+// The cap answers with a message under the star instead of a star that silently stays off (#91).
+export async function setFavoriteAction(
+  foodId: string,
+  starred: unknown,
+  _prev: FavoriteState,
+  formData?: FormData,
+): Promise<FavoriteState> {
+  const userId = await requireActionUser(formData);
   const id = requireId(foodId);
   const wanted = z.boolean().safeParse(starred);
   if (!wanted.success) notFound();
   const result = await setFavorite(db, userId, id, wanted.data);
   if (result === "not_found") notFound();
-  // The cap is far above real use; reaching it means a script, and the star simply stays off.
+  if (result === "limit") return "limit";
   revalidatePath(`/foods/${id}`);
   const recipeId = await getRecipeIdByFoodId(db, userId, id);
   if (recipeId) revalidatePath(recipeHref(recipeId));
   revalidatePath("/diary/add");
+  return null;
 }

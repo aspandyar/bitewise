@@ -134,7 +134,6 @@ tags:
 - [#30](https://github.com/aspandyar/bitewise/issues/30) Блокировка чужого аккаунта неверными паролями
 - [#31](https://github.com/aspandyar/bitewise/issues/31) Rate limit на мутирующие server actions
 - [#32](https://github.com/aspandyar/bitewise/issues/32) `import "server-only"` для `db/client.ts` и `lib/env.ts`
-- [#76](https://github.com/aspandyar/bitewise/issues/76) Очищать все логи ошибок от SQL-параметров централизованно
 - [#108](https://github.com/aspandyar/bitewise/issues/108) Неограниченный рост мягко удалённых продуктов и блюд
 
 ### Полировка (`ft/polish`) — код и UX без продуктовых решений
@@ -179,25 +178,9 @@ tags:
 - [#71](https://github.com/aspandyar/bitewise/issues/71) Норма: подсказки к ручным значениям
 - [#72](https://github.com/aspandyar/bitewise/issues/72) Свой продукт: предупреждение, если ккал расходятся с БЖУ
 - [#73](https://github.com/aspandyar/bitewise/issues/73) Атрибуция «Данные: USDA FoodData Central»
-- [#81](https://github.com/aspandyar/bitewise/issues/81) Переход с граммов на порции: пересчитывать количество
-- [#82](https://github.com/aspandyar/bitewise/issues/82) Красная рамка у поля с ошибкой и в фокусе
-- [#83](https://github.com/aspandyar/bitewise/issues/83) Кнопки «Изменить» и «Удалить» на карточке блюда — в ряд, как у продукта
-- [#86](https://github.com/aspandyar/bitewise/issues/86) Уведомление внизу экрана перекрывает текст
-- [#87](https://github.com/aspandyar/bitewise/issues/87) CHECK: copied_from не может быть 'user'
-- [#88](https://github.com/aspandyar/bitewise/issues/88) После «Скопировать к себе» «Назад» ведёт к общему продукту с той же кнопкой
-- [#89](https://github.com/aspandyar/bitewise/issues/89) Быстрая запись: подсказка, если ккал расходятся с БЖУ
-- [#90](https://github.com/aspandyar/bitewise/issues/90) Избранное без записей: показывать ккал на 100 г и пометку «блюдо»
-- [#91](https://github.com/aspandyar/bitewise/issues/91) Обратная связь при лимите избранного
-- [#92](https://github.com/aspandyar/bitewise/issues/92) «Назад» с формы нового продукта теряет поисковый запрос
-- [#93](https://github.com/aspandyar/bitewise/issues/93) Индекс diary_entries (user_id, created_at) для недавних
-- [#96](https://github.com/aspandyar/bitewise/issues/96) Офлайн-страница: имя кэша из содержимого, theme-color и favicon
-- [#97](https://github.com/aspandyar/bitewise/issues/97) Оформление: фокус «Отменить», гонка тапов, имя группы, Secure по протоколу, theme-color до гидрации
-- [#99](https://github.com/aspandyar/bitewise/issues/99) Подсказка установки на iPhone в две строки; числа офлайн-страницы в config
-- [#107](https://github.com/aspandyar/bitewise/issues/107) Хвосты #95: повтор под другой сессией, регистрация, «Повторить»
 
 ### Инструменты
 - [#74](https://github.com/aspandyar/bitewise/issues/74) Playwright и Context7 → корневой `.mcp.json`
-- [#98](https://github.com/aspandyar/bitewise/issues/98) PWA в dev: снимать service worker; 404 на /favicon.ico
 ### Закрыто
 - [x] Авторизация: Auth.js v4, Credentials + JWT (этап 1).
 - [x] Мультипользовательская модель, регистрация открыта всем; роли `user` / `manager` / `admin` (этап 1).
@@ -209,6 +192,7 @@ tags:
 - [x] Медленный локальный `pnpm test` (15–30 мин при почти нулевом CPU) — окружение, не код: на CI полный прогон этапа 4 занял меньше минуты (разбор 2026-10-12).
 
 ## 📝 Журнал
+- 2026-10-21 — полировка 6 (`ft/polish-6`): #76, #81–#83, #86–#93, #96–#99, #107. Миграция 0010: CHECK `copied_from <> 'user'`, индекс `diary_entries (user_id, created_at DESC, id DESC)`, `users.client_request_id`. Логи: `instrumentation.ts` чистит каждый аргумент `console.error/warn` (ошибка запроса — по форме: в prod-сборке несколько копий класса drizzle). Повторы (#107): форма несёт id вошедшего из cookie `bw-uid` (`__Host-` на https), `requireActionUser` отклоняет чужой с тостом; повтор регистрации входит в созданный аккаунт; «Повторить» — производные ключи пачки. Оформление пишет cookie в браузере, без server action. Service worker — имя кэша из хэша содержимого. Проверено на prod-сборке: повтор регистрации, задержанный запрос после входа под другим аккаунтом во второй вкладке (не записан, старая вкладка не «застревает»), лог при упавшей БД без SQL и id. Ревью: reviewer, security-reviewer, ui-checker — блокирующих нет; исправлены `__Host-` кука и тост отказа, «Сбросить норму» через `requireActionUser`, глубокие цепочки и необёрнутые ошибки Postgres в логах, `digest`, рамка «Отменить» (правила фокуса в `@layer base`), дубли `theme-color` после гидрации, пересчёт порций без молчаливого обрезания, сообщение о лимите избранного при возврате на экран. Заметка из #76 на этап AI: суточные квоты AI считать по UTC или скользящим окном на сервере, не по «сегодня» из cookie `tz`.
 - 2026-10-21 — повтор без дублей (`ft/retry-safe`, #95, решение владельца — ключи идемпотентности): миграция 0009 — `client_request_id` + уникальный индекс по владельцу в `diary_entries`, `foods`, `food_portions`, `recipes`, `recipe_items`; клиент ставит ключ на каждую отправку, создающие функции при повторе возвращают уже созданное; звезда — «поставить/снять» вместо «переключить»; повтор удаления ведёт туда же, куда успешное. Проверено на prod-сборке: каждое действие отправлено дважды — строк по одной, удаления не дают 404. Ревью: reviewer, security-reviewer — блокирующих нет; исправлены ключ для другой цели (отказ), гонка ключа в двух блюдах, ключ копии до поиска исходника, не-FormData в `readRequestId`, форма без `crypto.randomUUID`; повтор под другой сессией, регистрация и «Повторить» — #107, рост мягко удалённых строк — #108.
 - 2026-10-21 — прод до первого деплоя (`ft/hardening`), #101–#104: приложение ходит в Postgres своей ролью без суперпользователя (`db-role.sh` при каждом релизе, миграции — владельцем, отдельный compose-сервис `migrate`); каждому контейнеру — только свои переменные (шаги релиза — сервисы `ops`), `app` read-only без capabilities, лимиты памяти и процессов, nginx с минимумом capabilities; actions по SHA на Node 24, образ без `:latest`, по digest из артефакта сборки со сверкой метки коммита, базовые образы по digest; вход при переполненной очереди хешей — «слишком много попыток» без списания попытки. Прогнано на ноутбуке: релиз на живой и пустой базе, откат, права роли, восстановление бэкапа. Ревью: reviewer, security-reviewer — блокирующих нет; исправлены откат при сбое роли, поиск запуска по коммиту, refund чужого окна, пароль роли в логе ошибок, доступ к чужим базам кластера.
 - 2026-10-19 — этап 6б (`ft/deploy`) без сервера: образ (Next standalone + `ops/*.js`), `docker-compose.prod.yml` (`bitewise-prod`: db, app, nginx + TLS, certbot), `release.sh` (бэкап, миграции с проверками БД, сид, админ, здоровье, откат), бэкап по cron и проверка восстановления, сборка в GHCR по кнопке, полный CSP, семафор на scrypt (#20), пересчёт блюд после сида (#23), runbook `docs/deploy.md`. Стек прогнан на ноутбуке (podman): релиз на пустой и живой базе, откат, 429, 503, чужие Host, server actions через nginx, восстановление бэкапа. Ревью: reviewer, security-reviewer — блокирующих нет; исправлены повтор пересчёта блюд, Host с портом, default_server, `set -E`, тег отката, пересоздание nginx, права CI и др.; остальное — #101–#104, комментарий в #31.

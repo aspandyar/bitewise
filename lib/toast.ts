@@ -11,6 +11,7 @@ export const TOASTS = [
   "addedMany",
   "alreadyFilled",
   "dayFull",
+  "otherAccount",
 ] as const;
 
 // Only an add can be undone: other toasts ignore an undo list someone put in the URL.

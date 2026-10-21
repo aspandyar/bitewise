@@ -155,6 +155,15 @@ export function calcPortionGrams(portionGrams: number, count: number): number {
   return portionGrams * count;
 }
 
+// The way back from grams (an entry saved by weight, then switched to portions, #81), to the
+// hundredths a count is stored with. Not clamped to the portion range: a count outside it gets
+// the form's own error instead of silently saving a different weight.
+export function calcPortionCount(grams: number, portionGrams: number): number {
+  assertPositive("grams", grams);
+  assertPositive("portionGrams", portionGrams);
+  return Math.round((grams / portionGrams) * NUTRIENT_STORAGE_SCALE) / NUTRIENT_STORAGE_SCALE;
+}
+
 const ZERO_NUTRIENTS: Nutrients = { kcal: 0, proteinG: 0, fatG: 0, carbsG: 0 };
 
 export function sumNutrients(list: readonly Nutrients[]): Nutrients {

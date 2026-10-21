@@ -28,6 +28,7 @@ export function FoodSearch({
   excludeRecipes = false,
   idle,
   newFoodSearch,
+  initialQuery = "",
 }: {
   ownFoods: FoodListItem[];
   link?: FoodLink;
@@ -36,9 +37,11 @@ export function FoodSearch({
   idle?: ReactNode;
   // Carried to "add your own" so a new food can return to the entry it was started for.
   newFoodSearch?: string;
+  // From ?q=: the screen reopens on the search a new food was started from (#92).
+  initialQuery?: string;
 }) {
   const router = useRouter();
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(initialQuery);
   const [state, setState] = useState<SearchState | null>(null);
   // The last successful list stays on screen while the next query loads, so typing does not
   // make the results blink away on every letter.

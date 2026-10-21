@@ -51,3 +51,6 @@ export function parseAddError(value: unknown): AddError | null {
   const parsed = addErrorSchema.safeParse(value);
   return parsed.success ? parsed.data : null;
 }
+
+// What the star's action answers: null when the star took, "limit" when the cap stopped it.
+export type FavoriteState = "limit" | null;

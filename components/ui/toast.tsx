@@ -3,12 +3,18 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useEffect, useState } from "react";
 import { undoAddAction } from "@/app/(app)/diary/actions";
-import { QUICK, TOAST_DURATION_MS, TOAST_PARAM, UNDO_PARAM } from "@/lib/config";
+import { QUICK, TOAST_DURATION_MS, TOAST_EVENT, TOAST_PARAM, UNDO_PARAM } from "@/lib/config";
 import { parseUndoIds } from "@/lib/diary/quick";
 import { ru } from "@/lib/i18n/ru";
 import { parseToast, UNDOABLE_TOASTS, withoutToast, type Toast } from "@/lib/toast";
 
 type Shown = { toast: Toast; undo: string[] | null; key: string };
+
+// For a change that never leaves the page: a URL toast would mean a navigation, and its server
+// render could arrive after a newer change.
+export function showToast(toast: Toast): void {
+  window.dispatchEvent(new CustomEvent<Toast>(TOAST_EVENT, { detail: toast }));
+}
 
 function message({ toast, undo }: Shown): string {
   // A repeat of a one-entry meal reads like any single add.
@@ -47,6 +53,17 @@ export function ToastHost() {
   }, [fromUrl, pathname, params, router]);
 
   useEffect(() => {
+    function onToast(event: Event) {
+      if (!(event instanceof CustomEvent)) return;
+      const toast = parseToast(String(event.detail));
+      // A fresh key restarts the timer when the same toast is raised twice in a row.
+      if (toast !== null) setShown({ toast, undo: null, key: `event:${Date.now()}` });
+    }
+    window.addEventListener(TOAST_EVENT, onToast);
+    return () => window.removeEventListener(TOAST_EVENT, onToast);
+  }, []);
+
+  useEffect(() => {
     if (shown === null) return;
     // Long enough to notice a wrong tap when there is something to undo.
     const timer = setTimeout(() => setShown(null), shown.undo ? QUICK.undoMs : TOAST_DURATION_MS);
@@ -73,7 +90,7 @@ export function ToastHost() {
             <button
               type="button"
               onClick={() => shown.undo && undo(shown.undo)}
-              className="pointer-events-auto min-h-11 rounded-full px-4 underline"
+              className="pointer-events-auto min-h-11 rounded-full px-4 underline focus-visible:outline-on-accent"
             >
               {ru.toasts.undo}
             </button>

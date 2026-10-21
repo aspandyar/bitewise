@@ -1,12 +1,96 @@
 import { DrizzleQueryError } from "drizzle-orm/errors";
+import { LOG_SCRUB } from "@/lib/config";
+
+// Drizzle's message is "Failed query: <sql>\nparams: <values>", and a stack starts with it.
+const FAILED_QUERY = /Failed query:[\s\S]*/;
+const SCRUBBED = Symbol.for("bitewise.scrubbedConsole");
+
+type FailedQuery = Error & { query: string; params: unknown };
+
+// By shape as well as by class: the production build bundles drizzle into several chunks, and an
+// error thrown by a page is not an instance of the class this module imported (#76).
+function isFailedQuery(error: Error): error is FailedQuery {
+  if (error instanceof DrizzleQueryError) return true;
+  return (
+    "query" in error &&
+    typeof error.query === "string" &&
+    "params" in error &&
+    error.message.startsWith("Failed query:")
+  );
+}
+
+function scrubQuery(error: FailedQuery): { name: string; code?: unknown } {
+  const cause: unknown = error.cause;
+  if (!(cause instanceof Error)) return { name: error.name };
+  const code = "code" in cause ? cause.code : undefined;
+  return { name: cause.name, code };
+}
+
+// A Postgres error drizzle did not wrap (a raw client query, BEGIN/COMMIT): its detail can echo a
+// value ("Key (email)=(…) already exists"), so only its code is kept.
+function isDatabaseError(error: Error): error is Error & { code: unknown } {
+  return "code" in error && ("severity" in error || "detail" in error);
+}
+
+// Past the depth it follows the scrubber cannot see what a chain holds, so it assumes the worst.
+function hasFailedQuery(error: Error, depth: number): boolean {
+  if (depth > LOG_SCRUB.maxDepth) return true;
+  if (isFailedQuery(error) || isDatabaseError(error)) return true;
+  if (error instanceof AggregateError && error.errors.some((item) => isQueryIn(item, depth + 1))) {
+    return true;
+  }
+  return isQueryIn(error.cause, depth + 1);
+}
+
+function isQueryIn(value: unknown, depth: number): boolean {
+  return value instanceof Error && hasFailedQuery(value, depth);
+}
+
+// Next tags an error with the digest it shows the user; it holds no user data and is how a
+// reported error is found in the logs.
+function withDigest(error: Error, scrubbed: Record<string, unknown>): Record<string, unknown> {
+  return "digest" in error && typeof error.digest === "string"
+    ? { ...scrubbed, digest: error.digest }
+    : scrubbed;
+}
+
+function scrub(value: unknown, depth: number): unknown {
+  if (typeof value === "string") return value.replace(FAILED_QUERY, "Failed query: [scrubbed]");
+  if (!(value instanceof Error)) return value;
+  if (depth > LOG_SCRUB.maxDepth) return withDigest(value, { name: value.name });
+  if (isFailedQuery(value)) return withDigest(value, scrubQuery(value));
+  if (isDatabaseError(value)) return withDigest(value, { name: value.name, code: value.code });
+  if (!hasFailedQuery(value, depth)) return value;
+  // An error wrapping a failed query may repeat its text in its own message; keep only names.
+  return withDigest(value, {
+    name: value.name,
+    cause: scrub(value.cause, depth + 1),
+    ...(value instanceof AggregateError
+      ? { errors: value.errors.map((item: unknown) => scrub(item, depth + 1)) }
+      : {}),
+  });
+}
 
 // A failed query carries the SQL and its parameters (search text, user ids, emails), and
 // Postgres messages can echo a parameter too ('invalid input syntax for type uuid: "…"').
 // Logs keep only the error class and SQLSTATE code, which is enough to find the cause.
 export function loggableError(error: unknown): unknown {
-  if (!(error instanceof DrizzleQueryError)) return error;
-  const cause: unknown = error.cause;
-  if (!(cause instanceof Error)) return { name: error.name };
-  const code = "code" in cause ? cause.code : undefined;
-  return { name: cause.name, code };
+  return scrub(error, 0);
+}
+
+type ScrubbableConsole = {
+  error: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+};
+
+// Next prints an uncaught server-action error whole, so a call site that forgot loggableError
+// would still leak a failed insert's email and password hash (#76). Every argument goes through it.
+export function scrubConsole(target: ScrubbableConsole): void {
+  const marked = target as ScrubbableConsole & { [SCRUBBED]?: true };
+  if (marked[SCRUBBED]) return;
+  for (const method of ["error", "warn"] as const) {
+    const original = target[method].bind(target);
+    target[method] = (...args: unknown[]) => original(...args.map(loggableError));
+  }
+  marked[SCRUBBED] = true;
 }

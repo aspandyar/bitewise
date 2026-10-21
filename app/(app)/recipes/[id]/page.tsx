@@ -80,8 +80,8 @@ async function RecipeContent({ params }: Pick<PageProps<"/recipes/[id]">, "param
         items={items}
         canAdd={recipe.items.length < RECIPE_LIMITS.maxItems}
       />
-      {/* Stacked, so the two confirm buttons replace "Delete" in place instead of wrapping below. */}
-      <div className="flex flex-col items-start gap-2">
+      {/* One row, as on the food card (#83); the confirm buttons wrap below when they need room. */}
+      <div className="flex flex-wrap gap-2">
         <Link href={recipeEditHref(recipe.id)} className={action}>
           {ru.recipes.edit}
         </Link>

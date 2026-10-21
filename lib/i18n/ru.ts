@@ -77,7 +77,8 @@ export const ru = {
   install: {
     button: "Установить на телефон",
     iosTitle: "Установить на телефон",
-    iosHint: "Нажмите «Поделиться», затем «На экран „Домой“»",
+    // Two lines at 375 px (#99).
+    iosHint: "«Поделиться» → «На экран „Домой“»",
   },
   appearance: {
     title: "Оформление",
@@ -160,6 +161,7 @@ export const ru = {
     favorite: "В избранное",
     favoriteOn: "★",
     favoriteOff: "☆",
+    favoriteLimit: (max: number) => `В избранном уже ${n(max)} — уберите звёздочку с другого`,
     edit: "Изменить",
     copy: "Скопировать к себе",
     copyHint: "Общий продукт нельзя изменить — скопируйте его и правьте копию.",
@@ -297,6 +299,7 @@ export const ru = {
     undo: "Отменить",
     alreadyFilled: "Этот приём пищи уже заполнен",
     dayFull: `Не больше ${n(DIARY_LIMITS.maxEntriesPerDay)} записей за день`,
+    otherAccount: "Форма была из другого аккаунта — ничего не сохранено",
   },
   recipes: {
     title: "Блюда",

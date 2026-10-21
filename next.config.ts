@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders() }];
   },
+  // The favicon is app/icon.tsx at /icon; browsers and crawlers still ask for /favicon.ico (#98).
+  // Temporary, so a real favicon.ico added later is not shadowed by a redirect cached forever.
+  async redirects() {
+    return [{ source: "/favicon.ico", destination: "/icon", permanent: false }];
+  },
   // Kept from the create-next-app 16.4 template: it is the framework's current default model,
   // and turning it off later is easier than migrating to it once screens exist.
   cacheComponents: true,

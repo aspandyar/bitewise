@@ -98,6 +98,11 @@ export const AUTH = {
 // request, the server finds the row the first one made instead of writing a second.
 export const REQUEST_ID = {
   field: "requestId",
+  // The user signed in when the form was sent: a replay sent after signing in as someone else
+  // is refused instead of writing into the other account (#107). The value comes from a cookie
+  // the latest rendered page sets, shared by all tabs, so an old tab is never stuck on a user.
+  userField: "requestUser",
+  userCookie: "bw-uid",
 } as const;
 
 // Used until the browser reports its own zone through the cookie (first visit, JS off).
@@ -112,6 +117,9 @@ export const TIME_ZONE_COOKIE = {
 
 // The health check answers within this or reports the database as down.
 export const HEALTH = { timeoutMs: 2000 } as const;
+
+// How deep the log scrubber follows error causes; a cycle or a pathological chain stops here.
+export const LOG_SCRUB = { maxDepth: 5 } as const;
 
 // One policy for every environment. 'unsafe-inline' scripts: Next injects per-request inline
 // scripts that a hash cannot cover, and a nonce would make every screen request-time (#18).
@@ -149,6 +157,9 @@ export const APPEARANCE = {
   // Prefixed: cookies are not separated by port, and "theme" is a common name on localhost.
   cookies: { theme: "bw-theme", accent: "bw-accent" },
   maxAgeSec: 365 * SECONDS_PER_DAY,
+  // Marks the theme-color meta the head script adds for a forced theme before React hydrates;
+  // the server's own metas are left alone, since React matches them by content (#97).
+  earlyThemeColorAttr: "data-early",
   defaults: { theme: "system", accent: "graphite" },
   base: {
     light: { background: "#ffffff", foreground: "#171717" },
@@ -184,6 +195,7 @@ export const APPEARANCE = {
 } as const satisfies {
   cookies: { theme: string; accent: string };
   maxAgeSec: number;
+  earlyThemeColorAttr: string;
   defaults: { theme: Theme; accent: Accent };
   base: Record<ColorMode, { background: string; foreground: string }>;
   accents: Record<Accent, Record<ColorMode, { accent: string; onAccent: string }>>;
@@ -204,8 +216,12 @@ export const PWA = {
   serviceWorkerPath: "/sw.js",
   // Where the head script parks a beforeinstallprompt that fires before React hydrates.
   installPromptGlobal: "__bitewiseInstallPrompt",
-  // Bump when the offline page or icons change: the worker deletes caches with any other name.
-  cacheName: "bitewise-v1",
+  // The worker's cache is "<prefix>-<hash of what it precaches>": a changed offline page or icon
+  // setting renames it, and the worker deletes caches with any other name (#96).
+  cachePrefix: "bitewise",
+  cacheHashLength: 12,
+  // The offline page carries its own CSS; its retry button keeps the app's 44 px tap target.
+  offlineTapPx: 44,
 } as const;
 
 // OWASP scrypt profile (N=2^15, r=8, p=3): ~32 MB per hash keeps a small VPS responsive.
@@ -258,6 +274,8 @@ export const PORTION_LIMITS = {
 export const FOOD_SEARCH = {
   limit: 20,
   maxQueryLength: 50,
+  // A search screen opened with ?q= starts from that query: "Back" from a new food returns to it.
+  queryParam: "q",
   // Trigrams carry no signal below 3 letters; shorter queries match word starts only.
   minTrigramLength: 3,
   // pg_trgm word_similarity cut-off, tuned on real typos: "грчка" → "гречка" scores 0.44 and
@@ -331,6 +349,8 @@ export const TOAST_PARAM = "toast";
 // Entries a quick add or a repeat just created, so the toast can offer to undo them.
 export const UNDO_PARAM = "undo";
 export const TOAST_DURATION_MS = 3000;
+// A toast raised in the browser without a navigation (the appearance picker, #97).
+export const TOAST_EVENT = "bitewise:toast";
 
 // Credited on the foods screen: the seed's shared foods come from there (public domain).
 export const USDA_FDC_URL = "https://fdc.nal.usda.gov/";

@@ -9,17 +9,23 @@ import { formatEntryAmount, formatKcal } from "@/lib/format";
 import { ru } from "@/lib/i18n/ru";
 import { QuickAddButton } from "./quick-add-button";
 
+// A dish is marked as in search results, so a starred dish and a food of the same name differ.
+function details(food: QuickFood, text: string): string {
+  return food.isRecipe ? `${ru.recipes.badge} · ${text}` : text;
+}
+
 function QuickRow({ food, date, meal }: { food: QuickFood; date: IsoDate; meal: Meal }) {
   const amountHref = addFoodHref(food.foodId, date, meal);
-  // Never logged: there is no amount to repeat, so the row opens the amount screen.
+  // Never logged: there is no amount to repeat, so the row opens the amount screen and shows
+  // the food's kcal per 100 g instead (#90).
   if (food.amount === null || food.kcal === null) {
     return (
       <li>
-        <Link
-          href={amountHref}
-          className="flex min-h-11 items-center py-2 [overflow-wrap:anywhere]"
-        >
-          {food.name}
+        <Link href={amountHref} className="flex min-h-11 flex-col justify-center py-2">
+          <span className="[overflow-wrap:anywhere]">{food.name}</span>
+          <span className="text-sm text-foreground/60">
+            {details(food, ru.diary.kcalPer100g(formatKcal(food.kcal100)))}
+          </span>
         </Link>
       </li>
     );
@@ -33,7 +39,10 @@ function QuickRow({ food, date, meal }: { food: QuickFood; date: IsoDate; meal: 
         <QuickAddButton>
           <span className="[overflow-wrap:anywhere]">{food.name}</span>
           <span className="text-sm text-foreground/60">
-            {ru.diary.quickAmount(formatEntryAmount(food.amount), formatKcal(food.kcal))}
+            {details(
+              food,
+              ru.diary.quickAmount(formatEntryAmount(food.amount), formatKcal(food.kcal)),
+            )}
           </span>
         </QuickAddButton>
       </KeyedForm>

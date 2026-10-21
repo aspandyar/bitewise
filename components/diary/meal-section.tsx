@@ -7,6 +7,7 @@ import type { DiaryEntry } from "@/lib/diary/types";
 import { formatEntryAmount, formatKcal } from "@/lib/format";
 import { ru } from "@/lib/i18n/ru";
 import { RepeatMealButton } from "./repeat-meal-button";
+import { KeyedForm } from "@/components/ui/keyed-form";
 import type { Nutrients } from "@/lib/nutrition";
 
 // Nutrients are computed on the server page; this component only lays them out.
@@ -70,9 +71,9 @@ export function MealSection({
         {ru.diary.add}
       </Link>
       {repeatLabel ? (
-        <form action={repeatMealAction.bind(null, date, meal)}>
+        <KeyedForm action={repeatMealAction.bind(null, date, meal)}>
           <RepeatMealButton label={repeatLabel} />
-        </form>
+        </KeyedForm>
       ) : null}
     </section>
   );

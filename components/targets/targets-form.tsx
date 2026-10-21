@@ -7,6 +7,7 @@ import { FormError, SubmitButton, TextField, usePreservingFormAction } from "@/c
 import type { TargetMode } from "@/lib/config";
 import { formatGrams, formatKcal } from "@/lib/format";
 import { readDecimalInput } from "@/lib/forms";
+import { KeyedForm } from "@/components/ui/keyed-form";
 import { ru } from "@/lib/i18n/ru";
 import { calcKcalFromMacros, type MacroTargets } from "@/lib/nutrition";
 
@@ -101,9 +102,9 @@ export function TargetsForm({
       </form>
       {/* In auto mode there is nothing to reset to. */}
       {mode === "manual" ? (
-        <form action={resetTargetAction}>
+        <KeyedForm action={resetTargetAction}>
           <ResetButton />
-        </form>
+        </KeyedForm>
       ) : null}
     </div>
   );
