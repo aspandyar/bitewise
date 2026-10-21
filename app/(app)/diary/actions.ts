@@ -7,6 +7,7 @@ import { db } from "@/db/client";
 import { requireActionUser, requireUserId } from "@/lib/auth/session";
 import { DIARY_LIMITS } from "@/lib/config";
 import { addFoodHref, addHref, dayHref } from "@/lib/diary/paths";
+import type { FavoriteState } from "@/lib/diary/quick";
 import { quickEntryFormSchema } from "@/lib/diary/quick-entry";
 import { quickAddEntry, repeatMeal, setFavorite } from "@/lib/diary/quick-repo";
 import {
@@ -203,16 +204,23 @@ export async function updateQuickEntryAction(
 }
 
 // The star sends the state it should end in, not "toggle": a replay must not undo it (#95).
-export async function setFavoriteAction(foodId: string, starred: unknown): Promise<void> {
-  const userId = await requireUserId();
+// The cap answers with a message under the star instead of a star that silently stays off (#91).
+export async function setFavoriteAction(
+  foodId: string,
+  starred: unknown,
+  _prev: FavoriteState,
+  formData?: FormData,
+): Promise<FavoriteState> {
+  const userId = await requireActionUser(formData);
   const id = requireId(foodId);
   const wanted = z.boolean().safeParse(starred);
   if (!wanted.success) notFound();
   const result = await setFavorite(db, userId, id, wanted.data);
   if (result === "not_found") notFound();
-  // The cap is far above real use; reaching it means a script, and the star simply stays off.
+  if (result === "limit") return "limit";
   revalidatePath(`/foods/${id}`);
   const recipeId = await getRecipeIdByFoodId(db, userId, id);
   if (recipeId) revalidatePath(recipeHref(recipeId));
   revalidatePath("/diary/add");
+  return null;
 }

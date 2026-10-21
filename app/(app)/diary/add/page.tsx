@@ -16,6 +16,7 @@ import { parseDiaryDate, parseMeal } from "@/lib/diary/schema";
 import { getUserToday } from "@/lib/diary/today";
 import { countDayEntries } from "@/lib/diary/repo";
 import { listOwnFoods } from "@/lib/foods/repo";
+import { parseSearchQuery } from "@/lib/foods/search-query";
 import { formatDayLabel } from "@/lib/format";
 import { ru } from "@/lib/i18n/ru";
 
@@ -41,6 +42,7 @@ async function AddContent({ searchParams }: Pick<PageProps<"/diary/add">, "searc
   );
   const hasQuick = favorites.length > 0 || recent.length > 0;
   const addError = parseAddError(params.error);
+  const query = parseSearchQuery(params[FOOD_SEARCH.queryParam]);
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
       <BackLink href={dayHref(date, today)} />
@@ -59,8 +61,9 @@ async function AddContent({ searchParams }: Pick<PageProps<"/diary/add">, "searc
       {/* cacheComponents keeps this screen alive with its query; a new key after every add
           starts a fresh search, while Back from the amount step keeps the results. */}
       <FoodSearch
-        key={`${date}:${meal}:${dayCount}`}
+        key={`${date}:${meal}:${dayCount}:${query}`}
         ownFoods={ownFoods}
+        initialQuery={query}
         link={{ prefix: "/diary/add/", search: diarySearch(date, meal) }}
         newFoodSearch={diarySearch(date, meal)}
         idle={

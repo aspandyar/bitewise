@@ -264,6 +264,8 @@ export const PORTION_LIMITS = {
 export const FOOD_SEARCH = {
   limit: 20,
   maxQueryLength: 50,
+  // A search screen opened with ?q= starts from that query: "Back" from a new food returns to it.
+  queryParam: "q",
   // Trigrams carry no signal below 3 letters; shorter queries match word starts only.
   minTrigramLength: 3,
   // pg_trgm word_similarity cut-off, tuned on real typos: "грчка" → "гречка" scores 0.44 and

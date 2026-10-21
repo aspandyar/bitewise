@@ -5,6 +5,7 @@ import {
   isKcalConsistentWithMacros,
   calcDayProgress,
   calcEntryNutrients,
+  calcPortionCount,
   calcPortionGrams,
   calcRecipe,
   calcServingGrams,
@@ -263,6 +264,32 @@ describe("calcPortionGrams", () => {
     { portionGrams: Number.NaN, count: 1 },
   ])("throws RangeError for $portionGrams g × $count", ({ portionGrams, count }) => {
     expect(() => calcPortionGrams(portionGrams, count)).toThrow(RangeError);
+  });
+});
+
+describe("calcPortionCount", () => {
+  it("turns grams into portions", () => {
+    // 60 g ÷ 50 g = 1.2 шт
+    expect(calcPortionCount(60, 50)).toBe(1.2);
+  });
+
+  it("rounds to the hundredths the database stores", () => {
+    // 100 g ÷ 30 g = 3.333… → 3.33
+    expect(calcPortionCount(100, 30)).toBe(3.33);
+  });
+
+  it("keeps the count inside the allowed portion range", () => {
+    // 1 g ÷ 50 g = 0.02 → the minimum 0.25; 5000 g ÷ 10 g = 500 → the maximum 50
+    expect(calcPortionCount(1, 50)).toBe(0.25);
+    expect(calcPortionCount(5000, 10)).toBe(50);
+  });
+
+  it.each([
+    { grams: 0, portionGrams: 50 },
+    { grams: 60, portionGrams: 0 },
+    { grams: Number.NaN, portionGrams: 50 },
+  ])("throws RangeError for $grams g ÷ $portionGrams g", ({ grams, portionGrams }) => {
+    expect(() => calcPortionCount(grams, portionGrams)).toThrow(RangeError);
   });
 });
 

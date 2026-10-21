@@ -1,5 +1,6 @@
 import {
   ACTIVITY_FACTORS,
+  DIARY_LIMITS,
   FOOD_LIMITS,
   GOAL_ADJUSTMENTS,
   KCAL_CHECK,
@@ -153,6 +154,16 @@ export function calcPortionGrams(portionGrams: number, count: number): number {
   assertPositive("portionGrams", portionGrams);
   assertPositive("count", count);
   return portionGrams * count;
+}
+
+// The way back from grams (an entry saved by weight, then switched to portions, #81): the count
+// is what the database can store and what the portion field accepts.
+export function calcPortionCount(grams: number, portionGrams: number): number {
+  assertPositive("grams", grams);
+  assertPositive("portionGrams", portionGrams);
+  const { min, max } = DIARY_LIMITS.portionCount;
+  const stored = Math.round((grams / portionGrams) * NUTRIENT_STORAGE_SCALE) / NUTRIENT_STORAGE_SCALE;
+  return Math.min(max, Math.max(min, stored));
 }
 
 const ZERO_NUTRIENTS: Nutrients = { kcal: 0, proteinG: 0, fatG: 0, carbsG: 0 };

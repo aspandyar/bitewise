@@ -82,7 +82,9 @@ export async function copyFoodAction(foodId: string, formData?: FormData): Promi
   // The copy button has no form state to show a message in; reaching the cap means a script,
   // not a person, so the generic error screen is enough.
   if (copy === "limit") throw new Error("own food cap reached");
-  redirect(withToast(`/foods/${copy.id}/edit`, "copied"));
+  // Replace, not push: Back from the copy must not land on the shared card with its copy button
+  // again, one tap away from a second copy (#88).
+  redirect(withToast(`/foods/${copy.id}/edit`, "copied"), RedirectType.replace);
 }
 
 export async function addPortionAction(

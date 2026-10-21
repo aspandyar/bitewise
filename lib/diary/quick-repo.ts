@@ -26,6 +26,8 @@ export type QuickFood = {
   amount: AmountColumns | null;
   // From the food's current numbers, the same ones a quick add snapshots.
   kcal: number | null;
+  // Shown instead of an amount for a favorite never logged (#90).
+  kcal100: number;
 };
 
 const amountColumns = {
@@ -53,6 +55,7 @@ function toQuickFood(food: FoodRow, last: AmountColumns | null): QuickFood {
     isRecipe: food.isRecipe,
     amount,
     kcal: amount ? calcEntryNutrients(food, amount.grams).kcal : null,
+    kcal100: food.kcal100,
   };
 }
 

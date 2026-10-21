@@ -160,6 +160,7 @@ export const ru = {
     favorite: "В избранное",
     favoriteOn: "★",
     favoriteOff: "☆",
+    favoriteLimit: (max: number) => `В избранном уже ${n(max)} — уберите звёздочку с другого`,
     edit: "Изменить",
     copy: "Скопировать к себе",
     copyHint: "Общий продукт нельзя изменить — скопируйте его и правьте копию.",

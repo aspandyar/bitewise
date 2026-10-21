@@ -33,7 +33,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: appearanceScript() }} />
         <script dangerouslySetInnerHTML={{ __html: installPromptScript() }} />
       </head>
-      <body className="flex min-h-full flex-col">
+      {/* The bottom padding is the toast's lane: scrolled to the end, the last line of a page sits
+          above the toast instead of under it (#86). */}
+      <body className="flex min-h-full flex-col pb-20">
         <AppearanceSync />
         <PwaClient />
         <TimeZoneCookie />

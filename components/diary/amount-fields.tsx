@@ -6,7 +6,7 @@ import { previewKcal } from "@/lib/amount";
 import { DIARY_LIMITS } from "@/lib/config";
 import { formatAmount, formatGrams, formatKcal } from "@/lib/format";
 import { ru } from "@/lib/i18n/ru";
-import { calcPortionGrams, type Per100g } from "@/lib/nutrition";
+import { calcPortionCount, calcPortionGrams, type Per100g } from "@/lib/nutrition";
 
 // Portion kcal come from the server page; the live total is a preview through the same
 // lib/nutrition functions, and the server recomputes what is saved.
@@ -65,13 +65,18 @@ export function AmountFields({
       : { mode: "portion", portionGrams: portions[portionIndex]?.grams ?? null, count },
   );
 
-  // Switching from portions carries the amount over, so saving grams keeps what was picked.
+  // Switching carries the amount over both ways, so saving keeps what was picked: 60 g with
+  // "1 шт = 50 г" becomes 1,2 шт, not 1 (#81).
   function selectMode(next: AmountMode) {
     const portion = portions[portionIndex];
     if (next === "grams" && mode === "portion" && portion && current !== null && current > 0) {
       const carried = formatAmount(calcPortionGrams(portion.grams, current));
       setGramsDefault(carried);
       setGramsText(carried);
+    }
+    const grams = parseCount(gramsText);
+    if (next === "portion" && mode === "grams" && portion && grams !== null && grams > 0) {
+      setCount(formatAmount(calcPortionCount(grams, portion.grams)));
     }
     setMode(next);
   }
