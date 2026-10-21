@@ -1,10 +1,27 @@
 #!/usr/bin/env bash
-# One release: backup → migrations → seed → admin → new app container → health.
-# Usage: docker/scripts/release.sh <image tag>   (SKIP_PULL=1 for a locally built image)
-# Any failure after the backup puts the previous tag back and exits non-zero.
+# One release: backup → migrations → app role → seed → admin → new app container → health.
+# Usage: docker/scripts/release.sh <commit sha> <sha256:digest>
+#        docker/scripts/release.sh "$(cat .release-tag.prev)"   (rollback: <sha>@<digest>)
+#        SKIP_PULL=1 docker/scripts/release.sh <tag>   (locally built image, no digest)
+# The image is pulled by digest (from the workflow's image-digest artifact), so a tag re-pointed
+# in the registry cannot change what runs (#103).
+# Any failure after the backup puts the previous release back and exits non-zero.
 source "$(dirname "$0")/common.sh"
 
-tag="${1:?usage: release.sh <image tag>}"
+usage="usage: release.sh <commit sha> <sha256:digest>"
+tag="${1:?$usage}"
+digest="${2:-}"
+if [[ "$tag" == *@* ]]; then
+  digest="${tag#*@}"
+  tag="${tag%%@*}"
+fi
+if [ -z "${SKIP_PULL:-}" ]; then
+  if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+    log "$usage (digest: gh run download <run id> -n image-digest)"
+    exit 1
+  fi
+  tag="$tag@$digest"
+fi
 health_wait_sec="${HEALTH_WAIT_SEC:-60}"
 current_file=".release-tag"
 previous_tag="$(cat "$current_file" 2> /dev/null || true)"
@@ -20,8 +37,46 @@ if [ "$perm" != "600" ]; then
   exit 1
 fi
 
-run_app() {
-  IMAGE_TAG="$tag" "${COMPOSE[@]}" run --rm --no-deps app "$@"
+# One release step (a service of the "ops" profile) on the new image.
+run_step() {
+  IMAGE_TAG="$tag" "${COMPOSE[@]}" --profile ops run --rm --no-deps "$1"
+}
+
+# The app logs in as its own role, not the Postgres superuser (#101): with a superuser, any SQL
+# injection becomes the whole cluster (COPY ... TO PROGRAM runs commands in the db container).
+# Idempotent, before every migration: an existing database is converted on its next release and a
+# rollback after a failed migration still finds the role. Tables the migrations add get their
+# grants from the default privileges (the migrator runs as the same owner).
+apply_app_role() {
+  local user password database
+  user="$(env_value APP_DB_USER)"
+  password="$(env_value APP_DB_PASSWORD)"
+  database="$(env_value POSTGRES_DB)"
+  # These go into SQL text: allow only identifier characters and a URL-safe password.
+  if [[ ! "$user" =~ ^[a-z_][a-z0-9_]*$ ]] || [[ ! "$database" =~ ^[a-z_][a-z0-9_]*$ ]]; then
+    log "APP_DB_USER and POSTGRES_DB must be lowercase identifiers"
+    return 1
+  fi
+  if [[ ! "$password" =~ ^[A-Za-z0-9_-]{24,}$ ]]; then
+    log "APP_DB_PASSWORD must be at least 24 URL-safe characters (openssl rand -hex 24)"
+    return 1
+  fi
+  # The SQL travels over stdin, so the password never shows up in a process list.
+  "${COMPOSE[@]}" exec -T db sh -c \
+    'psql -q -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' << SQL
+DO \$\$ BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '$user') THEN CREATE ROLE $user; END IF;
+END \$\$;
+ALTER ROLE $user WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS
+  PASSWORD '$password';
+GRANT CONNECT ON DATABASE $database TO $user;
+GRANT USAGE ON SCHEMA public TO $user;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO $user;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO $user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO $user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO $user;
+SQL
+  log "database role $user is up to date"
 }
 
 rollback() {
@@ -54,11 +109,13 @@ if [ -z "${SKIP_PULL:-}" ]; then
 fi
 
 trap rollback ERR
+apply_app_role
 # Migrations run before the new container starts, so it never meets an old schema (deploy rules).
-run_app node ops/migrate.js
-run_app node ops/seed.js
+# They alone run as the owner; seed and admin only change rows, so they use the app role.
+run_step migrate
+run_step seed
 # Before the app accepts sign-ups, so no one can register the admin email first (#17).
-run_app node ops/bootstrap-admin.js
+run_step bootstrap-admin
 IMAGE_TAG="$tag" "${COMPOSE[@]}" up -d app
 
 for ((i = 0; i < health_wait_sec; i++)); do
