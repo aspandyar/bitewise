@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/db/client";
 import { addAmountSchema, toAddAmount, toUpdateAmount, updateAmountSchema } from "@/lib/amount";
-import { requireUserId } from "@/lib/auth/session";
+import { requireActionUser, requireUserId } from "@/lib/auth/session";
 import { DIARY_LIMITS, FOOD_LIMITS, RECIPE_LIMITS } from "@/lib/config";
 import { formatGramsAtLeast } from "@/lib/format";
 import { firstFieldErrors, type FormState } from "@/lib/forms";
@@ -46,7 +46,7 @@ function itemFailure(
 }
 
 export async function createRecipeAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  const userId = await requireUserId();
+  const userId = await requireActionUser(formData);
   const parsed = recipeFormSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
   const created = await createRecipe(db, userId, parsed.data, readRequestId(formData));
@@ -59,7 +59,7 @@ export async function updateRecipeAction(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const userId = await requireUserId();
+  const userId = await requireActionUser(formData);
   const id = requireId(recipeId);
   const parsed = recipeFormSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
@@ -92,7 +92,7 @@ export async function addItemAction(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const userId = await requireUserId();
+  const userId = await requireActionUser(formData);
   const id = requireId(recipeId);
   const food = requireId(foodId);
   const parsed = addAmountSchema.safeParse(Object.fromEntries(formData));
@@ -112,7 +112,7 @@ export async function updateItemAction(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const userId = await requireUserId();
+  const userId = await requireActionUser(formData);
   const id = requireId(recipeId);
   const item = requireId(itemId);
   const parsed = updateAmountSchema.safeParse(Object.fromEntries(formData));

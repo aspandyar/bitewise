@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { and, asc, count, desc, eq, inArray, isNotNull, lt, max, sql } from "drizzle-orm";
 import { lockUserWrites } from "@/db/locks";
 import { diaryEntries, favorites, foods } from "@/db/schema";
@@ -210,15 +211,39 @@ export async function quickAddEntry(
   });
 }
 
+// One request adds several entries, and each needs its own key under the per-user unique index:
+// the first carries the request key, the rest a key derived from it, so a replay can find them all.
+function batchRequestIds(requestId: string, size: number): string[] {
+  return Array.from({ length: size }, (_, index) => {
+    if (index === 0) return requestId;
+    const hex = createHash("sha256").update(`${requestId}:${index}`).digest("hex");
+    return [hex.slice(0, 8), hex.slice(8, 12), hex.slice(12, 16), hex.slice(16, 20), hex.slice(20, 32)].join("-");
+  });
+}
+
 // Copies the entries as they were (snapshots included): the same meal, the same numbers.
+// A replay (#107) answers with the entries the first request added, so its toast can still undo.
 export async function repeatMeal(
   db: Db,
   userId: string,
-  input: { date: IsoDate; meal: Meal },
+  input: { date: IsoDate; meal: Meal; requestId?: string | null },
   limits: EntryLimits = DIARY_LIMITS,
-): Promise<{ ids: string[] } | "nothing" | "not_empty" | "limit" | "total_limit"> {
+): Promise<{ ids: string[] } | "nothing" | "not_empty" | "not_found" | "limit" | "total_limit"> {
   return db.transaction(async (tx) => {
     await lockUserWrites(tx, userId);
+    const keys = input.requestId ? batchRequestIds(input.requestId, limits.maxEntriesPerDay) : [];
+    const replayed =
+      keys.length === 0
+        ? []
+        : await tx
+            .select({ id: diaryEntries.id, date: diaryEntries.date, meal: diaryEntries.meal })
+            .from(diaryEntries)
+            .where(and(eq(diaryEntries.userId, userId), inArray(diaryEntries.clientRequestId, keys)))
+            .orderBy(asc(diaryEntries.createdAt), asc(diaryEntries.id));
+    if (replayed.length > 0) {
+      const same = replayed.every((row) => row.date === input.date && row.meal === input.meal);
+      return same ? { ids: replayed.map((row) => row.id) } : "not_found";
+    }
     const source = await findRepeatSource(tx, userId, input.date, input.meal);
     if (!source) {
       const [filled] = await tx
@@ -255,6 +280,7 @@ export async function repeatMeal(
           portionLabel: entry.portionLabel,
           portionGrams: entry.portionGrams,
           portionCount: entry.portionCount,
+          clientRequestId: keys[index] ?? null,
         })),
       )
       .returning({ id: diaryEntries.id });

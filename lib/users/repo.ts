@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { users } from "@/db/schema";
 import type { Db } from "@/db/types";
 import type { UserRole } from "@/lib/config";
@@ -16,16 +16,25 @@ export async function findUserByEmail(
 }
 
 // A taken email yields null rather than a unique-violation error, so sign-up can answer generically.
+// A replay of the same sign-up (same email and request key, #107) gets the account it made; a key
+// already spent on another email conflicts too and yields null.
 export async function createUser(
   db: Db,
-  input: { email: string; passwordHash: string },
+  input: { email: string; passwordHash: string; requestId?: string | null },
 ): Promise<{ id: string } | null> {
+  const requestId = input.requestId ?? null;
   const [row] = await db
     .insert(users)
-    .values(input)
-    .onConflictDoNothing({ target: users.email })
+    .values({ email: input.email, passwordHash: input.passwordHash, clientRequestId: requestId })
+    .onConflictDoNothing()
     .returning({ id: users.id });
-  return row ?? null;
+  if (row || requestId === null) return row ?? null;
+  const [replayed] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.email, input.email), eq(users.clientRequestId, requestId)))
+    .limit(1);
+  return replayed ?? null;
 }
 
 export async function findUserRoleById(db: Db, id: string): Promise<UserRole | null> {

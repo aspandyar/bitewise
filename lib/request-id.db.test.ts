@@ -3,9 +3,10 @@ import { and, count, eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { diaryEntries, foodPortions, foods, recipeItems, recipes } from "@/db/schema";
 import { addEntry, addQuickEntry, getDayEntries } from "@/lib/diary/repo";
-import { isFavorite, quickAddEntry, setFavorite } from "@/lib/diary/quick-repo";
+import { isFavorite, quickAddEntry, repeatMeal, setFavorite } from "@/lib/diary/quick-repo";
 import { addPortion, copyFood, createFood } from "@/lib/foods/repo";
 import { addItem, createRecipe } from "@/lib/recipes/repo";
+import { createUser } from "@/lib/users/repo";
 import { closeTestDb, resetDb, testDb } from "@/tests/db";
 import { insertSharedFood, insertSharedPortion, newUserId } from "@/tests/foods";
 
@@ -316,5 +317,81 @@ describe("setFavorite", () => {
     expect(await setFavorite(testDb, alice, food, false)).toBe("off");
     expect(await setFavorite(testDb, alice, food, false)).toBe("off");
     expect(await isFavorite(testDb, alice, food)).toBe(false);
+  });
+});
+
+describe("repeatMeal", () => {
+  const NEXT = "2026-10-22";
+
+  async function yesterdayBreakfast(userId: string) {
+    const food = await insertSharedFood({ name: "Овсянка" });
+    for (const grams of [60, 80]) {
+      await addEntry(testDb, userId, {
+        date: DAY,
+        meal: "breakfast",
+        foodId: food,
+        amount: { mode: "grams", grams },
+      });
+    }
+  }
+
+  it("a replay answers with the ids the first repeat added, not 'already filled'", async () => {
+    const alice = await newUserId("alice@mail.com");
+    await yesterdayBreakfast(alice);
+    const input = { date: NEXT, meal: "breakfast" as const, requestId: randomUUID() };
+    const first = await repeatMeal(testDb, alice, input);
+    const replay = await repeatMeal(testDb, alice, input);
+    if (typeof first === "string") throw new Error(first);
+    expect(first.ids).toHaveLength(2);
+    expect(replay).toEqual(first);
+    expect(await getDayEntries(testDb, alice, NEXT)).toHaveLength(2);
+  });
+
+  it("a replay still finds the batch after one of its entries was undone", async () => {
+    const alice = await newUserId("alice@mail.com");
+    await yesterdayBreakfast(alice);
+    const input = { date: NEXT, meal: "breakfast" as const, requestId: randomUUID() };
+    const first = await repeatMeal(testDb, alice, input);
+    if (typeof first === "string") throw new Error(first);
+    await testDb.delete(diaryEntries).where(eq(diaryEntries.id, first.ids[0]!));
+    expect(await repeatMeal(testDb, alice, input)).toEqual({ ids: [first.ids[1]] });
+  });
+
+  it("refuses a key the user already spent on another meal", async () => {
+    const alice = await newUserId("alice@mail.com");
+    await yesterdayBreakfast(alice);
+    const requestId = randomUUID();
+    await repeatMeal(testDb, alice, { date: NEXT, meal: "breakfast", requestId });
+    expect(await repeatMeal(testDb, alice, { date: NEXT, meal: "lunch", requestId })).toBe(
+      "not_found",
+    );
+  });
+});
+
+describe("createUser", () => {
+  const hash = "scrypt$test";
+
+  it("a replayed sign-up finds the account it made instead of 'email taken'", async () => {
+    const requestId = randomUUID();
+    const first = await createUser(testDb, { email: "new@mail.com", passwordHash: hash, requestId });
+    const replay = await createUser(testDb, { email: "new@mail.com", passwordHash: hash, requestId });
+    expect(first).not.toBeNull();
+    expect(replay).toEqual(first);
+  });
+
+  it("a taken email with another key or no key is still refused", async () => {
+    await createUser(testDb, { email: "new@mail.com", passwordHash: hash, requestId: randomUUID() });
+    expect(
+      await createUser(testDb, { email: "new@mail.com", passwordHash: hash, requestId: randomUUID() }),
+    ).toBeNull();
+    expect(await createUser(testDb, { email: "new@mail.com", passwordHash: hash })).toBeNull();
+  });
+
+  it("a key already used by another account gives nothing, not an error", async () => {
+    const requestId = randomUUID();
+    await createUser(testDb, { email: "first@mail.com", passwordHash: hash, requestId });
+    expect(
+      await createUser(testDb, { email: "second@mail.com", passwordHash: hash, requestId }),
+    ).toBeNull();
   });
 });

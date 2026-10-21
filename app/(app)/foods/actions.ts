@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { notFound, redirect, RedirectType } from "next/navigation";
 import { db } from "@/db/client";
-import { requireUserId } from "@/lib/auth/session";
+import { requireActionUser, requireUserId } from "@/lib/auth/session";
 import { FOOD_LIMITS, PORTION_LIMITS } from "@/lib/config";
 import { firstFieldErrors, type FormState } from "@/lib/forms";
 import {
@@ -30,7 +30,7 @@ function requireId(value: unknown): string {
 }
 
 export async function createFoodAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  const userId = await requireUserId();
+  const userId = await requireActionUser(formData);
   const raw = Object.fromEntries(formData);
   const parsed = foodSchema.safeParse(raw);
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
@@ -55,7 +55,7 @@ export async function updateFoodAction(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const userId = await requireUserId();
+  const userId = await requireActionUser(formData);
   const id = requireId(foodId);
   const parsed = foodSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
@@ -76,7 +76,7 @@ export async function deleteFoodAction(foodId: string): Promise<void> {
 }
 
 export async function copyFoodAction(foodId: string, formData?: FormData): Promise<void> {
-  const userId = await requireUserId();
+  const userId = await requireActionUser(formData);
   const copy = await copyFood(db, userId, requireId(foodId), readRequestId(formData));
   if (!copy) notFound();
   // The copy button has no form state to show a message in; reaching the cap means a script,
@@ -90,7 +90,7 @@ export async function addPortionAction(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const userId = await requireUserId();
+  const userId = await requireActionUser(formData);
   const id = requireId(foodId);
   const parsed = portionSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };

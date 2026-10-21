@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { AppearanceSync } from "@/components/appearance-sync";
+import { RequestUser } from "@/components/auth/request-user-server";
 import { PwaClient } from "@/components/pwa/pwa-client";
 import { TimeZoneCookie } from "@/components/time-zone-cookie";
 import { OfflineBanner } from "@/components/ui/offline-banner";
@@ -41,6 +42,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* Reads the URL at request time, so it waits behind its own boundary. */}
         <Suspense fallback={null}>
           <ToastHost />
+        </Suspense>
+        {/* Reads the session, so it streams behind its own boundary like the toast. */}
+        <Suspense fallback={null}>
+          <RequestUser />
         </Suspense>
       </body>
     </html>

@@ -8,6 +8,7 @@ import { registerAction } from "@/app/(auth)/register/actions";
 import { FormError, SubmitButton, TextField } from "@/components/ui/form";
 import type { RegisterResult } from "@/lib/auth/register";
 import { ru } from "@/lib/i18n/ru";
+import { stampRequestId } from "@/lib/request-id";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -17,7 +18,8 @@ export function RegisterForm() {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
+    // A replayed sign-up (#107) finds the account it made and goes on to sign in.
+    const formData = stampRequestId(new FormData(event.currentTarget));
     setPending(true);
     try {
       const registered = await registerAction(formData);

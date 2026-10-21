@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/db/client";
-import { requireUserId } from "@/lib/auth/session";
+import { requireActionUser, requireUserId } from "@/lib/auth/session";
 import { DIARY_LIMITS } from "@/lib/config";
 import { addFoodHref, addHref, dayHref } from "@/lib/diary/paths";
 import { quickEntryFormSchema } from "@/lib/diary/quick-entry";
@@ -49,7 +49,7 @@ const portionTotalError: FormState = {
 };
 
 export async function addEntryAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  const userId = await requireUserId();
+  const userId = await requireActionUser(formData);
   const today = await getUserToday(new Date());
   const raw = Object.fromEntries(formData);
   const date = parseDiaryDate(raw.date, today);
@@ -78,7 +78,7 @@ export async function updateEntryAction(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const userId = await requireUserId();
+  const userId = await requireActionUser(formData);
   const id = requireId(entryId);
   const parsed = updateEntryFormSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
@@ -115,7 +115,7 @@ export async function quickAddAction(
   rawMeal: string,
   formData?: FormData,
 ): Promise<void> {
-  const userId = await requireUserId();
+  const userId = await requireActionUser(formData);
   const { today, date, meal } = await requireDayAndMeal(rawDate, rawMeal);
   const id = requireId(foodId);
   const requestId = readRequestId(formData);
@@ -129,13 +129,19 @@ export async function quickAddAction(
   redirect(withToast(dayHref(date, today), "added", [result.id]));
 }
 
-export async function repeatMealAction(rawDate: string, rawMeal: string): Promise<void> {
-  const userId = await requireUserId();
+export async function repeatMealAction(
+  rawDate: string,
+  rawMeal: string,
+  formData?: FormData,
+): Promise<void> {
+  const userId = await requireActionUser(formData);
   const { today, date, meal } = await requireDayAndMeal(rawDate, rawMeal);
-  const result = await repeatMeal(db, userId, { date, meal });
+  const requestId = readRequestId(formData);
+  const result = await repeatMeal(db, userId, { date, meal, requestId });
   // The repeat button lives on the day, so every outcome returns there with its message.
   if (result === "not_empty") redirect(withToast(dayHref(date, today), "alreadyFilled"));
-  if (result === "nothing") redirect(dayHref(date, today));
+  // A key already spent on another meal: a tampered request, it just returns to the day.
+  if (result === "nothing" || result === "not_found") redirect(dayHref(date, today));
   if (result === "limit" || result === "total_limit") {
     redirect(withToast(dayHref(date, today), "dayFull"));
   }
@@ -157,7 +163,7 @@ export async function addQuickEntryAction(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const userId = await requireUserId();
+  const userId = await requireActionUser(formData);
   const raw = Object.fromEntries(formData);
   const { today, date } = await requireDayAndMeal(raw.date, raw.meal);
   const parsed = z.object({ meal: mealSchema }).and(quickEntryFormSchema).safeParse(raw);
@@ -183,7 +189,7 @@ export async function updateQuickEntryAction(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const userId = await requireUserId();
+  const userId = await requireActionUser(formData);
   const id = requireId(entryId);
   const parsed = z
     .object({ meal: mealSchema })

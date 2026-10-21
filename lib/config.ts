@@ -98,6 +98,9 @@ export const AUTH = {
 // request, the server finds the row the first one made instead of writing a second.
 export const REQUEST_ID = {
   field: "requestId",
+  // The user the page was rendered for: a replay sent after signing in as someone else is
+  // refused instead of writing into the other account (#107).
+  userField: "requestUser",
 } as const;
 
 // Used until the browser reports its own zone through the cookie (first visit, JS off).

@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/db/client";
 import { appearanceSchema } from "@/lib/appearance";
-import { requireUserId } from "@/lib/auth/session";
+import { requireActionUser, requireUserId } from "@/lib/auth/session";
 import { APPEARANCE } from "@/lib/config";
 import { todayIsoDate } from "@/lib/date";
 import { firstFieldErrors, type FormState } from "@/lib/forms";
@@ -14,7 +14,7 @@ import { setManualTarget } from "@/lib/targets/repo";
 import { targetsSchema } from "@/lib/targets/schema";
 
 export async function saveProfileAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  const userId = await requireUserId();
+  const userId = await requireActionUser(formData);
   const today = todayIsoDate(new Date());
   const parsed = makeProfileSchema(today).safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
@@ -26,7 +26,7 @@ export async function saveManualTargetAction(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const userId = await requireUserId();
+  const userId = await requireActionUser(formData);
   const parsed = targetsSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
   await setManualTarget(db, userId, parsed.data);
