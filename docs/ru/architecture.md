@@ -8,6 +8,8 @@ tags:
 ---
 # Bitewise — архитектура
 
+[English](../en/architecture.md) · **Русский**
+
 > Наверх: [[Bitewise]] · связано: [[Projects/Bitewise/PROJECT_PLAN|PROJECT_PLAN]] · [[Projects/Bitewise/features|features]] · [[Projects/Bitewise/notes|notes]]
 
 ## Стек
@@ -19,10 +21,10 @@ tags:
 | ORM / миграции | Drizzle ORM + drizzle-kit | типы из схемы, SQL-подобный синтаксис |
 | Валидация | zod | одна схема для форм, API и ответов AI |
 | Авторизация | **Auth.js v4**, Credentials + JWT (30 дней), пароли — scrypt из `node:crypto` | email + пароль; Credentials в Auth.js работает только с JWT |
-| PWA | manifest + service worker (этап 6) | установка на телефон, офлайн-оболочка |
+| PWA | manifest + service worker, `experimental.useOffline` | установка на телефон, страница «Нет сети», повтор действий после обрыва |
 | Тесты | Vitest: проект `unit` и проект `db` на отдельной базе `bitewise_test`; UI проверяет субагент ui-checker в браузере | расчёты и запросы — автоматом, вёрстка — глазами |
-| Деплой | Docker Compose: `app` + `postgres`, nginx + TLS на VPS (этап 6; сейчас в compose только `db`) | свой сервер, привычный стек |
-| Бэкапы | `pg_dump` по cron → отдельное хранилище | |
+| Деплой | Docker Compose на VPS: `db`, `app`, `nginx` (TLS), `certbot`; образ из GHCR (в dev compose только `db`) | свой сервер, привычный стек |
+| Бэкапы | `pg_dump` по cron на сервере, 14 дней, ежемесячная проверка восстановления | |
 
 ## Принципы
 > [!tip] Главное правило
@@ -35,7 +37,7 @@ tags:
 - Блюдо — тоже строка `foods`: поиск, порции и дневник работают с ним как с продуктом, цифры на 100 г пересчитываются из состава.
 
 ## Модель данных
-Сделано (этапы 1–4) — таблицы до `diary_entries` включительно; ниже черты — план.
+Сделано — таблицы до `favorites` включительно; ниже черты — план.
 
 | Таблица | Поля (основные) |
 | --- | --- |
@@ -90,12 +92,12 @@ Postgres 17 (+ pg_trgm)                            db/schema.ts → db/migration
 ## Безопасность (коротко)
 - **Сессии и пароли.** Сессия — JWT Auth.js. Каждое чтение сессии сверяет `token_version` и роль с базой (`checkToken`, один запрос по ключу): после смены пароля или «Выйти на всех устройствах» старые токены не действуют, роль не снимок на момент входа (#29). Пароли — scrypt (N = 2^15). При неизвестном email считается фиктивный хеш, чтобы время ответа было тем же. Смена пароля — с текущим паролем, 5 попыток за 15 минут на аккаунт и версию токена (после «Выйти на всех устройствах» у владельца новый запас); устройство после неё входит заново новым паролем. Ни смена пароля, ни «выйти везде» не подчиняются лимиту записи — вор с украденной сессией не может помешать себя отозвать. Пароль админа в приложении не меняется: он задаётся `ADMIN_PASSWORD`, и bootstrap вернул бы его при деплое.
 - **Регистрация** закрыта, пока `REGISTRATION=open` не открыл её (#27): страница и `registerAction` отвечают «Регистрация пока закрыта» до любой работы.
-- **Метка устройства (#30).** После входа браузер получает httpOnly-cookie `bw-device` (`__Host-` на https) — HMAC от id пользователя на `NEXTAUTH_SECRET`. Попытки входа с ней считаются в своём счётчике аккаунта: чужие неверные пароли не блокируют владельца.
+- **Метка устройства (#30).** После входа браузер получает httpOnly-cookie `bw-device` (`__Host-` на https) на год — HMAC от id пользователя, версии токена и времени выпуска на `NEXTAUTH_SECRET`. Смена пароля и «Выйти на всех устройствах» отзывают все метки. Попытки входа с меткой считаются в общем счётчике доверенных устройств аккаунта, отдельном от чужих: неверные пароли со стороны не блокируют владельца, а выпуск новых меток не даёт лишних попыток.
 - **Rate limit в памяти** (fail-closed, до 100 тыс. ключей): вход — 10 за 15 минут, регистрация — 5 в час с IP, поиск — 120 в минуту, любая запись (server actions через `requireActionUser` / `requireWriteUser`) — 60 в минуту на пользователя (#31), смена пароля — 5 за 15 минут. Снаружи — `limit_req` nginx. Хеширование паролей — не больше 2 одновременно, очередь до 20 (семафор).
 - **Роли.** Новые аккаунты всегда `user`. `admin` появляется только через `pnpm admin:bootstrap`; привилегированные действия читают роль из БД.
 - **Доступ.** Каждый repo-запрос ограничен `user_id` из сессии. Чужое → 404.
 - **Лимиты объёма:** 1000 своих продуктов и блюд, 20 порций на продукт, 50 ингредиентов в блюде, 100 записей дневника в день и 100 000 на аккаунт.
-- **Секреты** только в env на сервере, проверяются zod при старте (`lib/env.ts`).
+- **Секреты** только в env на сервере, проверяются zod при старте (`lib/env-read.ts` через `lib/env.ts`).
 
 ## Расчёт нормы
 ```text
@@ -142,24 +144,26 @@ bitewise/
 ├── app/
 │   ├── (auth)/          # login, register (+ registerAction)
 │   ├── (app)/           # главная-дневник, onboarding, profile, targets, foods/**, diary/**, recipes/** + actions.ts
-│   ├── api/             # foods/search, auth/[...nextauth]
+│   ├── api/             # foods/search, health, auth/[...nextauth]
 │   └── manifest.ts, icon.tsx, apple-icon.tsx, pwa-icons/, sw.js/, offline/   # PWA
 ├── components/          # ui/ (формы, удаление в два тапа, ResetOnHide, плашка «Нет сети»), auth/, diary/, foods/, recipes/, profile/, targets/, pwa/, brand/
 ├── lib/
 │   ├── config.ts        # все константы и лимиты
 │   ├── nutrition.ts     # все расчёты (+ тесты)
 │   ├── amount.ts        # количество: граммы или порция × N (дневник и состав блюда)
-│   ├── date.ts, format.ts, forms.ts, ids.ts, env.ts, i18n/ru.ts
+│   ├── date.ts, format.ts, forms.ts, ids.ts, i18n/ru.ts
+│   ├── env.ts, env-read.ts  # переменные окружения: для приложения (server-only) и для скриптов
+│   ├── log.ts, request-id.ts, toast.ts   # очистка логов, ключ запроса, уведомления
 │   ├── appearance.ts    # тема и акцент: палитра → CSS, скрипт в <head>, контраст
 │   ├── pwa/             # иконки, service worker, офлайн-страница, подсказка установки
 │   ├── auth/            # Auth.js, пароли, лимиты, регистрация, роли, версия токена, метка устройства
 │   ├── foods/ diary/ recipes/ profile/ targets/ users/   # repo.ts · schema.ts · types.ts (+ тесты)
 │   └── ai/              # этапы 9–12
-├── db/                  # schema.ts, migrations/, seed/ (foods.json + sources/), client.ts
-├── docker/postgres/     # init-скрипт тестовой базы
+├── db/                  # schema.ts, migrations/, seed/ (foods.json + sources/), client.ts (server-only), connect.ts (скрипты), ops/ (мигратор образа)
 ├── scripts/             # build-food-seed.ts, bootstrap-admin.ts
 ├── docker/              # postgres init, nginx-шаблон, скрипты релиза и бэкапа, crontab
 ├── Dockerfile, docker-compose.prod.yml   # прод-образ и стек
+├── instrumentation.ts   # при старте: очистка логов, проверка REGISTRATION
 ├── tests/               # testDb, хелперы, global-setup, fixtures
 ├── docs/                # ru/ — документация по-русски (+ superpowers/: спеки и планы этапов), en/ — по-английски
 └── .claude/             # rules, skills, agents, settings

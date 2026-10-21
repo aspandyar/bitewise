@@ -8,6 +8,8 @@ tags:
 ---
 # Bitewise — функционал
 
+[English](../en/features.md) · **Русский**
+
 > Наверх: [[Bitewise]] · связано: [[Projects/Bitewise/PROJECT_PLAN|PROJECT_PLAN]] · [[Projects/Bitewise/architecture|architecture]]
 
 ## 🔴 Tier 1 — MUST HAVE (MVP)
