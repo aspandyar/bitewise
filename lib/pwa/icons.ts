@@ -15,3 +15,10 @@ export function pwaIcons(): PwaIcon[] {
 export function pwaIconUrl(icon: PwaIcon): string {
   return `${PWA.iconsPath}/${icon.file}`;
 }
+
+// The offline page's favicon: one of the icons the worker already keeps, so it shows offline.
+export function offlineIcon(): PwaIcon {
+  const [icon] = pwaIcons();
+  if (!icon) throw new Error("no PWA icons configured");
+  return icon;
+}

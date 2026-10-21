@@ -210,8 +210,12 @@ export const PWA = {
   serviceWorkerPath: "/sw.js",
   // Where the head script parks a beforeinstallprompt that fires before React hydrates.
   installPromptGlobal: "__bitewiseInstallPrompt",
-  // Bump when the offline page or icons change: the worker deletes caches with any other name.
-  cacheName: "bitewise-v1",
+  // The worker's cache is "<prefix>-<hash of what it precaches>": a changed offline page or icon
+  // setting renames it, and the worker deletes caches with any other name (#96).
+  cachePrefix: "bitewise",
+  cacheHashLength: 12,
+  // The offline page carries its own CSS; its retry button keeps the app's 44 px tap target.
+  offlineTapPx: 44,
 } as const;
 
 // OWASP scrypt profile (N=2^15, r=8, p=3): ~32 MB per hash keeps a small VPS responsive.
