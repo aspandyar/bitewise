@@ -5,7 +5,21 @@ import { LOG_SCRUB } from "@/lib/config";
 const FAILED_QUERY = /Failed query:[\s\S]*/;
 const SCRUBBED = Symbol.for("bitewise.scrubbedConsole");
 
-function scrubQuery(error: DrizzleQueryError): { name: string; code?: unknown } {
+type FailedQuery = Error & { query: string; params: unknown };
+
+// By shape as well as by class: the production build bundles drizzle into several chunks, and an
+// error thrown by a page is not an instance of the class this module imported (#76).
+function isFailedQuery(error: Error): error is FailedQuery {
+  if (error instanceof DrizzleQueryError) return true;
+  return (
+    "query" in error &&
+    typeof error.query === "string" &&
+    "params" in error &&
+    error.message.startsWith("Failed query:")
+  );
+}
+
+function scrubQuery(error: FailedQuery): { name: string; code?: unknown } {
   const cause: unknown = error.cause;
   if (!(cause instanceof Error)) return { name: error.name };
   const code = "code" in cause ? cause.code : undefined;
@@ -14,7 +28,7 @@ function scrubQuery(error: DrizzleQueryError): { name: string; code?: unknown } 
 
 function hasFailedQuery(error: Error, depth: number): boolean {
   if (depth > LOG_SCRUB.maxDepth) return false;
-  if (error instanceof DrizzleQueryError) return true;
+  if (isFailedQuery(error)) return true;
   if (error instanceof AggregateError && error.errors.some((item) => isQueryIn(item, depth + 1))) {
     return true;
   }
@@ -28,7 +42,7 @@ function isQueryIn(value: unknown, depth: number): boolean {
 function scrub(value: unknown, depth: number): unknown {
   if (typeof value === "string") return value.replace(FAILED_QUERY, "Failed query: [scrubbed]");
   if (!(value instanceof Error) || depth > LOG_SCRUB.maxDepth) return value;
-  if (value instanceof DrizzleQueryError) return scrubQuery(value);
+  if (isFailedQuery(value)) return scrubQuery(value);
   if (!hasFailedQuery(value, depth)) return value;
   // An error wrapping a failed query may repeat its text in its own message; keep only names.
   return {

@@ -89,3 +89,24 @@ describe("scrubConsole", () => {
     expect(target.error).toBe(once);
   });
 });
+
+describe("a failed query from another copy of drizzle", () => {
+  // The production build bundles drizzle into several chunks, each with its own class, so the
+  // error a page throws is not an instance of the class lib/log imported.
+  class OtherCopyQueryError extends Error {
+    constructor(
+      readonly query: string,
+      readonly params: unknown[],
+      cause: unknown,
+    ) {
+      super(`Failed query: ${query}\nparams: ${params}`, { cause });
+    }
+  }
+
+  it("is recognised by its shape and scrubbed", () => {
+    const error = new OtherCopyQueryError("select $1", ["user-123"], pgError());
+    const logged = JSON.stringify(loggableError(error));
+    expect(logged).not.toContain("user-123");
+    expect(logged).toContain("42P01");
+  });
+});
