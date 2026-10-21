@@ -1,10 +1,9 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { AUTH } from "@/lib/config";
+import { AUTH, MS_PER_SECOND } from "@/lib/config";
 
 type DeviceOptions = { secret: string; https: boolean; nowMs: number };
 type Account = { id: string; tokenVersion: number };
 
-const MS_PER_SECOND = 1000;
 
 // Over https the __Host- prefix keeps a sibling or parent domain from planting the cookie.
 function deviceCookieName(https: boolean): string {

@@ -39,7 +39,8 @@ export function readAuthEnv(source: NodeJS.ProcessEnv = process.env): AuthEnv {
 }
 
 // Sign-up stays closed until bots and email probing are handled (#27): the owner opens it with
-// REGISTRATION=open. A typo fails fast rather than silently opening or closing it.
+// REGISTRATION=open. A typo fails at server start (instrumentation.ts) rather than silently
+// opening or closing it.
 const registrationSchema = z.object({
   REGISTRATION: z.enum(["open", "closed"]).default("closed"),
 });

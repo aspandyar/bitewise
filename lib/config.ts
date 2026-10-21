@@ -83,7 +83,8 @@ export const TARGET_LIMITS = {
   macroG: { min: 0, max: 1000 },
 } as const;
 
-const MS_PER_MINUTE = 60_000;
+export const MS_PER_SECOND = 1000;
+const MS_PER_MINUTE = 60 * MS_PER_SECOND;
 const SECONDS_PER_DAY = 86_400;
 
 export const AUTH = {

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useState, type FormEvent } from "react";
@@ -59,12 +58,6 @@ export function LoginForm() {
       />
       <FormError message={error} />
       <SubmitButton pending={pending}>{ru.auth.loginSubmit}</SubmitButton>
-      <Link
-        href="/register"
-        className="flex min-h-11 items-center justify-center text-sm underline text-accent-text"
-      >
-        {ru.auth.toRegister}
-      </Link>
     </form>
   );
 }
