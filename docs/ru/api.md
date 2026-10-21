@@ -8,6 +8,8 @@ tags:
 ---
 # Bitewise — API
 
+[English](../en/api.md) · **Русский**
+
 > Наверх: [[Bitewise]] · связано: [[Projects/Bitewise/architecture|architecture]] · [[Projects/Bitewise/development|development]]
 
 У приложения два вида серверных входов:

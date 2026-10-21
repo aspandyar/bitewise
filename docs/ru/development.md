@@ -8,6 +8,8 @@ tags:
 ---
 # Bitewise — локальная разработка
 
+[English](../en/development.md) · **Русский**
+
 > Наверх: [[Bitewise]] · связано: [[Projects/Bitewise/architecture|architecture]] · [[Projects/Bitewise/workflow|workflow]] · [[Projects/Bitewise/api|api]]
 
 ## Что нужно
@@ -76,7 +78,7 @@ Vitest с двумя проектами (`vitest.config.ts`):
 | `db` | `**/*.db.test.ts` | `tests/global-setup.ts` мигрирует `bitewise_test`; файлы идут по очереди (`fileParallelism: false`); `resetDb()` делает `TRUNCATE users CASCADE` перед каждым тестом |
 
 - `pnpm test` — всё, `pnpm test:unit` — только unit, `pnpm vitest run lib/recipes` — выборочно.
-- Хелперы: `tests/db.ts` (`testDb`, `resetDb`, `closeTestDb`), `tests/foods.ts` (`newUserId`, `insertSharedFood`, `insertSharedPortion`, `createOwnFood`), `tests/recipes.ts` (`insertRecipeFood`).
+- Хелперы: `tests/db.ts` (`testDb`, `resetDb`, `closeTestDb`, `createTestPool` для тестов гонок), `tests/foods.ts` (`newUserId`, `insertSharedFood`, `insertSharedPortion`, `createOwnFood`), `tests/recipes.ts` (`insertRecipeFood`).
 - Расчёты пишутся по TDD: сначала тест с числами, посчитанными вручную, потом код (`.claude/rules/testing.md`). Тесты нельзя ослаблять, чтобы они прошли.
 - Внешние API (USDA, Open Food Facts, AI) — только через fixtures в `tests/fixtures/`, без сети.
 
@@ -90,6 +92,6 @@ Vitest с двумя проектами (`vitest.config.ts`):
 ## Частые проблемы
 - **Форма или поиск показывают старые значения после возврата на экран.** `cacheComponents` держит скрытые экраны живыми вместе с их состоянием. Клиентской форме на таком экране нужен `key` из входных данных или обёртка `ResetOnHide` (`components/ui/reset-on-hide.tsx`). См. `.claude/rules/ui.md`.
 - **Сессия и cookie читаются только внутри `<Suspense>`.** Каждая страница устроена как `Page` → `<Suspense fallback={<PageLoading />}>` → `…Content`, и `requireUserId()` вызывается внутри `…Content`.
-- **Локально `pnpm test` иногда идёт 15–30 минут при почти нулевом CPU.** Код тут ни при чём: на CI тот же код проходит меньше чем за минуту. Это особенность окружения (Podman или macOS, когда процесс в фоне); повторный запуск на переднем плане обычно проходит за 10–20 секунд.
+- **Локально `pnpm test` иногда идёт 15–30 минут при почти нулевом CPU.** Код тут ни при чём: на CI тот же код проходит меньше чем за минуту. Это особенность окружения (Podman или macOS, когда процесс в фоне); повторный запуск на переднем плане обычно проходит за 10–20 секунд. При сильной загрузке машины тесты scrypt могут упасть по таймауту; по отдельности они проходят.
 - **Прод-стек целиком на ноутбуке** (nginx, TLS, роль базы, релиз и откат) — раздел «Прогон на ноутбуке» в [deploy.md](deploy.md).
 - **`AGENTS.md` переписывается `next dev`.** Это блок с правилами Next.js для агентов, его можно коммитить как есть.

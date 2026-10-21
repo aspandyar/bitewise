@@ -8,6 +8,8 @@ tags:
 ---
 # Bitewise — как ведём работу
 
+[English](../en/workflow.md) · **Русский**
+
 > Наверх: [[Bitewise]] · связано: [[Projects/Bitewise/PROJECT_PLAN|PROJECT_PLAN]] · [[Projects/Bitewise/notes|notes]] · [[Projects/Bitewise/development|development]]
 
 Проект строится по этапам из [[Projects/Bitewise/PROJECT_PLAN|плана]]. Код пишет Claude Code, решения и «ок» — за владельцем. Всё, что Claude должен соблюдать, записано в репозитории: `CLAUDE.md`, `.claude/rules/`, `.claude/skills/`, `.claude/agents/`.
@@ -38,7 +40,7 @@ tags:
 | `nutrition.md` | `lib/nutrition*`, `lib/config.ts` | чистые функции, единицы в именах, тест с ручными числами, рецепт = сумма / вес готового × 100 |
 | `db.md` | `db/**`, `lib/**/repo*.ts` | схема только миграциями, `user_id` + индекс, снимок в дневнике, мягкое удаление, `numeric(8,2)` |
 | `ui.md` | `app/**`, `components/**` | 375 px, тап-зоны ≥ 44 px, тексты из `ru.ts`, клиент не считает нутриенты, `key` для форм при `cacheComponents` |
-| `api-security.md` | `app/api/**`, `lib/auth/**`, `actions.ts` | сессия первой строкой, чужое → 404, zod, rate limit, без секретов в ответах |
+| `api-security.md` | `app/api/**`, `lib/auth/**`, `actions.ts` | сессия первой строкой, чужое → 404, zod, rate limit, без секретов в ответах, ключ запроса, лимит записи |
 | `testing.md` | тесты | TDD для расчётов, без сети, db-тесты на отдельной базе, тесты не ослаблять |
 | `ai.md` | `lib/ai/**`, `app/api/ai/**` | AI возвращает только «что и сколько граммов», числа считает код (этапы 9–12) |
 | `deploy.md` | `docker/**`, `Dockerfile`, compose | правила прод-окружения (этап 6) |
