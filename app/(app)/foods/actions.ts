@@ -19,6 +19,7 @@ import { addFoodHref } from "@/lib/diary/paths";
 import { parseEntryContext } from "@/lib/diary/schema";
 import { getUserToday } from "@/lib/diary/today";
 import { ru } from "@/lib/i18n/ru";
+import { readRequestId } from "@/lib/request-id";
 import { withToast } from "@/lib/toast";
 
 // Bound arguments come from the client and can be tampered with, so ids are re-validated here.
@@ -33,7 +34,9 @@ export async function createFoodAction(_prev: FormState, formData: FormData): Pr
   const raw = Object.fromEntries(formData);
   const parsed = foodSchema.safeParse(raw);
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
-  const created = await createFood(db, userId, parsed.data);
+  const created = await createFood(db, userId, parsed.data, {
+    requestId: readRequestId(formData),
+  });
   if (created === "limit") return { formError: ru.foods.foodLimit(FOOD_LIMITS.maxOwnFoods) };
   // Started from the diary search: back to logging it, not to the food card. The form's history
   // entry is replaced, so system Back cannot reopen it and save the same food twice.
@@ -63,16 +66,18 @@ export async function updateFoodAction(
 export async function deleteFoodAction(foodId: string): Promise<void> {
   const userId = await requireUserId();
   const id = requireId(foodId);
-  if (!(await softDeleteOwnFood(db, userId, id))) notFound();
+  const deleted = await softDeleteOwnFood(db, userId, id);
   // Drops the client's cached food screen, so browser Back renders "not found" instead of a food
   // that still looks editable.
   revalidatePath(`/foods/${id}`);
-  redirect(withToast("/foods", "deleted"));
+  // Nothing deleted: a replay of a delete that already went through (#95) — or an id that is not
+  // the user's; both go back to the list, without the toast.
+  redirect(deleted ? withToast("/foods", "deleted") : "/foods");
 }
 
-export async function copyFoodAction(foodId: string): Promise<void> {
+export async function copyFoodAction(foodId: string, formData?: FormData): Promise<void> {
   const userId = await requireUserId();
-  const copy = await copyFood(db, userId, requireId(foodId));
+  const copy = await copyFood(db, userId, requireId(foodId), readRequestId(formData));
   if (!copy) notFound();
   // The copy button has no form state to show a message in; reaching the cap means a script,
   // not a person, so the generic error screen is enough.
@@ -89,7 +94,7 @@ export async function addPortionAction(
   const id = requireId(foodId);
   const parsed = portionSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
-  const result = await addPortion(db, userId, id, parsed.data);
+  const result = await addPortion(db, userId, id, parsed.data, readRequestId(formData));
   if (result === "not_found") notFound();
   if (result === "limit") return { formError: ru.foods.portionLimit(PORTION_LIMITS.maxOwnPerFood) };
   revalidatePath(`/foods/${id}`);
@@ -99,6 +104,7 @@ export async function addPortionAction(
 export async function deletePortionAction(foodId: string, portionId: string): Promise<void> {
   const userId = await requireUserId();
   const id = requireId(foodId);
-  if (!(await deleteOwnPortion(db, userId, id, requireId(portionId)))) notFound();
+  // Nothing deleted is a replay (#95) or a stale list: either way the food screen just refreshes.
+  await deleteOwnPortion(db, userId, id, requireId(portionId));
   revalidatePath(`/foods/${id}`);
 }

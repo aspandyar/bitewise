@@ -8,7 +8,7 @@ import { requireUserId } from "@/lib/auth/session";
 import { DIARY_LIMITS } from "@/lib/config";
 import { addFoodHref, addHref, dayHref } from "@/lib/diary/paths";
 import { quickEntryFormSchema } from "@/lib/diary/quick-entry";
-import { quickAddEntry, repeatMeal, toggleFavorite } from "@/lib/diary/quick-repo";
+import { quickAddEntry, repeatMeal, setFavorite } from "@/lib/diary/quick-repo";
 import {
   addEntry,
   addQuickEntry,
@@ -31,6 +31,7 @@ import { getUserToday } from "@/lib/diary/today";
 import { firstFieldErrors, type FormState } from "@/lib/forms";
 import { ru } from "@/lib/i18n/ru";
 import { recipeHref } from "@/lib/recipes/paths";
+import { readRequestId } from "@/lib/request-id";
 import { getRecipeIdByFoodId } from "@/lib/recipes/repo";
 import { withToast } from "@/lib/toast";
 
@@ -61,6 +62,7 @@ export async function addEntryAction(_prev: FormState, formData: FormData): Prom
     meal: parsed.data.meal,
     foodId,
     amount: toAddAmount(parsed.data),
+    requestId: readRequestId(formData),
   });
   if (result === "not_found") notFound();
   if (result === "grams_out_of_range") return portionTotalError;
@@ -89,11 +91,13 @@ export async function updateEntryAction(
   redirect(dayHref(updated.date, await getUserToday(new Date())));
 }
 
-export async function deleteEntryAction(entryId: string): Promise<void> {
+// rawDate is the entry's day from the edit page: a replayed delete (#95) finds nothing left and
+// still lands on that day, as the first one did. A missing or foreign id ends there too.
+export async function deleteEntryAction(entryId: string, rawDate: string): Promise<void> {
   const userId = await requireUserId();
+  const today = await getUserToday(new Date());
   const deleted = await deleteEntry(db, userId, requireId(entryId));
-  if (!deleted) notFound();
-  redirect(dayHref(deleted.date, await getUserToday(new Date())));
+  redirect(dayHref(deleted?.date ?? parseDiaryDate(rawDate, today) ?? today, today));
 }
 
 // Date and meal arrive as bound arguments from the page; both are re-validated here.
@@ -109,11 +113,13 @@ export async function quickAddAction(
   foodId: string,
   rawDate: string,
   rawMeal: string,
+  formData?: FormData,
 ): Promise<void> {
   const userId = await requireUserId();
   const { today, date, meal } = await requireDayAndMeal(rawDate, rawMeal);
   const id = requireId(foodId);
-  const result = await quickAddEntry(db, userId, { date, meal, foodId: id });
+  const requestId = readRequestId(formData);
+  const result = await quickAddEntry(db, userId, { date, meal, foodId: id, requestId });
   // A cached add screen can still list a food deleted since: say so there, not with a 404.
   if (result === "not_found") redirect(addHref(date, meal, "gone"));
   // A favorite never logged has no amount to repeat: it gets the regular amount screen.
@@ -157,7 +163,12 @@ export async function addQuickEntryAction(
   const parsed = z.object({ meal: mealSchema }).and(quickEntryFormSchema).safeParse(raw);
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
   const { meal, ...values } = parsed.data;
-  const result = await addQuickEntry(db, userId, { date, meal, values });
+  const result = await addQuickEntry(db, userId, {
+    date,
+    meal,
+    values,
+    requestId: readRequestId(formData),
+  });
   if (result === "limit") return { formError: ru.diary.entryLimit(DIARY_LIMITS.maxEntriesPerDay) };
   if (result === "total_limit") {
     return { formError: ru.diary.entryTotalLimit(DIARY_LIMITS.maxEntriesTotal) };
@@ -183,10 +194,13 @@ export async function updateQuickEntryAction(
   redirect(withToast(dayHref(updated.date, await getUserToday(new Date())), "saved"));
 }
 
-export async function toggleFavoriteAction(foodId: string): Promise<void> {
+// The star sends the state it should end in, not "toggle": a replay must not undo it (#95).
+export async function setFavoriteAction(foodId: string, starred: unknown): Promise<void> {
   const userId = await requireUserId();
   const id = requireId(foodId);
-  const result = await toggleFavorite(db, userId, id);
+  const wanted = z.boolean().safeParse(starred);
+  if (!wanted.success) notFound();
+  const result = await setFavorite(db, userId, id, wanted.data);
   if (result === "not_found") notFound();
   // The cap is far above real use; reaching it means a script, and the star simply stays off.
   revalidatePath(`/foods/${id}`);

@@ -90,6 +90,22 @@ export async function checkEntryLimits(
   return null;
 }
 
+// A replayed create (#95): the entry this user already made with the same key, if any. Callers
+// hold lockUserWrites, so a concurrent twin waits and then sees the committed row.
+export async function findEntryByRequest(
+  tx: Db,
+  userId: string,
+  requestId: string | null | undefined,
+): Promise<{ id: string } | null> {
+  if (!requestId) return null;
+  const [row] = await tx
+    .select({ id: diaryEntries.id })
+    .from(diaryEntries)
+    .where(and(eq(diaryEntries.userId, userId), eq(diaryEntries.clientRequestId, requestId)))
+    .limit(1);
+  return row ?? null;
+}
+
 export async function addEntry(
   db: Db,
   userId: string,
@@ -99,6 +115,7 @@ export async function addEntry(
 ): Promise<"ok" | "not_found" | "limit" | "total_limit" | "grams_out_of_range"> {
   return db.transaction(async (tx) => {
     await lockUserWrites(tx, userId);
+    if (await findEntryByRequest(tx, userId, input.requestId)) return "ok";
     const [food] = await tx
       .select({
         name: foods.name,
@@ -132,6 +149,7 @@ export async function addEntry(
       fat100: food.fat100,
       carbs100: food.carbs100,
       ...columns,
+      clientRequestId: input.requestId ?? null,
     });
     return "ok";
   });
@@ -220,16 +238,24 @@ function quickEntryColumns(values: QuickEntryValues) {
 export async function addQuickEntry(
   db: Db,
   userId: string,
-  input: { date: IsoDate; meal: Meal; values: QuickEntryValues },
+  input: { date: IsoDate; meal: Meal; values: QuickEntryValues; requestId?: string | null },
   limits: EntryLimits = DIARY_LIMITS,
 ): Promise<{ id: string } | "limit" | "total_limit"> {
   return db.transaction(async (tx) => {
     await lockUserWrites(tx, userId);
+    const replayed = await findEntryByRequest(tx, userId, input.requestId);
+    if (replayed) return replayed;
     const capped = await checkEntryLimits(tx, userId, input.date, 1, limits);
     if (capped) return capped;
     const [row] = await tx
       .insert(diaryEntries)
-      .values({ userId, date: input.date, meal: input.meal, ...quickEntryColumns(input.values) })
+      .values({
+        userId,
+        date: input.date,
+        meal: input.meal,
+        ...quickEntryColumns(input.values),
+        clientRequestId: input.requestId ?? null,
+      })
       .returning({ id: diaryEntries.id });
     if (!row) throw new Error("quick entry insert returned no row");
     return row;

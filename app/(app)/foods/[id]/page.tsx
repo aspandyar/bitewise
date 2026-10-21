@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { db } from "@/db/client";
 import { CopyFoodButton, DeleteFoodButton } from "@/components/foods/food-actions";
 import { Portions } from "@/components/foods/portions";
-import { toggleFavoriteAction } from "@/app/(app)/diary/actions";
+import { setFavoriteAction } from "@/app/(app)/diary/actions";
 import { FavoriteButton } from "@/components/foods/favorite-button";
 import { BackLink } from "@/components/ui/back-link";
 import { PageLoading } from "@/components/ui/page-loading";
@@ -50,7 +50,7 @@ async function FoodContent({ params }: { params: Promise<{ id: string }> }) {
       <BackLink href="/foods" />
       <div className="flex items-start justify-between gap-2">
         <h1 className="text-2xl font-semibold [overflow-wrap:anywhere]">{food.name}</h1>
-        <FavoriteButton active={starred} action={toggleFavoriteAction.bind(null, food.id)} />
+        <FavoriteButton active={starred} action={setFavoriteAction.bind(null, food.id, !starred)} />
       </div>
       <section className="flex flex-col gap-3 rounded-2xl border border-foreground/10 p-5">
         <p className="text-3xl font-semibold">
@@ -75,7 +75,12 @@ async function FoodContent({ params }: { params: Promise<{ id: string }> }) {
         <p className="text-sm text-foreground/60">
           {ru.foods.sourceLabel}{" "}
           {sourceUrl ? (
-            <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="underline text-accent-text">
+            <a
+              href={sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-accent-text"
+            >
               {ru.foods.sourceNames[food.source]}
             </a>
           ) : (

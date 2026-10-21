@@ -79,14 +79,24 @@ export async function listOwnFoods(
 }
 
 // Copies and recipes create through here too, inside their own transaction (a savepoint then).
+// `replayed`: the same request key already made this food (#95), so nothing new was written.
 export async function createFood(
   db: Db,
   userId: string,
   values: FoodValues,
-  copiedFrom: FoodSource | null = null,
-): Promise<{ id: string } | "limit"> {
+  options: { copiedFrom?: FoodSource | null; requestId?: string | null } = {},
+): Promise<{ id: string; replayed: boolean } | "limit"> {
+  const { copiedFrom = null, requestId = null } = options;
   return db.transaction(async (tx) => {
     await lockUserWrites(tx, userId);
+    if (requestId) {
+      const [existing] = await tx
+        .select({ id: foods.id })
+        .from(foods)
+        .where(and(eq(foods.ownerId, userId), eq(foods.clientRequestId, requestId)))
+        .limit(1);
+      if (existing) return { id: existing.id, replayed: true };
+    }
     const [owned] = await tx
       .select({ total: count() })
       .from(foods)
@@ -94,10 +104,16 @@ export async function createFood(
     if ((owned?.total ?? 0) >= FOOD_LIMITS.maxOwnFoods) return "limit";
     const [row] = await tx
       .insert(foods)
-      .values({ ...values, ownerId: userId, source: "user", copiedFrom })
+      .values({
+        ...values,
+        ownerId: userId,
+        source: "user",
+        copiedFrom,
+        clientRequestId: requestId,
+      })
       .returning({ id: foods.id });
     if (!row) throw new Error("food insert returned no row");
-    return row;
+    return { id: row.id, replayed: false };
   });
 }
 
@@ -189,6 +205,7 @@ export async function copyFood(
   db: Db,
   userId: string,
   foodId: string,
+  requestId: string | null = null,
 ): Promise<{ id: string } | null | "limit"> {
   return db.transaction(async (tx) => {
     const [source] = await tx
@@ -209,8 +226,10 @@ export async function copyFood(
     const { source: origin, copiedFrom, ...values } = source;
     // A copy of a copy still credits the original data; a copy of a plain own food has none.
     const credit = copiedFrom ?? (origin === "user" ? null : origin);
-    const copy = await createFood(tx, userId, values, credit);
+    const copy = await createFood(tx, userId, values, { copiedFrom: credit, requestId });
     if (copy === "limit") return copy;
+    // A replay: the first request already copied the portions.
+    if (copy.replayed) return { id: copy.id };
     // Every copied portion becomes the user's own and so counts against the cap. Shared ones come
     // first in the list, so the slice drops generic portions before the user's.
     const portions = (await listVisiblePortions(tx, userId, foodId)).slice(
@@ -221,7 +240,7 @@ export async function copyFood(
         .insert(foodPortions)
         .values(portions.map(({ label, grams }) => ({ foodId: copy.id, userId, label, grams })));
     }
-    return copy;
+    return { id: copy.id };
   });
 }
 
@@ -230,9 +249,18 @@ export async function addPortion(
   userId: string,
   foodId: string,
   portion: PortionValues,
+  requestId: string | null = null,
 ): Promise<"ok" | "not_found" | "limit"> {
   return db.transaction(async (tx) => {
     await lockUserWrites(tx, userId);
+    if (requestId) {
+      const [existing] = await tx
+        .select({ id: foodPortions.id })
+        .from(foodPortions)
+        .where(and(eq(foodPortions.userId, userId), eq(foodPortions.clientRequestId, requestId)))
+        .limit(1);
+      if (existing) return "ok";
+    }
     const [food] = await tx
       .select({ id: foods.id })
       .from(foods)
@@ -244,7 +272,9 @@ export async function addPortion(
       .from(foodPortions)
       .where(and(eq(foodPortions.foodId, foodId), eq(foodPortions.userId, userId)));
     if ((owned?.total ?? 0) >= PORTION_LIMITS.maxOwnPerFood) return "limit";
-    await tx.insert(foodPortions).values({ foodId, userId, ...portion });
+    await tx
+      .insert(foodPortions)
+      .values({ foodId, userId, ...portion, clientRequestId: requestId });
     return "ok";
   });
 }

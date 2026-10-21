@@ -3,7 +3,14 @@ import type { Meal } from "@/lib/config";
 import type { IsoDate } from "@/lib/date";
 
 // Kept free of DB imports so client components can use these types.
-export type AddEntryInput = { date: IsoDate; meal: Meal; foodId: string; amount: AddAmount };
+export type AddEntryInput = {
+  date: IsoDate;
+  meal: Meal;
+  foodId: string;
+  amount: AddAmount;
+  // The client's key for this submit; a replay with the same key finds the entry already made.
+  requestId?: string | null;
+};
 
 export type UpdateEntryInput = { meal: Meal; amount: UpdateAmount };
 

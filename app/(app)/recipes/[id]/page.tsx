@@ -5,7 +5,7 @@ import { db } from "@/db/client";
 import { deleteRecipeAction } from "@/app/(app)/recipes/actions";
 import { IngredientList } from "@/components/recipes/ingredient-list";
 import { RecipeSummary } from "@/components/recipes/recipe-summary";
-import { toggleFavoriteAction } from "@/app/(app)/diary/actions";
+import { setFavoriteAction } from "@/app/(app)/diary/actions";
 import { FavoriteButton } from "@/components/foods/favorite-button";
 import { BackLink } from "@/components/ui/back-link";
 import { ConfirmDeleteButton } from "@/components/ui/confirm-delete-button";
@@ -50,7 +50,10 @@ async function RecipeContent({ params }: Pick<PageProps<"/recipes/[id]">, "param
       <BackLink href={RECIPES_HREF} />
       <div className="flex items-start justify-between gap-2">
         <h1 className="text-2xl font-semibold [overflow-wrap:anywhere]">{recipe.name}</h1>
-        <FavoriteButton active={starred} action={toggleFavoriteAction.bind(null, recipe.foodId)} />
+        <FavoriteButton
+          active={starred}
+          action={setFavoriteAction.bind(null, recipe.foodId, !starred)}
+        />
       </div>
       <RecipeSummary
         per100g={result.per100g}

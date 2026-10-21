@@ -3,6 +3,7 @@
 import { useFormStatus } from "react-dom";
 import { copyFoodAction, deleteFoodAction } from "@/app/(app)/foods/actions";
 import { ConfirmDeleteButton } from "@/components/ui/confirm-delete-button";
+import { KeyedForm } from "@/components/ui/keyed-form";
 import { ru } from "@/lib/i18n/ru";
 
 const outlined = "min-h-11 rounded-lg border border-foreground/40 px-4 disabled:opacity-60";
@@ -19,9 +20,9 @@ function PendingButton({ children, className }: { children: string; className: s
 
 export function CopyFoodButton({ foodId }: { foodId: string }) {
   return (
-    <form action={copyFoodAction.bind(null, foodId)}>
+    <KeyedForm action={copyFoodAction.bind(null, foodId)}>
       <PendingButton className={`${outlined} w-full`}>{ru.foods.copy}</PendingButton>
-    </form>
+    </KeyedForm>
   );
 }
 

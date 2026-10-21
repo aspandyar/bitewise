@@ -94,6 +94,12 @@ export const AUTH = {
   busySignInError: "busy",
 } as const;
 
+// A key the client adds to every submit (#95): when a response is lost and Next replays the
+// request, the server finds the row the first one made instead of writing a second.
+export const REQUEST_ID = {
+  field: "requestId",
+} as const;
+
 // Used until the browser reports its own zone through the cookie (first visit, JS off).
 export const DEFAULT_TIME_ZONE = "Asia/Almaty";
 

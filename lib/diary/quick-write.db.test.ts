@@ -11,7 +11,7 @@ import {
 import { calcEntryNutrients } from "@/lib/nutrition";
 import { closeTestDb, resetDb, testDb } from "@/tests/db";
 import { createOwnFood, insertSharedFood, newUserId } from "@/tests/foods";
-import { isFavorite, quickAddEntry, repeatMeal, toggleFavorite } from "./quick-repo";
+import { isFavorite, quickAddEntry, repeatMeal, setFavorite } from "./quick-repo";
 import {
   addEntry,
   addQuickEntry,
@@ -299,13 +299,13 @@ describe("just-kcal entries", () => {
   });
 });
 
-describe("toggleFavorite", () => {
+describe("setFavorite", () => {
   it("stars and unstars a visible food", async () => {
     const alice = await newUserId("alice@mail.com");
     const food = await insertSharedFood(oats);
-    expect(await toggleFavorite(testDb, alice, food)).toBe("added");
+    expect(await setFavorite(testDb, alice, food, true)).toBe("on");
     expect(await isFavorite(testDb, alice, food)).toBe(true);
-    expect(await toggleFavorite(testDb, alice, food)).toBe("removed");
+    expect(await setFavorite(testDb, alice, food, false)).toBe("off");
     expect(await isFavorite(testDb, alice, food)).toBe(false);
   });
 
@@ -313,20 +313,22 @@ describe("toggleFavorite", () => {
     const alice = await newUserId("alice@mail.com");
     const { id: gone } = await createOwnFood(alice, { ...oats, name: "Старое", fiber100: null });
     const fresh = await insertSharedFood({ name: "Кефир" });
-    expect(await toggleFavorite(testDb, alice, gone, 1)).toBe("added");
+    expect(await setFavorite(testDb, alice, gone, true, 1)).toBe("on");
     await softDeleteOwnFood(testDb, alice, gone);
-    expect(await toggleFavorite(testDb, alice, fresh, 1)).toBe("added");
+    expect(await setFavorite(testDb, alice, fresh, true, 1)).toBe("on");
   });
 
   it("refuses another user's food and keeps the cap", async () => {
     const alice = await newUserId("alice@mail.com");
     const bob = await newUserId("bob@mail.com");
     const { id: own } = await createOwnFood(alice, { ...oats, fiber100: null });
-    expect(await toggleFavorite(testDb, bob, own)).toBe("not_found");
+    expect(await setFavorite(testDb, bob, own, true)).toBe("not_found");
     const foods = await Promise.all(
       Array.from({ length: 2 }, (_, i) => insertSharedFood({ name: `Продукт ${i}` })),
     );
-    expect(await toggleFavorite(testDb, alice, foods[0] ?? "", 1)).toBe("added");
-    expect(await toggleFavorite(testDb, alice, foods[1] ?? "", 1)).toBe("limit");
+    expect(await setFavorite(testDb, alice, foods[0] ?? "", true, 1)).toBe("on");
+    expect(await setFavorite(testDb, alice, foods[1] ?? "", true, 1)).toBe("limit");
+    // Starring an already starred food at the cap is a replay, not a new star.
+    expect(await setFavorite(testDb, alice, foods[0] ?? "", true, 1)).toBe("on");
   });
 });

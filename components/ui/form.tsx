@@ -13,11 +13,13 @@ import {
   type ReactNode,
 } from "react";
 import { visibleFieldErrors, type FormState } from "@/lib/forms";
+import { stampRequestId } from "@/lib/request-id";
 
 // React 19 resets a form after a `form action` runs, wiping input on validation errors;
 // submitting through onSubmit + startTransition keeps what the user typed.
 // Spread `formProps` onto the <form>: it also hides an error once its field is edited and moves
-// focus to the first invalid field after a failed submit.
+// focus to the first invalid field after a failed submit. Every submit carries its own request
+// key, so a replayed request (lost response, #95) does not create a second row.
 export function usePreservingFormAction(
   action: (prev: FormState, formData: FormData) => Promise<FormState>,
 ) {
@@ -29,7 +31,7 @@ export function usePreservingFormAction(
     event.preventDefault();
     formRef.current = event.currentTarget;
     setEdited(new Set());
-    const formData = new FormData(event.currentTarget);
+    const formData = stampRequestId(new FormData(event.currentTarget));
     startTransition(() => formAction(formData));
   }
 
