@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readAuthEnv } from "./env";
+import { readAuthEnv } from "./env-read";
 
 const secret = "x".repeat(32);
 
