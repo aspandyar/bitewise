@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/db/client";
-import { requireActionUser, requireUserId } from "@/lib/auth/session";
+import { requireActionUser, requireWriteUser } from "@/lib/auth/session";
 import { DIARY_LIMITS } from "@/lib/config";
 import { addFoodHref, addHref, dayHref } from "@/lib/diary/paths";
 import type { FavoriteState } from "@/lib/diary/quick";
@@ -95,7 +95,7 @@ export async function updateEntryAction(
 // rawDate is the entry's day from the edit page: a replayed delete (#95) finds nothing left and
 // still lands on that day, as the first one did. A missing or foreign id ends there too.
 export async function deleteEntryAction(entryId: string, rawDate: string): Promise<void> {
-  const userId = await requireUserId();
+  const userId = await requireWriteUser();
   const today = await getUserToday(new Date());
   const deleted = await deleteEntry(db, userId, requireId(entryId));
   redirect(dayHref(deleted?.date ?? parseDiaryDate(rawDate, today) ?? today, today));
@@ -153,7 +153,7 @@ const undoSchema = z.array(z.uuid()).min(1).max(DIARY_LIMITS.maxEntriesPerDay);
 
 // Called from the toast; ids are the ones the URL carried, so only the user's own are deleted.
 export async function undoAddAction(ids: unknown): Promise<void> {
-  const userId = await requireUserId();
+  const userId = await requireWriteUser();
   const parsed = undoSchema.safeParse(ids);
   if (!parsed.success) return;
   await deleteOwnEntries(db, userId, parsed.data);

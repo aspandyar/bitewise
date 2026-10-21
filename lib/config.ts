@@ -243,6 +243,9 @@ export const RATE_LIMITS = {
   register: { max: 5, windowMs: 60 * MS_PER_MINUTE, maxKeys: 100_000 },
   // Search fires on every typed letter after a debounce; 2 per second is far above human typing.
   foodSearch: { max: 120, windowMs: MS_PER_MINUTE, maxKeys: 100_000 },
+  // Every server action that writes, per user (#31): a person tapping "+" fast stays far below,
+  // a script creating and deleting rows in a loop does not.
+  write: { max: 60, windowMs: MS_PER_MINUTE, maxKeys: 100_000 },
 } as const;
 
 // Number of reverse proxies we control in front of the app (nginx, stage 6). Each one appends the

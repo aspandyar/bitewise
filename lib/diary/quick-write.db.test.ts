@@ -6,7 +6,7 @@ import {
   addPortion,
   deleteOwnPortion,
   listVisiblePortions,
-  softDeleteOwnFood,
+  deleteOwnFood,
 } from "@/lib/foods/repo";
 import { calcEntryNutrients } from "@/lib/nutrition";
 import { closeTestDb, resetDb, testDb } from "@/tests/db";
@@ -93,7 +93,7 @@ describe("quickAddEntry", () => {
     const bob = await newUserId("bob@mail.com");
     const { id: own } = await createOwnFood(alice, { ...oats, fiber100: null });
     await grams(alice, own, 60);
-    await softDeleteOwnFood(testDb, alice, own);
+    await deleteOwnFood(testDb, alice, own);
     const fresh = await insertSharedFood({ name: "Кефир" });
     const input = { date: NEXT, meal: "breakfast" as const };
     expect(await quickAddEntry(testDb, alice, { ...input, foodId: own })).toBe("not_found");
@@ -314,7 +314,7 @@ describe("setFavorite", () => {
     const { id: gone } = await createOwnFood(alice, { ...oats, name: "Старое", fiber100: null });
     const fresh = await insertSharedFood({ name: "Кефир" });
     expect(await setFavorite(testDb, alice, gone, true, 1)).toBe("on");
-    await softDeleteOwnFood(testDb, alice, gone);
+    await deleteOwnFood(testDb, alice, gone);
     expect(await setFavorite(testDb, alice, fresh, true, 1)).toBe("on");
   });
 

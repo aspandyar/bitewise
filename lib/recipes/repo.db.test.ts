@@ -6,7 +6,7 @@ import { addEntry, getDayEntries } from "@/lib/diary/repo";
 import {
   getVisibleFood,
   listVisiblePortions,
-  softDeleteOwnFood,
+  deleteOwnFood,
   updateOwnFood,
 } from "@/lib/foods/repo";
 import { calcEntryNutrients } from "@/lib/nutrition";
@@ -211,7 +211,7 @@ describe("recipe numbers", () => {
     const id = await newRecipe(alice, { name: "Суп", cookedWeightG: null, servings: null });
     const own = await createOwnFood(alice, { ...buckwheat, name: "Моя гречка", fiber100: null });
     await grams(alice, id, own.id, 100);
-    expect(await softDeleteOwnFood(testDb, alice, own.id)).toBe(true);
+    expect(await deleteOwnFood(testDb, alice, own.id)).toBe(true);
     const { recipe, food } = await recipeFood(alice, id);
     expect(recipe.items[0]).toMatchObject({ foodName: "Моя гречка", foodDeleted: true });
     expect(food.kcal100).toBe(343);
@@ -227,7 +227,7 @@ describe("recipe guards", () => {
     const otherFood = (await recipeFood(alice, other)).recipe.foodId;
     const bobsFood = await createOwnFood(bob, { ...buckwheat, name: "Боба", fiber100: null });
     const deleted = await createOwnFood(alice, { ...buckwheat, name: "Старая", fiber100: null });
-    await softDeleteOwnFood(testDb, alice, deleted.id);
+    await deleteOwnFood(testDb, alice, deleted.id);
     const eggId = await insertSharedFood({ name: "Яйцо" });
     const milkId = await insertSharedFood({ name: "Молоко" });
     const milkPortion = await insertSharedPortion(milkId, "1 стакан", 200);
@@ -351,6 +351,13 @@ describe("listRecipes and deleteRecipe", () => {
     const own = await createOwnFood(alice, { ...beet, fiber100: null });
     await grams(alice, id, own.id, 100);
     const { foodId } = (await recipeFood(alice, id)).recipe;
+    // Logged, so the dish's food outlives the delete as a soft-deleted row (#108).
+    await addEntry(testDb, alice, {
+      date: "2026-10-12",
+      meal: "lunch",
+      foodId,
+      amount: { mode: "grams", grams: 100 },
+    });
     expect(await deleteRecipe(testDb, alice, id)).toBe(true);
     expect(await testDb.select().from(recipeItems)).toEqual([]);
 

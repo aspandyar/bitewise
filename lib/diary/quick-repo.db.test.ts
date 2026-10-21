@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { diaryEntries, favorites } from "@/db/schema";
-import { softDeleteOwnFood, updateOwnFood } from "@/lib/foods/repo";
+import { deleteOwnFood, updateOwnFood } from "@/lib/foods/repo";
 import { closeTestDb, resetDb, testDb } from "@/tests/db";
 import { createOwnFood, insertSharedFood, insertSharedPortion, newUserId } from "@/tests/foods";
 import { addEntry } from "./repo";
@@ -122,7 +122,7 @@ describe("listRecentFoods", () => {
     await grams(alice, kept, "breakfast", 250);
     await grams(alice, starred, "breakfast", 10);
     await grams(bob, await insertSharedFood({ name: "Бобов" }), "breakfast", 100);
-    await softDeleteOwnFood(testDb, alice, gone);
+    await deleteOwnFood(testDb, alice, gone);
     await testDb.insert(diaryEntries).values({
       userId: alice,
       date: DAY,
@@ -155,7 +155,7 @@ describe("listFavoriteFoods", () => {
       { userId: alice, foodId: gone },
       { userId: bob, foodId: honey },
     ]);
-    await softDeleteOwnFood(testDb, alice, gone);
+    await deleteOwnFood(testDb, alice, gone);
     const found = await listFavoriteFoods(testDb, alice);
     expect(found.map((food) => [food.name, food.amount?.grams ?? null, food.kcal])).toEqual(
       expect.arrayContaining([

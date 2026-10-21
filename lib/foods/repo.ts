@@ -2,6 +2,7 @@ import { and, asc, count, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { lockUserWrites } from "@/db/locks";
 import { foodPortions, foods } from "@/db/schema";
 import type { Db } from "@/db/types";
+import { purgeDeletedFoods } from "./purge";
 import { FOOD_LIMITS, FOOD_SEARCH, PORTION_LIMITS, type FoodSource } from "@/lib/config";
 import { recomputeRecipesUsingFoods } from "@/lib/recipes/recompute";
 import { escapeLike } from "./search";
@@ -136,13 +137,18 @@ export async function updateOwnFood(
   });
 }
 
-export async function softDeleteOwnFood(db: Db, userId: string, foodId: string): Promise<boolean> {
-  const rows = await db
-    .update(foods)
-    .set({ deletedAt: sql`now()`, updatedAt: sql`now()` })
-    .where(and(ownedBy(userId, foodId), notRecipe))
-    .returning({ id: foods.id });
-  return rows.length > 0;
+// Soft delete first; a food nothing points at is then removed for good (#108).
+export async function deleteOwnFood(db: Db, userId: string, foodId: string): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const rows = await tx
+      .update(foods)
+      .set({ deletedAt: sql`now()`, updatedAt: sql`now()` })
+      .where(and(ownedBy(userId, foodId), notRecipe))
+      .returning({ id: foods.id });
+    if (rows.length === 0) return false;
+    await purgeDeletedFoods(tx, userId, [foodId]);
+    return true;
+  });
 }
 
 export async function listVisiblePortions(

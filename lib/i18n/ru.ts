@@ -300,6 +300,7 @@ export const ru = {
     alreadyFilled: "Этот приём пищи уже заполнен",
     dayFull: `Не больше ${n(DIARY_LIMITS.maxEntriesPerDay)} записей за день`,
     otherAccount: "Форма была из другого аккаунта — ничего не сохранено",
+    tooFast: "Слишком много изменений подряд — подождите минуту",
   },
   recipes: {
     title: "Блюда",

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { notFound, redirect, RedirectType } from "next/navigation";
 import { db } from "@/db/client";
-import { requireActionUser, requireUserId } from "@/lib/auth/session";
+import { requireActionUser, requireWriteUser } from "@/lib/auth/session";
 import { FOOD_LIMITS, PORTION_LIMITS } from "@/lib/config";
 import { firstFieldErrors, type FormState } from "@/lib/forms";
 import {
@@ -11,7 +11,7 @@ import {
   copyFood,
   createFood,
   deleteOwnPortion,
-  softDeleteOwnFood,
+  deleteOwnFood,
   updateOwnFood,
 } from "@/lib/foods/repo";
 import { foodSchema, parseFoodId, portionSchema } from "@/lib/foods/schema";
@@ -64,9 +64,9 @@ export async function updateFoodAction(
 }
 
 export async function deleteFoodAction(foodId: string): Promise<void> {
-  const userId = await requireUserId();
+  const userId = await requireWriteUser();
   const id = requireId(foodId);
-  const deleted = await softDeleteOwnFood(db, userId, id);
+  const deleted = await deleteOwnFood(db, userId, id);
   // Drops the client's cached food screen, so browser Back renders "not found" instead of a food
   // that still looks editable.
   revalidatePath(`/foods/${id}`);
@@ -104,7 +104,7 @@ export async function addPortionAction(
 }
 
 export async function deletePortionAction(foodId: string, portionId: string): Promise<void> {
-  const userId = await requireUserId();
+  const userId = await requireWriteUser();
   const id = requireId(foodId);
   // Nothing deleted is a replay (#95) or a stale list: either way the food screen just refreshes.
   await deleteOwnPortion(db, userId, id, requireId(portionId));

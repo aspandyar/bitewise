@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { isForeignRequest } from "@/lib/request-id";
 import { withToast } from "@/lib/toast";
 import { authOptions } from "./options";
+import { allowWrite } from "./write-limit";
 
 export async function getSessionUserId(): Promise<string | null> {
   // Marks the read as request-time: getServerSession touches cookies and crypto randomness,
@@ -27,5 +28,19 @@ export async function requireUserId(): Promise<string> {
 export async function requireActionUser(formData: FormData | undefined): Promise<string> {
   const userId = await requireUserId();
   if (isForeignRequest(formData, userId)) redirect(withToast("/", "otherAccount"));
+  limitWrites(userId);
   return userId;
+}
+
+// For actions that write without a form (deletes, Undo): the same per-user write cap (#31).
+export async function requireWriteUser(): Promise<string> {
+  const userId = await requireUserId();
+  limitWrites(userId);
+  return userId;
+}
+
+// Past the cap nothing is written: a script looping creates and deletes is slowed to a crawl,
+// and the rare person who gets here sees why.
+function limitWrites(userId: string): void {
+  if (!allowWrite(userId, Date.now())) redirect(withToast("/", "tooFast"));
 }

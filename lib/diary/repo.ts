@@ -12,6 +12,7 @@ import {
 import { DIARY_LIMITS, NUTRIENT_BASE_GRAMS, QUICK, type Meal } from "@/lib/config";
 import type { IsoDate } from "@/lib/date";
 import { getVisiblePortion, visibleTo } from "@/lib/foods/repo";
+import { purgeDeletedFoods } from "@/lib/foods/purge";
 import type { PortionValues } from "@/lib/foods/types";
 import type { QuickEntryValues } from "./quick-entry";
 import type { AddEntryInput, DiaryEntry, UpdateEntryInput } from "./types";
@@ -206,11 +207,16 @@ export async function deleteEntry(
   userId: string,
   entryId: string,
 ): Promise<{ date: IsoDate } | null> {
-  const [row] = await db
-    .delete(diaryEntries)
-    .where(ownEntry(userId, entryId))
-    .returning({ date: diaryEntries.date });
-  return row ?? null;
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .delete(diaryEntries)
+      .where(ownEntry(userId, entryId))
+      .returning({ date: diaryEntries.date, foodId: diaryEntries.foodId });
+    if (!row) return null;
+    // The last entry of a deleted food lets the food go for good (#108).
+    await purgeDeletedFoods(tx, userId, [row.foodId]);
+    return { date: row.date };
+  });
 }
 
 // Undo of a quick add or a repeat: ids come from the URL, so only the user's own entries, and only
@@ -221,17 +227,24 @@ export async function deleteOwnEntries(
   ids: readonly string[],
 ): Promise<number> {
   if (ids.length === 0) return 0;
-  const rows = await db
-    .delete(diaryEntries)
-    .where(
-      and(
-        eq(diaryEntries.userId, userId),
-        inArray(diaryEntries.id, [...ids]),
-        gt(diaryEntries.createdAt, sql`now() - ${QUICK.undoWindowMs} * interval '1 millisecond'`),
-      ),
-    )
-    .returning({ id: diaryEntries.id });
-  return rows.length;
+  return db.transaction(async (tx) => {
+    const rows = await tx
+      .delete(diaryEntries)
+      .where(
+        and(
+          eq(diaryEntries.userId, userId),
+          inArray(diaryEntries.id, [...ids]),
+          gt(diaryEntries.createdAt, sql`now() - ${QUICK.undoWindowMs} * interval '1 millisecond'`),
+        ),
+      )
+      .returning({ id: diaryEntries.id, foodId: diaryEntries.foodId });
+    await purgeDeletedFoods(
+      tx,
+      userId,
+      rows.map((row) => row.foodId),
+    );
+    return rows.length;
+  });
 }
 
 // A "just kcal" entry is stored as 100 g of something with the typed numbers per 100 g, so day
