@@ -110,3 +110,24 @@ describe("a failed query from another copy of drizzle", () => {
     expect(logged).toContain("42P01");
   });
 });
+
+describe("errors the scrubber cannot fully walk or that drizzle did not wrap", () => {
+  it("drops a chain deeper than it follows instead of passing it through", () => {
+    let error: Error = new DrizzleQueryError("insert into users", ["deep@mail.com"], pgError());
+    for (let level = 0; level < 10; level += 1) error = new Error("wrapped", { cause: error });
+    expect(JSON.stringify(loggableError(error))).not.toContain("deep@mail.com");
+    expect(loggableError(error)).not.toBe(error);
+  });
+
+  it("keeps only the code of a raw Postgres error, whose detail can echo a value", () => {
+    const raw = Object.assign(new Error("duplicate key value violates unique constraint"), {
+      name: "PostgresError",
+      code: "23505",
+      severity: "ERROR",
+      detail: "Key (email)=(a@b.c) already exists.",
+    });
+    const logged = JSON.stringify(loggableError(raw));
+    expect(logged).not.toContain("a@b.c");
+    expect(logged).toContain("23505");
+  });
+});

@@ -3,18 +3,26 @@ import { REQUEST_ID } from "@/lib/config";
 
 const requestIdSchema = z.uuid();
 
+// Over https the cookie is __Host-: no Domain, Secure, path=/, so a sibling or parent domain
+// cannot plant a value that would get every form of this user refused. Plain http (localhost, a
+// LAN address) cannot use the prefix.
+function requestUserCookieName(https: boolean): string {
+  return https ? `__Host-${REQUEST_ID.userCookie}` : REQUEST_ID.userCookie;
+}
+
 // Set by RequestUserMark for the session the page was rendered with; not httpOnly, since the
 // browser stamps it into forms. It is the viewer's own id and grants nothing on its own.
 export function requestUserCookie(userId: string | null, { https }: { https: boolean }): string {
+  const name = requestUserCookieName(https);
   const secure = https ? "; secure" : "";
   return userId
-    ? `${REQUEST_ID.userCookie}=${userId}; path=/; samesite=lax${secure}`
-    : `${REQUEST_ID.userCookie}=; path=/; max-age=0; samesite=lax${secure}`;
+    ? `${name}=${userId}; path=/; samesite=lax${secure}`
+    : `${name}=; path=/; max-age=0; samesite=lax${secure}`;
 }
 
 function currentRequestUser(): string | null {
-  if (typeof document === "undefined") return null;
-  const prefix = `${REQUEST_ID.userCookie}=`;
+  if (typeof document === "undefined" || typeof location === "undefined") return null;
+  const prefix = `${requestUserCookieName(location.protocol === "https:")}=`;
   const value = document.cookie
     .split("; ")
     .find((item) => item.startsWith(prefix))
@@ -47,6 +55,8 @@ export function stampRequestId(formData: FormData): FormData {
 // only a stamped user that differs from the session is.
 export function isForeignRequest(formData: FormData | undefined, userId: string): boolean {
   if (!(formData instanceof FormData)) return false;
-  const stamped = formData.get(REQUEST_ID.userField);
-  return stamped !== null && stamped !== userId;
+  // Something that is not an id at all was not put there by our page: it protects nothing, and
+  // refusing on it would only block the form.
+  const stamped = z.uuid().safeParse(formData.get(REQUEST_ID.userField));
+  return stamped.success && stamped.data !== userId;
 }

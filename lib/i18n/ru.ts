@@ -299,6 +299,7 @@ export const ru = {
     undo: "Отменить",
     alreadyFilled: "Этот приём пищи уже заполнен",
     dayFull: `Не больше ${n(DIARY_LIMITS.maxEntriesPerDay)} записей за день`,
+    otherAccount: "Форма была из другого аккаунта — ничего не сохранено",
   },
   recipes: {
     title: "Блюда",

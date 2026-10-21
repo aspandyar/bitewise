@@ -26,9 +26,16 @@ function scrubQuery(error: FailedQuery): { name: string; code?: unknown } {
   return { name: cause.name, code };
 }
 
+// A Postgres error drizzle did not wrap (a raw client query, BEGIN/COMMIT): its detail can echo a
+// value ("Key (email)=(…) already exists"), so only its code is kept.
+function isDatabaseError(error: Error): error is Error & { code: unknown } {
+  return "code" in error && ("severity" in error || "detail" in error);
+}
+
+// Past the depth it follows the scrubber cannot see what a chain holds, so it assumes the worst.
 function hasFailedQuery(error: Error, depth: number): boolean {
-  if (depth > LOG_SCRUB.maxDepth) return false;
-  if (isFailedQuery(error)) return true;
+  if (depth > LOG_SCRUB.maxDepth) return true;
+  if (isFailedQuery(error) || isDatabaseError(error)) return true;
   if (error instanceof AggregateError && error.errors.some((item) => isQueryIn(item, depth + 1))) {
     return true;
   }
@@ -41,8 +48,10 @@ function isQueryIn(value: unknown, depth: number): boolean {
 
 function scrub(value: unknown, depth: number): unknown {
   if (typeof value === "string") return value.replace(FAILED_QUERY, "Failed query: [scrubbed]");
-  if (!(value instanceof Error) || depth > LOG_SCRUB.maxDepth) return value;
+  if (!(value instanceof Error)) return value;
+  if (depth > LOG_SCRUB.maxDepth) return { name: value.name };
   if (isFailedQuery(value)) return scrubQuery(value);
+  if (isDatabaseError(value)) return { name: value.name, code: value.code };
   if (!hasFailedQuery(value, depth)) return value;
   // An error wrapping a failed query may repeat its text in its own message; keep only names.
   return {

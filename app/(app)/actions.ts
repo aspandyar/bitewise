@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { db } from "@/db/client";
-import { requireActionUser, requireUserId } from "@/lib/auth/session";
+import { requireActionUser } from "@/lib/auth/session";
 import { todayIsoDate } from "@/lib/date";
 import { firstFieldErrors, type FormState } from "@/lib/forms";
 import { resetTargetToAuto, saveProfile } from "@/lib/profile/repo";
@@ -30,8 +30,10 @@ export async function saveManualTargetAction(
   redirect("/");
 }
 
-export async function resetTargetAction(): Promise<void> {
-  const userId = await requireUserId();
+// A form too (KeyedForm): it is bound to no id, so a replay under another account would reset
+// that account's target (#107).
+export async function resetTargetAction(formData?: FormData): Promise<void> {
+  const userId = await requireActionUser(formData);
   const reset = await resetTargetToAuto(db, userId, todayIsoDate(new Date()));
   redirect(reset ? "/" : "/onboarding");
 }
