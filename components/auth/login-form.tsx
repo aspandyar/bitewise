@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useState, type FormEvent } from "react";
 import { FormError, SubmitButton, TextField } from "@/components/ui/form";
+import { signInErrorMessage } from "@/lib/auth/sign-in-error";
 import { ru } from "@/lib/i18n/ru";
 
 export function LoginForm() {
@@ -24,7 +25,7 @@ export function LoginForm() {
         redirect: false,
       });
       if (!result?.ok) {
-        setError(ru.auth.invalidCredentials);
+        setError(signInErrorMessage(result?.error));
         return;
       }
       router.push("/");

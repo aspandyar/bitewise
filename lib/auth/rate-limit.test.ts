@@ -59,4 +59,22 @@ describe("createRateLimiter", () => {
     // A full scan per request would be 10^9 iterations (seconds); pruning from the front is ~10^4.
     expect(performance.now() - started).toBeLessThan(500);
   });
+
+  it("refund gives back one hit of the current window", () => {
+    const limiter = createRateLimiter({ max: 1, windowMs: 1000, maxKeys: 100 });
+    expect(limiter.hit("a", 0)).toBe(true);
+    limiter.refund("a", 10);
+    expect(limiter.hit("a", 20)).toBe(true);
+    expect(limiter.hit("a", 30)).toBe(false);
+  });
+
+  it("refund is a no-op for unknown keys and expired windows", () => {
+    const limiter = createRateLimiter({ max: 1, windowMs: 1000, maxKeys: 100 });
+    limiter.refund("nobody", 0);
+    expect(limiter.size()).toBe(0);
+    limiter.hit("a", 0);
+    limiter.refund("a", 1000);
+    expect(limiter.hit("a", 1000)).toBe(true);
+    expect(limiter.hit("a", 1001)).toBe(false);
+  });
 });

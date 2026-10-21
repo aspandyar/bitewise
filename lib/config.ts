@@ -89,6 +89,9 @@ const SECONDS_PER_DAY = 86_400;
 export const AUTH = {
   passwordLength: { min: 8, max: 128 },
   sessionMaxAgeSec: 30 * SECONDS_PER_DAY,
+  // Error code authorize throws when the hashing queue is full; the login form maps it to
+  // "too many attempts" instead of "wrong password" (#104).
+  busySignInError: "busy",
 } as const;
 
 // Used until the browser reports its own zone through the cookie (first visit, JS off).

@@ -1,5 +1,10 @@
 export type RateLimitRule = { max: number; windowMs: number; maxKeys: number };
-export type RateLimiter = { hit(key: string, nowMs: number): boolean; size(): number };
+export type RateLimiter = {
+  hit(key: string, nowMs: number): boolean;
+  // Gives back one hit of the current window: for attempts that failed through no fault of the client.
+  refund(key: string, nowMs: number): void;
+  size(): number;
+};
 
 // In-process fixed window: the app runs as a single container, so shared storage is not needed yet.
 export function createRateLimiter(rule: RateLimitRule): RateLimiter {
@@ -32,6 +37,12 @@ export function createRateLimiter(rule: RateLimitRule): RateLimiter {
       if (current.count >= rule.max) return false;
       current.count += 1;
       return true;
+    },
+    refund(key, nowMs) {
+      const current = windows.get(key);
+      if (current && nowMs - current.startMs < rule.windowMs && current.count > 0) {
+        current.count -= 1;
+      }
     },
     size: () => windows.size,
   };

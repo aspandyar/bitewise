@@ -1,6 +1,6 @@
 import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { PASSWORD_HASH } from "@/lib/config";
-import { createSemaphore } from "./semaphore";
+import { BusyError, createSemaphore } from "./semaphore";
 
 type ScryptParams = { N: number; r: number; p: number; keyLength: number };
 
@@ -51,9 +51,11 @@ export async function verifyPassword(password: string, stored: string): Promise<
   try {
     const key = await deriveKey(password, parsed.salt, parsed);
     return timingSafeEqual(key, parsed.hash);
-  } catch {
-    // Invalid scrypt parameters in a corrupted row, or a full hashing queue, mean "no match", not
-    // a 500: login answers with its usual generic failure.
+  } catch (error) {
+    // A full hashing queue is overload, not a wrong password: login must neither say "wrong
+    // password" nor spend the account's attempt on it (#104).
+    if (error instanceof BusyError) throw error;
+    // Invalid scrypt parameters in a corrupted row mean "no match", not a 500.
     return false;
   }
 }
