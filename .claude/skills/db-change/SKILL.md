@@ -8,4 +8,4 @@ description: Изменить схему БД безопасно — schema.ts, 
 4. Отметь риски: потеря данных, блокировка большой таблицы, NOT NULL без default.
 5. После моего «ок» — `pnpm db:migrate` на dev-базе.
 6. Обнови типы/репозитории, прогони `pnpm test`.
-7. Обнови модель данных в docs/architecture.md.
+7. Обнови модель данных в docs/ru/architecture.md.

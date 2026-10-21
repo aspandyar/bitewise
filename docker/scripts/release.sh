@@ -35,7 +35,7 @@ current_file=".release-tag"
 previous_tag="$(cat "$current_file" 2> /dev/null || true)"
 
 if [ ! -f "$ENV_FILE" ]; then
-  log "$ENV_FILE not found (see docs/deploy.md, step 6)"
+  log "$ENV_FILE not found (see docs/ru/deploy.md, step 6)"
   exit 1
 fi
 # The env file holds the database password and auth secret (#21).

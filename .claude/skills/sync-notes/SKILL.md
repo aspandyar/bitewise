@@ -1,6 +1,6 @@
 ---
 name: sync-notes
-description: Перенести статус, решения и архитектуру из docs/ в заметки проекта Bitewise в Obsidian. Использовать после завершения этапа.
+description: Перенести статус, решения и архитектуру из docs/ru/ в заметки проекта Bitewise в Obsidian. Использовать после завершения этапа.
 disable-model-invocation: true
 ---
 1. Путь к волту — из CLAUDE.local.md.

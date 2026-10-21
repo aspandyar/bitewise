@@ -161,6 +161,6 @@ bitewise/
 ├── docker/              # postgres init, nginx-шаблон, скрипты релиза и бэкапа, crontab
 ├── Dockerfile, docker-compose.prod.yml   # прод-образ и стек
 ├── tests/               # testDb, хелперы, global-setup, fixtures
-├── docs/                # план, функционал, архитектура, API, разработка, процесс, решения, superpowers/
+├── docs/                # ru/ — документация по-русски (+ superpowers/: спеки и планы этапов), en/ — по-английски
 └── .claude/             # rules, skills, agents, settings
 ```

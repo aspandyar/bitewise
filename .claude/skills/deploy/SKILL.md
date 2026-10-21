@@ -3,7 +3,7 @@ name: deploy
 description: Выкатить текущий master на VPS — образ в GHCR, бэкап, миграции, сид, админ, перезапуск, проверка.
 disable-model-invocation: true
 ---
-Runbook и устройство прода — docs/deploy.md. Сервер — в CLAUDE.local.md (host, user, /opt/bitewise).
+Runbook и устройство прода — docs/ru/deploy.md. Сервер — в CLAUDE.local.md (host, user, /opt/bitewise).
 
 1. Проверь: ветка master, дерево чистое, `git fetch && git status` — HEAD совпадает с `origin/master` (CI собирает образ из origin), `pnpm lint && pnpm test && pnpm build` зелёные.
 2. Покажи коммиты с прошлого деплоя (`git log deploy-<последний>..HEAD`, тег `deploy-*`). Жди «ок».
