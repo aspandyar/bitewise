@@ -11,6 +11,7 @@ import { firstFieldErrors, type FormState } from "@/lib/forms";
 import { ru } from "@/lib/i18n/ru";
 import { withToast } from "@/lib/toast";
 import { parseId } from "@/lib/ids";
+import { readRequestId } from "@/lib/request-id";
 import { RECIPES_HREF, ingredientSearchHref, recipeHref } from "@/lib/recipes/paths";
 import {
   addItem,
@@ -48,7 +49,7 @@ export async function createRecipeAction(_prev: FormState, formData: FormData): 
   const userId = await requireUserId();
   const parsed = recipeFormSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
-  const created = await createRecipe(db, userId, parsed.data);
+  const created = await createRecipe(db, userId, parsed.data, readRequestId(formData));
   if (created === "limit") return { formError: ru.foods.foodLimit(FOOD_LIMITS.maxOwnFoods) };
   redirect(recipeHref(created.id));
 }
@@ -77,7 +78,8 @@ export async function updateRecipeAction(
 export async function deleteRecipeAction(recipeId: string): Promise<void> {
   const userId = await requireUserId();
   const id = requireId(recipeId);
-  if (!(await deleteRecipe(db, userId, id))) notFound();
+  // Nothing deleted: a replay (#95) or an id that is not the user's; both end on the list.
+  await deleteRecipe(db, userId, id);
   // Drops the client's cached recipe screen, so browser Back renders "not found" instead of a
   // dish that still looks editable.
   revalidatePath(recipeHref(id));
@@ -95,7 +97,11 @@ export async function addItemAction(
   const food = requireId(foodId);
   const parsed = addAmountSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
-  const result = await addItem(db, userId, id, { foodId: food, amount: toAddAmount(parsed.data) });
+  const result = await addItem(db, userId, id, {
+    foodId: food,
+    amount: toAddAmount(parsed.data),
+    requestId: readRequestId(formData),
+  });
   if (result !== "ok") return itemFailure(result);
   redirect(withToast(ingredientSearchHref(id), "added"));
 }
@@ -119,6 +125,8 @@ export async function updateItemAction(
 export async function deleteItemAction(recipeId: string, itemId: string): Promise<void> {
   const userId = await requireUserId();
   const id = requireId(recipeId);
-  if (!(await deleteItem(db, userId, id, requireId(itemId)))) notFound();
+  // Nothing deleted is a replay (#95): back to the dish, as after the first delete. A foreign
+  // recipe id renders "not found" there.
+  await deleteItem(db, userId, id, requireId(itemId));
   redirect(recipeHref(id));
 }

@@ -90,6 +90,35 @@ export async function checkEntryLimits(
   return null;
 }
 
+// A replayed create (#95): the entry this user already made with the same key, if any. Callers
+// hold lockUserWrites, so a concurrent twin waits and then sees the committed row. They compare
+// the target too: a key reused for another day, meal or food is refused, not answered with this.
+export async function findEntryByRequest(
+  tx: Db,
+  userId: string,
+  requestId: string | null | undefined,
+): Promise<{ id: string; date: IsoDate; meal: Meal; foodId: string | null } | null> {
+  if (!requestId) return null;
+  const [row] = await tx
+    .select({
+      id: diaryEntries.id,
+      date: diaryEntries.date,
+      meal: diaryEntries.meal,
+      foodId: diaryEntries.foodId,
+    })
+    .from(diaryEntries)
+    .where(and(eq(diaryEntries.userId, userId), eq(diaryEntries.clientRequestId, requestId)))
+    .limit(1);
+  return row ?? null;
+}
+
+export function sameTarget(
+  entry: { date: IsoDate; meal: Meal; foodId: string | null },
+  target: { date: IsoDate; meal: Meal; foodId: string | null },
+): boolean {
+  return entry.date === target.date && entry.meal === target.meal && entry.foodId === target.foodId;
+}
+
 export async function addEntry(
   db: Db,
   userId: string,
@@ -99,6 +128,8 @@ export async function addEntry(
 ): Promise<"ok" | "not_found" | "limit" | "total_limit" | "grams_out_of_range"> {
   return db.transaction(async (tx) => {
     await lockUserWrites(tx, userId);
+    const replayed = await findEntryByRequest(tx, userId, input.requestId);
+    if (replayed) return sameTarget(replayed, input) ? "ok" : "not_found";
     const [food] = await tx
       .select({
         name: foods.name,
@@ -132,6 +163,7 @@ export async function addEntry(
       fat100: food.fat100,
       carbs100: food.carbs100,
       ...columns,
+      clientRequestId: input.requestId ?? null,
     });
     return "ok";
   });
@@ -220,16 +252,26 @@ function quickEntryColumns(values: QuickEntryValues) {
 export async function addQuickEntry(
   db: Db,
   userId: string,
-  input: { date: IsoDate; meal: Meal; values: QuickEntryValues },
+  input: { date: IsoDate; meal: Meal; values: QuickEntryValues; requestId?: string | null },
   limits: EntryLimits = DIARY_LIMITS,
-): Promise<{ id: string } | "limit" | "total_limit"> {
+): Promise<{ id: string } | "not_found" | "limit" | "total_limit"> {
   return db.transaction(async (tx) => {
     await lockUserWrites(tx, userId);
+    const replayed = await findEntryByRequest(tx, userId, input.requestId);
+    if (replayed) {
+      return sameTarget(replayed, { ...input, foodId: null }) ? { id: replayed.id } : "not_found";
+    }
     const capped = await checkEntryLimits(tx, userId, input.date, 1, limits);
     if (capped) return capped;
     const [row] = await tx
       .insert(diaryEntries)
-      .values({ userId, date: input.date, meal: input.meal, ...quickEntryColumns(input.values) })
+      .values({
+        userId,
+        date: input.date,
+        meal: input.meal,
+        ...quickEntryColumns(input.values),
+        clientRequestId: input.requestId ?? null,
+      })
       .returning({ id: diaryEntries.id });
     if (!row) throw new Error("quick entry insert returned no row");
     return row;

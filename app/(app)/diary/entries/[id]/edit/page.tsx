@@ -56,7 +56,7 @@ async function EditEntryContent({ params }: Pick<PageProps<"/diary/entries/[id]/
             submitLabel={ru.common.save}
           />
         </ResetOnHide>
-        <ConfirmDeleteButton action={deleteEntryAction.bind(null, entry.id)} />
+        <ConfirmDeleteButton action={deleteEntryAction.bind(null, entry.id, entry.date)} />
       </main>
     );
   }
@@ -115,7 +115,7 @@ async function EditEntryContent({ params }: Pick<PageProps<"/diary/entries/[id]/
           initial={initial}
         />
       </ResetOnHide>
-      <ConfirmDeleteButton action={deleteEntryAction.bind(null, entry.id)} />
+      <ConfirmDeleteButton action={deleteEntryAction.bind(null, entry.id, entry.date)} />
     </main>
   );
 }

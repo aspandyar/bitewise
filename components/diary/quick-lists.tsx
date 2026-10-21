@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { quickAddAction } from "@/app/(app)/diary/actions";
+import { KeyedForm } from "@/components/ui/keyed-form";
 import type { Meal } from "@/lib/config";
 import type { IsoDate } from "@/lib/date";
 import { addFoodHref } from "@/lib/diary/paths";
@@ -25,14 +26,17 @@ function QuickRow({ food, date, meal }: { food: QuickFood; date: IsoDate; meal: 
   }
   return (
     <li className="flex items-center gap-2">
-      <form action={quickAddAction.bind(null, food.foodId, date, meal)} className="min-w-0 flex-1">
+      <KeyedForm
+        action={quickAddAction.bind(null, food.foodId, date, meal)}
+        className="min-w-0 flex-1"
+      >
         <QuickAddButton>
           <span className="[overflow-wrap:anywhere]">{food.name}</span>
           <span className="text-sm text-foreground/60">
             {ru.diary.quickAmount(formatEntryAmount(food.amount), formatKcal(food.kcal))}
           </span>
         </QuickAddButton>
-      </form>
+      </KeyedForm>
       <Link
         href={amountHref}
         aria-label={ru.diary.otherAmount(food.name)}

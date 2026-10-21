@@ -8,7 +8,13 @@ import type { IsoDate } from "@/lib/date";
 import { listColumnsFor, visibleTo } from "@/lib/foods/repo";
 import { calcEntryNutrients } from "@/lib/nutrition";
 import { lastAmount } from "./quick";
-import { checkEntryLimits, entryColumns, type EntryLimits } from "./repo";
+import {
+  checkEntryLimits,
+  entryColumns,
+  findEntryByRequest,
+  sameTarget,
+  type EntryLimits,
+} from "./repo";
 import type { DiaryEntry } from "./types";
 
 export type QuickFood = {
@@ -155,11 +161,13 @@ export async function findRepeatSource(
 export async function quickAddEntry(
   db: Db,
   userId: string,
-  input: { date: IsoDate; meal: Meal; foodId: string },
+  input: { date: IsoDate; meal: Meal; foodId: string; requestId?: string | null },
   limits: EntryLimits = DIARY_LIMITS,
 ): Promise<{ id: string } | "not_found" | "no_amount" | "limit" | "total_limit"> {
   return db.transaction(async (tx) => {
     await lockUserWrites(tx, userId);
+    const replayed = await findEntryByRequest(tx, userId, input.requestId);
+    if (replayed) return sameTarget(replayed, input) ? { id: replayed.id } : "not_found";
     const [food] = await tx
       .select({
         name: foods.name,
@@ -194,6 +202,7 @@ export async function quickAddEntry(
         fat100: food.fat100,
         carbs100: food.carbs100,
         ...lastAmount(last),
+        clientRequestId: input.requestId ?? null,
       })
       .returning({ id: diaryEntries.id });
     if (!row) throw new Error("quick add insert returned no row");
@@ -253,13 +262,16 @@ export async function repeatMeal(
   });
 }
 
-export async function toggleFavorite(
+// Sets the state the user asked for rather than flipping it: a replayed request (#95) must not
+// undo the first one.
+export async function setFavorite(
   db: Db,
   userId: string,
   foodId: string,
+  starred: boolean,
   // Injectable so tests can reach the cap without starring a hundred foods.
   maxFavorites: number = QUICK.maxFavorites,
-): Promise<"added" | "removed" | "not_found" | "limit"> {
+): Promise<"on" | "off" | "not_found" | "limit"> {
   return db.transaction(async (tx) => {
     await lockUserWrites(tx, userId);
     const [food] = await tx
@@ -268,11 +280,13 @@ export async function toggleFavorite(
       .where(and(eq(foods.id, foodId), visibleTo(userId)))
       .limit(1);
     if (!food) return "not_found";
-    const removed = await tx
-      .delete(favorites)
-      .where(and(eq(favorites.userId, userId), eq(favorites.foodId, foodId)))
-      .returning({ foodId: favorites.foodId });
-    if (removed.length > 0) return "removed";
+    const own = and(eq(favorites.userId, userId), eq(favorites.foodId, foodId));
+    if (!starred) {
+      await tx.delete(favorites).where(own);
+      return "off";
+    }
+    const [already] = await tx.select({ foodId: favorites.foodId }).from(favorites).where(own);
+    if (already) return "on";
     // Foods are only soft-deleted, so their stars stay in the table; they must not fill the cap.
     const [owned] = await tx
       .select({ total: count() })
@@ -281,6 +295,6 @@ export async function toggleFavorite(
       .where(and(eq(favorites.userId, userId), visibleTo(userId)));
     if ((owned?.total ?? 0) >= maxFavorites) return "limit";
     await tx.insert(favorites).values({ userId, foodId });
-    return "added";
+    return "on";
   });
 }

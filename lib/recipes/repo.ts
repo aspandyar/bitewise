@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, isNull, max, sql } from "drizzle-orm";
+import { lockUserWrites } from "@/db/locks";
 import { foodPortions, foods, recipeItems, recipes } from "@/db/schema";
 import type { Db } from "@/db/types";
 import {
@@ -140,8 +141,19 @@ export async function createRecipe(
   db: Db,
   userId: string,
   values: RecipeValues,
+  requestId: string | null = null,
 ): Promise<{ id: string } | "limit"> {
   return db.transaction(async (tx) => {
+    // The same lock createFood takes, held from here so a replay (#95) checks and inserts as one.
+    await lockUserWrites(tx, userId);
+    if (requestId) {
+      const [existing] = await tx
+        .select({ id: recipes.id })
+        .from(recipes)
+        .where(and(eq(recipes.userId, userId), eq(recipes.clientRequestId, requestId)))
+        .limit(1);
+      if (existing) return existing;
+    }
     const food = await createFood(tx, userId, {
       name: values.name,
       kcal100: 0,
@@ -158,6 +170,7 @@ export async function createRecipe(
         foodId: food.id,
         cookedWeightG: values.cookedWeightG,
         servings: values.servings,
+        clientRequestId: requestId,
       })
       .returning({ id: recipes.id });
     if (!row) throw new Error("recipe insert returned no row");
@@ -218,13 +231,27 @@ export async function addItem(
   db: Db,
   userId: string,
   recipeId: string,
-  input: { foodId: string; amount: AddAmount },
+  input: { foodId: string; amount: AddAmount; requestId?: string | null },
   // Injectable so tests can reach the cap without inserting fifty rows.
   limits: { maxItems: number } = RECIPE_LIMITS,
 ): Promise<RecipeWriteResult | "grams_out_of_range"> {
   return db.transaction(async (tx) => {
+    // The key is unique per user, not per dish: the user lock (before the row lock, as in
+    // createRecipe) serializes twins aimed at two dishes too (#95).
+    if (input.requestId) await lockUserWrites(tx, userId);
     const recipe = await lockOwnRecipe(tx, userId, recipeId);
     if (!recipe) return "not_found";
+    if (input.requestId) {
+      const [existing] = await tx
+        .select({ recipeId: recipeItems.recipeId })
+        .from(recipeItems)
+        .where(
+          and(eq(recipeItems.userId, userId), eq(recipeItems.clientRequestId, input.requestId)),
+        )
+        .limit(1);
+      // A key reused for another dish is refused, not answered with this ingredient.
+      if (existing) return existing.recipeId === recipeId ? "ok" : "not_found";
+    }
     // Not a recipe: dishes inside dishes are not supported, which also rules out cycles.
     const [food] = await tx
       .select(per100gColumns)
@@ -246,7 +273,13 @@ export async function addItem(
       recipe.cookedWeightG,
     );
     if (tooLow) return tooLow;
-    await tx.insert(recipeItems).values({ recipeId, userId, foodId: input.foodId, ...columns });
+    await tx.insert(recipeItems).values({
+      recipeId,
+      userId,
+      foodId: input.foodId,
+      ...columns,
+      clientRequestId: input.requestId ?? null,
+    });
     await recomputeRecipe(tx, recipeId);
     return "ok";
   });
