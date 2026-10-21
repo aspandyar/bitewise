@@ -78,7 +78,7 @@ Postgres 17 (+ pg_trgm)                            db/schema.ts → db/migration
 ## Прод
 - Отдельный VPS, `docker-compose.prod.yml` (проект `bitewise-prod`): `db` и `app` без опубликованных портов, `nginx` (TLS, HSTS, gzip, `limit_req` на вход и регистрацию, 503 + `Retry-After` во время перезапуска), `certbot` (продление).
 - Образ — Next standalone + `ops/*.js` (esbuild: мигратор drizzle-orm с проверками БД, сид, админ). Собирает GitHub Actions по кнопке в GHCR; сервер только скачивает.
-- Релиз — `docker/scripts/release.sh <sha> <digest>`: бэкап → роль приложения в БД → миграции → сид → админ → новый контейнер → `/api/health`; ошибка — откат на прошлый образ. Образ скачивается по digest из артефакта сборки.
+- Релиз — `docker/scripts/release.sh <sha> <digest>`: бэкап → роль приложения в БД → миграции → сид → админ → новый контейнер → `/api/health`; ошибка — откат на прошлый образ. Образ скачивается по digest из артефакта сборки, метка коммита сверяется; базовые образы тоже закреплены по digest.
 - Права в проде: приложение — своей ролью Postgres без суперпользователя (только строки своих таблиц), миграции — владельцем; каждому контейнеру — только свои переменные; `app` — read-only, без capabilities.
 - Заголовки — `lib/security-headers.ts` (CSP с `'unsafe-inline'` для скриптов Next, `Permissions-Policy`); HSTS — в nginx.
 - Подробно: [[Projects/Bitewise/deploy|deploy]].

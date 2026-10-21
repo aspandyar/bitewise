@@ -23,6 +23,9 @@ x-app-container: &app-container
   # No default: release.sh names the image as <commit sha>@<digest>, scripts read the live one
   # from .release-tag (#103).
   image: ghcr.io/aspandyar/bitewise:${IMAGE_TAG:?set IMAGE_TAG}
+  # release.sh pulls by digest itself; compose never fetches by tag (a missing local image is an
+  # error, not a silent pull of whatever the tag points at now).
+  pull_policy: never
   # Code and image are immutable at runtime; only the Next cache and /tmp are writable.
   read_only: true
   tmpfs:
@@ -38,12 +41,17 @@ x-app-database-url: &app-database-url postgres://${APP_DB_USER:?set APP_DB_USER}
 services:
   db:
     logging: *logging
-    image: docker.io/library/postgres:17-alpine
+    # Base images are pinned by digest as well: a re-pointed tag on Docker Hub changes nothing.
+    # To update: new tag and digest in one commit.
+    image: docker.io/library/postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
     restart: unless-stopped
     security_opt: *no-new-privileges
     # Memory caps size the stack for a 1–2 GB VPS: a leak or flood in one service hits its own
-    # limit instead of pushing Postgres into the kernel's OOM killer.
+    # limit instead of pushing Postgres into the kernel's OOM killer, and if the host still runs
+    # out, the kernel picks another process before the database.
     mem_limit: 512m
+    oom_score_adj: -500
+    pids_limit: 256
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
@@ -75,6 +83,7 @@ services:
   migrate:
     <<: *app-container
     profiles: ["ops"]
+    mem_limit: 256m
     # The only step that runs as the owner: migrations create tables and extensions.
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
@@ -83,6 +92,7 @@ services:
   seed:
     <<: *app-container
     profiles: ["ops"]
+    mem_limit: 256m
     environment:
       DATABASE_URL: *app-database-url
     command: ["node", "ops/seed.js"]
@@ -90,6 +100,7 @@ services:
   bootstrap-admin:
     <<: *app-container
     profiles: ["ops"]
+    mem_limit: 256m
     environment:
       DATABASE_URL: *app-database-url
       ADMIN_EMAIL: ${ADMIN_EMAIL:?set ADMIN_EMAIL}
@@ -98,10 +109,14 @@ services:
 
   nginx:
     logging: *logging
-    image: docker.io/library/nginx:1.29-alpine
+    image: docker.io/library/nginx:1.29-alpine@sha256:5616878291a2eed594aee8db4dade5878cf7edcb475e59193904b198d9b830de
     restart: unless-stopped
     security_opt: *no-new-privileges
+    # The master process binds 80/443 and drops workers to the nginx user; nothing else is needed.
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETUID, SETGID, NET_BIND_SERVICE]
     mem_limit: 128m
+    pids_limit: 64
     ports:
       - "${HTTP_PORT:-80}:80"
       - "${HTTPS_PORT:-443}:443"
@@ -124,12 +139,13 @@ services:
 
   certbot:
     logging: *logging
-    image: docker.io/certbot/certbot:v5.8.0
+    image: docker.io/certbot/certbot:v5.8.0@sha256:f70ad0adbb7e117f0fe42a63c553f28ea451edabc0148757b6efcd9735acaa20
     # Off locally (DOMAIN=localhost uses a self-signed certificate); on the server: --profile tls.
     profiles: ["tls"]
     restart: unless-stopped
     security_opt: *no-new-privileges
     mem_limit: 256m
+    pids_limit: 64
     volumes:
       - letsencrypt:/etc/letsencrypt
       - certbot-www:/var/www/certbot

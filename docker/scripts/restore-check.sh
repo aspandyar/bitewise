@@ -22,6 +22,8 @@ trap cleanup EXIT
 
 cleanup
 db_exec 'createdb -U "$POSTGRES_USER" restore_check'
+# A full copy of the data: only the owner may connect while it exists.
+db_exec 'psql -q -U "$POSTGRES_USER" -c "REVOKE CONNECT, TEMPORARY ON DATABASE restore_check FROM PUBLIC"'
 db_exec 'pg_restore -U "$POSTGRES_USER" --no-owner -d restore_check' < "$latest"
 counts="$(db_exec 'psql -U "$POSTGRES_USER" -d restore_check -At -F " " -c "
   select (select count(*) from users), (select count(*) from foods),

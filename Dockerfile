@@ -1,7 +1,9 @@
 # syntax=docker/dockerfile:1
 # Production image: Next.js standalone server plus the bundled release scripts (ops/*.js).
 
-FROM node:24-alpine AS deps
+# Pinned by digest: a re-pointed tag on Docker Hub cannot change the build. Update tag and digest
+# together.
+FROM node:24-alpine@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f AS deps
 WORKDIR /app
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -17,7 +19,7 @@ RUN DATABASE_URL=postgres://build:build@localhost:5432/build \
     NEXTAUTH_URL=https://build.invalid \
     sh -c 'pnpm build && pnpm ops:build'
 
-FROM node:24-alpine AS runner
+FROM node:24-alpine@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \

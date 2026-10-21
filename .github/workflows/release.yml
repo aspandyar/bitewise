@@ -16,7 +16,7 @@ jobs:
 
   image:
     needs: checks
-    # Images (and :latest) come from master only, never from a branch someone dispatched.
+    # Images come from master only, never from a branch someone dispatched.
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     permissions:
@@ -42,8 +42,11 @@ jobs:
           push: true
           # One tag per commit and no :latest: the server runs exactly the image a release names.
           tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # release.sh checks this against the commit it was asked to release.
+          labels: org.opencontainers.image.revision=${{ github.sha }}
+          # Own cache scope: only this job (from master) writes the layers it later reads.
+          cache-from: type=gha,scope=release-image
+          cache-to: type=gha,mode=max,scope=release-image
       # The digest travels to the server through GitHub, not the registry: release.sh pulls by it,
       # so a tag re-pointed in the registry cannot change what runs (#103).
       - name: Record image digest
