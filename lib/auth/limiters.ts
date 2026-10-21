@@ -5,3 +5,4 @@ import { createRateLimiter } from "./rate-limit";
 export const loginLimiter = createRateLimiter(RATE_LIMITS.login);
 export const registerLimiter = createRateLimiter(RATE_LIMITS.register);
 export const writeLimiter = createRateLimiter(RATE_LIMITS.write);
+export const passwordChangeLimiter = createRateLimiter(RATE_LIMITS.passwordChange);

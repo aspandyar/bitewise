@@ -246,6 +246,8 @@ export const RATE_LIMITS = {
   // Every server action that writes, per user (#31): a person tapping "+" fast stays far below,
   // a script creating and deleting rows in a loop does not.
   write: { max: 60, windowMs: MS_PER_MINUTE, maxKeys: 100_000 },
+  // Guesses at the current password from a signed-in session, per account (#29).
+  passwordChange: { max: 5, windowMs: 15 * MS_PER_MINUTE, maxKeys: 100_000 },
 } as const;
 
 // Number of reverse proxies we control in front of the app (nginx, stage 6). Each one appends the

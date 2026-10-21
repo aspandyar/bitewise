@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { users } from "@/db/schema";
 import type { Db } from "@/db/types";
 import type { UserRole } from "@/lib/config";
@@ -6,9 +6,14 @@ import type { UserRole } from "@/lib/config";
 export async function findUserByEmail(
   db: Db,
   email: string,
-): Promise<{ id: string; passwordHash: string; role: UserRole } | null> {
+): Promise<{ id: string; passwordHash: string; role: UserRole; tokenVersion: number } | null> {
   const [row] = await db
-    .select({ id: users.id, passwordHash: users.passwordHash, role: users.role })
+    .select({
+      id: users.id,
+      passwordHash: users.passwordHash,
+      role: users.role,
+      tokenVersion: users.tokenVersion,
+    })
     .from(users)
     .where(eq(users.email, email))
     .limit(1);
@@ -63,6 +68,44 @@ export async function createAdmin(db: Db, email: string, passwordHash: string): 
   await db.insert(users).values({ email, passwordHash, role: "admin" });
 }
 
+// A new password also revokes every session issued with the old one (#29).
 export async function updatePasswordHash(db: Db, id: string, passwordHash: string): Promise<void> {
-  await db.update(users).set({ passwordHash }).where(eq(users.id, id));
+  await db
+    .update(users)
+    .set({ passwordHash, tokenVersion: sql`${users.tokenVersion} + 1` })
+    .where(eq(users.id, id));
+}
+
+// "Sign out everywhere": every session of the account stops counting at its next read (#29).
+export async function bumpTokenVersion(db: Db, id: string): Promise<void> {
+  await db
+    .update(users)
+    .set({ tokenVersion: sql`${users.tokenVersion} + 1` })
+    .where(eq(users.id, id));
+}
+
+// What each session read checks against (lib/auth/token.ts): one primary-key lookup.
+export async function findAuthState(
+  db: Db,
+  id: string,
+): Promise<{ role: UserRole; tokenVersion: number } | null> {
+  const [row] = await db
+    .select({ role: users.role, tokenVersion: users.tokenVersion })
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+  return row ?? null;
+}
+
+// For a password change: the current hash to verify, the email to sign in again with.
+export async function findPasswordHash(
+  db: Db,
+  id: string,
+): Promise<{ email: string; passwordHash: string } | null> {
+  const [row] = await db
+    .select({ email: users.email, passwordHash: users.passwordHash })
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+  return row ?? null;
 }

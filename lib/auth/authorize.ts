@@ -8,7 +8,7 @@ import { BusyError } from "./semaphore";
 export type AuthorizeDeps = {
   findUserByEmail(
     email: string,
-  ): Promise<{ id: string; passwordHash: string; role: UserRole } | null>;
+  ): Promise<{ id: string; passwordHash: string; role: UserRole; tokenVersion: number } | null>;
   verifyPassword(password: string, stored: string): Promise<boolean>;
   getDummyPasswordHash(): Promise<string>;
   limiter: RateLimiter;
@@ -21,7 +21,7 @@ export async function authorizeCredentials(
   raw: unknown,
   ip: string,
   deps: AuthorizeDeps,
-): Promise<{ id: string; email: string; role: UserRole } | null | "busy"> {
+): Promise<{ id: string; email: string; role: UserRole; tokenVersion: number } | null | "busy"> {
   const parsed = credentialsSchema.safeParse(raw);
   if (!parsed.success) return null;
   const { email, password } = parsed.data;
@@ -41,7 +41,9 @@ export async function authorizeCredentials(
     // real attempt and response time reveals nothing.
     const stored = user && accountAllowed ? user.passwordHash : await deps.getDummyPasswordHash();
     const passwordOk = await deps.verifyPassword(password, stored);
-    return user && accountAllowed && passwordOk ? { id: user.id, email, role: user.role } : null;
+    return user && accountAllowed && passwordOk
+      ? { id: user.id, email, role: user.role, tokenVersion: user.tokenVersion }
+      : null;
   } catch (error) {
     if (error instanceof BusyError) {
       // Overload is not the client's fault: under a flood that keeps the queue full, spent

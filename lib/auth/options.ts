@@ -3,11 +3,12 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { db } from "@/db/client";
 import { AUTH } from "@/lib/config";
 import { readAuthEnv } from "@/lib/env";
-import { findUserByEmail } from "@/lib/users/repo";
+import { findAuthState, findUserByEmail } from "@/lib/users/repo";
 import { authorizeCredentials } from "./authorize";
 import { loginLimiter } from "./limiters";
 import { getDummyPasswordHash, verifyPassword } from "./password";
 import { clientIpFromForwardedFor, forwardedForHeader } from "./request";
+import { checkToken } from "./token";
 
 const env = readAuthEnv();
 
@@ -39,12 +40,16 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user }) {
       if (user) {
         token.sub = user.id;
         token.role = user.role;
+        token.ver = user.tokenVersion;
+        return token;
       }
-      return token;
+      // A revoked token (password changed, signed out everywhere) becomes an empty one: the
+      // session then has no user id, and every page sends the visitor to /login (#29).
+      return (await checkToken(token, { findAuthState: (id) => findAuthState(db, id) })) ?? {};
     },
     session({ session, token }) {
       // A token without a role predates roles; treating it as "user" never grants extra rights.

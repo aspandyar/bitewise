@@ -6,6 +6,7 @@ import { InstallRow } from "@/components/pwa/install-row";
 import { BackLink } from "@/components/ui/back-link";
 import { PageLoading } from "@/components/ui/page-loading";
 import { ProfileForm } from "@/components/profile/profile-form";
+import { SignOutEverywhere } from "@/components/profile/sign-out-everywhere";
 import { requireUserId } from "@/lib/auth/session";
 import { ru } from "@/lib/i18n/ru";
 import { getProfile } from "@/lib/profile/repo";
@@ -29,6 +30,16 @@ async function ProfileContent() {
         </Link>
         <InstallRow />
       </nav>
+      <section
+        aria-label={ru.profile.accountTitle}
+        className="flex flex-col gap-3 border-t border-foreground/10 pt-4"
+      >
+        <Link href="/profile/password" className="flex min-h-11 items-center justify-between">
+          {ru.auth.changePasswordTitle}
+          <span aria-hidden>{ru.profile.openArrow}</span>
+        </Link>
+        <SignOutEverywhere />
+      </section>
     </main>
   );
 }
