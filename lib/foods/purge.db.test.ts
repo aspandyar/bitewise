@@ -1,11 +1,12 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { favorites, foodPortions, foods, recipes } from "@/db/schema";
+import { diaryEntries, favorites, foodPortions, foods, recipes } from "@/db/schema";
 import { addEntry, deleteEntry, deleteOwnEntries, getDayEntries } from "@/lib/diary/repo";
 import { setFavorite } from "@/lib/diary/quick-repo";
 import { addItem, createRecipe, deleteItem, deleteRecipe, getRecipe } from "@/lib/recipes/repo";
-import { closeTestDb, resetDb, testDb } from "@/tests/db";
+import { closeTestDb, createTestPool, resetDb, testDb } from "@/tests/db";
 import { createOwnFood, newUserId } from "@/tests/foods";
+import { purgeDeletedFoods } from "./purge";
 import { addPortion, deleteOwnFood } from "./repo";
 
 // Soft delete exists only to keep history readable. A deleted food nothing points at is removed
@@ -141,5 +142,74 @@ describe("other users", () => {
     await deleteOwnEntries(testDb, bob, [entry]);
     await deleteEntry(testDb, bob, entry);
     expect(await foodRow(id)).not.toBeNull();
+  });
+});
+
+describe("races", () => {
+  it("a delete racing a new entry with the food never fails the entry", async () => {
+    const pool = createTestPool(4);
+    try {
+      for (let round = 0; round < 10; round += 1) {
+        const alice = await newUserId(`race${round}@mail.com`);
+        const { id } = await createOwnFood(alice, cheese);
+        const [added] = await Promise.all([
+          addEntry(pool.db, alice, {
+            date: DAY,
+            meal: "breakfast",
+            foodId: id,
+            amount: { mode: "grams", grams: 30 },
+          }),
+          deleteOwnFood(pool.db, alice, id),
+        ]);
+        expect(["ok", "not_found"]).toContain(added);
+      }
+    } finally {
+      await pool.close();
+    }
+  });
+
+  it("keeps the soft delete when an entry commits while the purge waits on the food", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const { id } = await createOwnFood(alice, cheese);
+    await testDb.update(foods).set({ deletedAt: new Date() }).where(eq(foods.id, id));
+    const pool = createTestPool(2);
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let inserted!: () => void;
+    const insertedOnce = new Promise<void>((resolve) => {
+      inserted = resolve;
+    });
+    try {
+      // An entry written before the delete saw it: its FK lock holds the food row.
+      const writer = pool.db.transaction(async (tx) => {
+        await tx.insert(diaryEntries).values({
+          userId: alice,
+          date: DAY,
+          meal: "breakfast",
+          foodId: id,
+          foodName: cheese.name,
+          kcal100: cheese.kcal100,
+          protein100: cheese.protein100,
+          fat100: cheese.fat100,
+          carbs100: cheese.carbs100,
+          grams: 30,
+        });
+        inserted();
+        await held;
+      });
+      await insertedOnce;
+      const purge = pool.db.transaction(async (tx) => {
+        await purgeDeletedFoods(tx, alice, [id]);
+        return "survived";
+      });
+      setTimeout(release, 200);
+      await writer;
+      expect(await purge).toBe("survived");
+      expect((await foodRow(id))?.deletedAt).not.toBeNull();
+    } finally {
+      await pool.close();
+    }
   });
 });

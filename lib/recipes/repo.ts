@@ -213,6 +213,7 @@ export async function updateRecipe(
 
 export async function deleteRecipe(db: Db, userId: string, recipeId: string): Promise<boolean> {
   return db.transaction(async (tx) => {
+    await lockUserWrites(tx, userId);
     const recipe = await lockOwnRecipe(tx, userId, recipeId);
     if (!recipe) return false;
     // Soft delete: diary entries keep pointing at the recipe's food. They hold their own snapshot,
@@ -243,7 +244,9 @@ export async function addItem(
   return db.transaction(async (tx) => {
     // The key is unique per user, not per dish: the user lock (before the row lock, as in
     // createRecipe) serializes twins aimed at two dishes too (#95).
-    if (input.requestId) await lockUserWrites(tx, userId);
+    // Always: deletes take it too before removing a food for good (#108), and an ingredient
+    // must not lose its food between the read and the insert.
+    await lockUserWrites(tx, userId);
     const recipe = await lockOwnRecipe(tx, userId, recipeId);
     if (!recipe) return "not_found";
     if (input.requestId) {
@@ -333,6 +336,7 @@ export async function deleteItem(
   itemId: string,
 ): Promise<boolean> {
   return db.transaction(async (tx) => {
+    await lockUserWrites(tx, userId);
     const recipe = await lockOwnRecipe(tx, userId, recipeId);
     if (!recipe) return false;
     const rows = await tx

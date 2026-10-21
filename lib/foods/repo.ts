@@ -140,6 +140,9 @@ export async function updateOwnFood(
 // Soft delete first; a food nothing points at is then removed for good (#108).
 export async function deleteOwnFood(db: Db, userId: string, foodId: string): Promise<boolean> {
   return db.transaction(async (tx) => {
+    // The user's write lock orders this after an entry or ingredient being added with the food:
+    // removing it for good under that insert would fail it on the foreign key.
+    await lockUserWrites(tx, userId);
     const rows = await tx
       .update(foods)
       .set({ deletedAt: sql`now()`, updatedAt: sql`now()` })
