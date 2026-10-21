@@ -48,9 +48,17 @@ export const users = pgTable(
     passwordHash: text("password_hash").notNull(),
     // Sign-up never sets this; managers are assigned by an admin, the admin by the bootstrap script.
     role: userRoleEnum("role").notNull().default("user"),
+    // The sign-up form's request key: a replayed registration finds the account it already made
+    // instead of answering "email taken" (#107). Global, since there is no owner yet.
+    clientRequestId: uuid("client_request_id"),
     createdAt: createdAt(),
   },
-  (t) => [uniqueIndex("users_email_unique").on(t.email)],
+  (t) => [
+    uniqueIndex("users_email_unique").on(t.email),
+    uniqueIndex("users_request_unique")
+      .on(t.clientRequestId)
+      .where(sql`${t.clientRequestId} IS NOT NULL`),
+  ],
 );
 
 export const profiles = pgTable("profiles", {
@@ -134,7 +142,11 @@ export const foods = pgTable(
     // A user's own food is never seed data, and every shared food comes from the seed.
     check("foods_user_source_has_owner", sql`(${t.source} = 'user') = (${t.ownerId} IS NOT NULL)`),
     check("foods_seed_key_iff_shared", sql`(${t.ownerId} IS NULL) = (${t.seedKey} IS NOT NULL)`),
-    check("foods_copied_from_only_own", sql`${t.copiedFrom} IS NULL OR ${t.source} = 'user'`),
+    // A copy of an own food gets null, so 'user' is never a valid origin.
+    check(
+      "foods_copied_from_only_own",
+      sql`${t.copiedFrom} IS NULL OR (${t.source} = 'user' AND ${t.copiedFrom} <> 'user')`,
+    ),
     // Rendered as a link on the food card; the seed validates it, the database guarantees it.
     check("foods_source_url_https", sql`${t.sourceUrl} IS NULL OR ${t.sourceUrl} LIKE 'https://%'`),
     check(
@@ -208,6 +220,8 @@ export const diaryEntries = pgTable(
       .on(t.userId, t.clientRequestId)
       .where(sql`${t.clientRequestId} IS NOT NULL`),
     index("diary_entries_user_id_date_idx").on(t.userId, t.date),
+    // Recent foods read the user's latest entries by creation time (#93).
+    index("diary_entries_user_created_idx").on(t.userId, t.createdAt.desc(), t.id.desc()),
     // Lets the FK check on cascaded food deletes use an index instead of a full scan.
     index("diary_entries_food_id_idx").on(t.foodId),
     check("diary_entries_grams_positive", sql`${t.grams} > 0`),

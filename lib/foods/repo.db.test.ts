@@ -94,6 +94,16 @@ describe("source_url", () => {
   });
 });
 
+describe("copied_from", () => {
+  it("refuses 'user' as the origin of a copy in the database", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const insert = (copiedFrom: "user" | "usda") =>
+      testDb.insert(foods).values({ ...oats, source: "user", ownerId: alice, copiedFrom });
+    await expect(insert("user")).rejects.toThrow();
+    await expect(insert("usda")).resolves.toBeDefined();
+  });
+});
+
 describe("own foods", () => {
   it("updates only the owner's food", async () => {
     const alice = await newUserId("alice@mail.com");
