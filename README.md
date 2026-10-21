@@ -63,7 +63,7 @@ Sign-up opens with `REGISTRATION=open` in `.env`. Variables, tests and common is
 | [Deployment](docs/en/deploy.md)            | production on a VPS: release, rollback, backups |
 | [How we work](docs/en/workflow.md)         | stages, Claude Code, reviews                    |
 
-The decision log and the stage specs and plans are in Russian only: [docs/ru](docs/ru/).
+Index: [docs/en](docs/en/README.md). The decision log and the stage specs and plans are in Russian only: [docs/ru](docs/ru/README.md).
 
 ## How it is built
 

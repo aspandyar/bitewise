@@ -62,7 +62,7 @@ pnpm dev                 # http://localhost:3000, вход администра�
 | [Как ведём работу](docs/ru/workflow.md)  | этапы, Claude Code, ревью                  |
 | [Решения](docs/ru/notes.md)              | журнал решений и открытые вопросы          |
 
-Документация на английском — в [docs/en](docs/en/).
+Оглавление — [docs/ru](docs/ru/README.md); документация на английском — [docs/en](docs/en/README.md).
 
 ## Как сделано
 
