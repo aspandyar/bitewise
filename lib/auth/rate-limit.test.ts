@@ -77,4 +77,13 @@ describe("createRateLimiter", () => {
     expect(limiter.hit("a", 1000)).toBe(true);
     expect(limiter.hit("a", 1001)).toBe(false);
   });
+
+  it("refund leaves a window opened after the refunded hit alone", () => {
+    const limiter = createRateLimiter({ max: 1, windowMs: 1000, maxKeys: 100 });
+    limiter.hit("a", 900);
+    // Another request opened a fresh window while the first one was still running.
+    expect(limiter.hit("a", 1950)).toBe(true);
+    limiter.refund("a", 900);
+    expect(limiter.hit("a", 1960)).toBe(false);
+  });
 });

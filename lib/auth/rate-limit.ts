@@ -40,9 +40,9 @@ export function createRateLimiter(rule: RateLimitRule): RateLimiter {
     },
     refund(key, nowMs) {
       const current = windows.get(key);
-      if (current && nowMs - current.startMs < rule.windowMs && current.count > 0) {
-        current.count -= 1;
-      }
+      // nowMs is the time of the refunded hit: a window that started after it holds other hits.
+      if (!current || current.startMs > nowMs || nowMs - current.startMs >= rule.windowMs) return;
+      if (current.count > 0) current.count -= 1;
     },
     size: () => windows.size,
   };
