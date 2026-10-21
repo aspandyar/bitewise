@@ -113,6 +113,9 @@ export const TIME_ZONE_COOKIE = {
 // The health check answers within this or reports the database as down.
 export const HEALTH = { timeoutMs: 2000 } as const;
 
+// How deep the log scrubber follows error causes; a cycle or a pathological chain stops here.
+export const LOG_SCRUB = { maxDepth: 5 } as const;
+
 // One policy for every environment. 'unsafe-inline' scripts: Next injects per-request inline
 // scripts that a hash cannot cover, and a nonce would make every screen request-time (#18).
 export const SECURITY_HEADERS = {

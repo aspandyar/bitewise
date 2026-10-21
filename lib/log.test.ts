@@ -1,6 +1,6 @@
 import { DrizzleQueryError } from "drizzle-orm/errors";
 import { describe, expect, it } from "vitest";
-import { loggableError } from "./log";
+import { loggableError, scrubConsole } from "./log";
 
 function pgError(): Error {
   return Object.assign(new Error('relation "foods" does not exist'), { code: "42P01" });
@@ -35,5 +35,57 @@ describe("loggableError", () => {
   it("passes other errors through untouched", () => {
     const error = new Error("boom");
     expect(loggableError(error)).toBe(error);
+  });
+});
+
+describe("loggableError inside other errors", () => {
+  const failed = () => new DrizzleQueryError("insert into users", ["a@b.c", "scrypt$hash"], pgError());
+
+  it("scrubs a failed query found in the cause chain", () => {
+    const outer = new Error("action failed", { cause: failed() });
+    const logged = JSON.stringify(loggableError(outer));
+    expect(logged).not.toContain("a@b.c");
+    expect(logged).toContain("42P01");
+  });
+
+  it("scrubs each error of an AggregateError", () => {
+    const logged = JSON.stringify(loggableError(new AggregateError([failed()], "many")));
+    expect(logged).not.toContain("scrypt$hash");
+    expect(logged).toContain("42P01");
+  });
+
+  it("scrubs a stack or message string that carries a failed query", () => {
+    const logged = String(loggableError(failed().stack));
+    expect(logged).not.toContain("a@b.c");
+    expect(logged).toContain("Failed query");
+  });
+
+  it("leaves ordinary strings alone", () => {
+    expect(loggableError("request done")).toBe("request done");
+  });
+});
+
+describe("scrubConsole", () => {
+  it("passes every argument of error and warn through loggableError", () => {
+    const seen: unknown[][] = [];
+    const target = {
+      error: (...args: unknown[]) => seen.push(args),
+      warn: (...args: unknown[]) => seen.push(args),
+    };
+    scrubConsole(target);
+    const error = new DrizzleQueryError("insert into users", ["a@b.c"], pgError());
+    target.error("⨯", error);
+    target.warn(error);
+    expect(JSON.stringify(seen)).not.toContain("a@b.c");
+    expect(seen[0]?.[0]).toBe("⨯");
+  });
+
+  it("wraps a console only once", () => {
+    const calls: unknown[] = [];
+    const target = { error: (...args: unknown[]) => calls.push(args), warn: () => undefined };
+    scrubConsole(target);
+    const once = target.error;
+    scrubConsole(target);
+    expect(target.error).toBe(once);
   });
 });
