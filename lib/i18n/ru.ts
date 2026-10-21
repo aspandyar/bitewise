@@ -43,6 +43,18 @@ export const ru = {
     signOut: "Выйти",
     invalidCredentials: "Неверный email или пароль",
     registerFailed: "Не удалось зарегистрироваться с этим email",
+    registrationClosed: "Регистрация пока закрыта",
+    currentPassword: "Текущий пароль",
+    newPassword: "Новый пароль",
+    wrongCurrentPassword: "Неверный текущий пароль",
+    samePassword: "Новый пароль совпадает с текущим",
+    adminPasswordFromEnv:
+      "Пароль администратора задаётся в ADMIN_PASSWORD на сервере и меняется при деплое",
+    changePasswordTitle: "Сменить пароль",
+    changePasswordSubmit: "Сменить пароль",
+    signOutEverywhere: "Выйти на всех устройствах",
+    signOutEverywhereConfirm: "Да, выйти везде",
+    signOutEverywhereHint: "Все сессии, в том числе эта, закончатся — войти можно снова",
     tooManyAttempts: "Слишком много попыток. Попробуйте позже",
   },
   profile: {
@@ -66,6 +78,7 @@ export const ru = {
     goals: { lose: "Похудеть", maintain: "Держать вес", gain: "Набрать" },
     submitOnboarding: "Посчитать норму",
     deviceTitle: "Это устройство",
+    accountTitle: "Аккаунт",
     openArrow: "›",
   },
   offline: {
@@ -300,6 +313,8 @@ export const ru = {
     alreadyFilled: "Этот приём пищи уже заполнен",
     dayFull: `Не больше ${n(DIARY_LIMITS.maxEntriesPerDay)} записей за день`,
     otherAccount: "Форма была из другого аккаунта — ничего не сохранено",
+    tooFast: "Слишком много изменений подряд — подождите минуту",
+    passwordChanged: "Пароль изменён, другие устройства вышли",
   },
   recipes: {
     title: "Блюда",

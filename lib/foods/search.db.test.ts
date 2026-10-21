@@ -3,7 +3,7 @@ import { FOOD_SEARCH } from "@/lib/config";
 import { closeTestDb, resetDb, testDb } from "@/tests/db";
 import { createOwnFood, insertSharedFood, newUserId } from "@/tests/foods";
 import { insertRecipeFood } from "@/tests/recipes";
-import { createFood, searchFoods, softDeleteOwnFood } from "./repo";
+import { createFood, searchFoods, deleteOwnFood } from "./repo";
 import { normalizeFoodQuery } from "./search";
 
 const values = { kcal100: 100, protein100: 1, fat100: 1, carbs100: 1, fiber100: null };
@@ -102,7 +102,7 @@ describe("searchFoods", () => {
     const bob = await newUserId("bob@mail.com");
     const { id } = await createOwnFood(bob, { ...values, name: "Гречка Боба" });
     expect(await names(alice, "гречка")).not.toContain("Гречка Боба");
-    await softDeleteOwnFood(testDb, bob, id);
+    await deleteOwnFood(testDb, bob, id);
     expect(await names(bob, "гречка")).not.toContain("Гречка Боба");
   });
 

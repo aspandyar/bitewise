@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/db/client";
 import { addAmountSchema, toAddAmount, toUpdateAmount, updateAmountSchema } from "@/lib/amount";
-import { requireActionUser, requireUserId } from "@/lib/auth/session";
+import { requireActionUser, requireWriteUser } from "@/lib/auth/session";
 import { DIARY_LIMITS, FOOD_LIMITS, RECIPE_LIMITS } from "@/lib/config";
 import { formatGramsAtLeast } from "@/lib/format";
 import { firstFieldErrors, type FormState } from "@/lib/forms";
@@ -76,7 +76,7 @@ export async function updateRecipeAction(
 }
 
 export async function deleteRecipeAction(recipeId: string): Promise<void> {
-  const userId = await requireUserId();
+  const userId = await requireWriteUser();
   const id = requireId(recipeId);
   // Nothing deleted: a replay (#95) or an id that is not the user's; both end on the list.
   await deleteRecipe(db, userId, id);
@@ -123,7 +123,7 @@ export async function updateItemAction(
 }
 
 export async function deleteItemAction(recipeId: string, itemId: string): Promise<void> {
-  const userId = await requireUserId();
+  const userId = await requireWriteUser();
   const id = requireId(recipeId);
   // Nothing deleted is a replay (#95): back to the dish, as after the first delete. A foreign
   // recipe id renders "not found" there.

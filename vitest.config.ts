@@ -7,7 +7,11 @@ if (existsSync(".env")) process.loadEnvFile(".env");
 
 export default defineConfig({
   resolve: {
-    alias: { "@": fileURLToPath(new URL("./", import.meta.url)) },
+    alias: {
+      "@": fileURLToPath(new URL("./", import.meta.url)),
+      // Next resolves it to an empty module on the server; tests run server code directly.
+      "server-only": fileURLToPath(new URL("./tests/server-only.ts", import.meta.url)),
+    },
   },
   test: {
     environment: "node",

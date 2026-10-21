@@ -83,7 +83,8 @@ export const TARGET_LIMITS = {
   macroG: { min: 0, max: 1000 },
 } as const;
 
-const MS_PER_MINUTE = 60_000;
+export const MS_PER_SECOND = 1000;
+const MS_PER_MINUTE = 60 * MS_PER_SECOND;
 const SECONDS_PER_DAY = 86_400;
 
 export const AUTH = {
@@ -92,6 +93,10 @@ export const AUTH = {
   // Error code authorize throws when the hashing queue is full; the login form maps it to
   // "too many attempts" instead of "wrong password" (#104).
   busySignInError: "busy",
+  // The cookie that marks a browser the account signed in from (#30): its attempts skip the
+  // per-account lockout, which strangers guessing the password would otherwise trigger.
+  deviceCookie: "bw-device",
+  deviceMaxAgeSec: 365 * SECONDS_PER_DAY,
 } as const;
 
 // A key the client adds to every submit (#95): when a response is lost and Next replays the
@@ -243,6 +248,11 @@ export const RATE_LIMITS = {
   register: { max: 5, windowMs: 60 * MS_PER_MINUTE, maxKeys: 100_000 },
   // Search fires on every typed letter after a debounce; 2 per second is far above human typing.
   foodSearch: { max: 120, windowMs: MS_PER_MINUTE, maxKeys: 100_000 },
+  // Every server action that writes, per user (#31): a person tapping "+" fast stays far below,
+  // a script creating and deleting rows in a loop does not.
+  write: { max: 60, windowMs: MS_PER_MINUTE, maxKeys: 100_000 },
+  // Guesses at the current password from a signed-in session, per account (#29).
+  passwordChange: { max: 5, windowMs: 15 * MS_PER_MINUTE, maxKeys: 100_000 },
 } as const;
 
 // Number of reverse proxies we control in front of the app (nginx, stage 6). Each one appends the

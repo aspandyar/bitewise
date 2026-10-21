@@ -1,6 +1,14 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { closeTestDb, resetDb, testDb } from "@/tests/db";
-import { createAdmin, createUser, findUserByEmail, updatePasswordHash } from "./repo";
+import {
+  bumpTokenVersion,
+  createAdmin,
+  createUser,
+  findAuthState,
+  findPasswordHash,
+  findUserByEmail,
+  updatePasswordHash,
+} from "./repo";
 
 beforeEach(resetDb);
 afterAll(closeTestDb);
@@ -13,6 +21,7 @@ describe("users repo", () => {
       id: created?.id,
       passwordHash: "h",
       role: "user",
+      tokenVersion: 0,
     });
   });
 
@@ -36,5 +45,31 @@ describe("users repo", () => {
     await updatePasswordHash(testDb, a?.id ?? "", "new");
     expect((await findUserByEmail(testDb, "a@example.com"))?.passwordHash).toBe("new");
     expect((await findUserByEmail(testDb, "b@example.com"))?.passwordHash).toBe("old");
+  });
+
+  it("a new password revokes the sessions issued before it (#29)", async () => {
+    const a = await createUser(testDb, { email: "a@example.com", passwordHash: "old" });
+    const id = a?.id ?? "";
+    await updatePasswordHash(testDb, id, "new");
+    expect(await findAuthState(testDb, id)).toEqual({ role: "user", tokenVersion: 1 });
+  });
+
+  it("sign out everywhere bumps only that account's version", async () => {
+    const a = await createUser(testDb, { email: "a@example.com", passwordHash: "h" });
+    const b = await createUser(testDb, { email: "b@example.com", passwordHash: "h" });
+    await bumpTokenVersion(testDb, a?.id ?? "");
+    expect((await findAuthState(testDb, a?.id ?? ""))?.tokenVersion).toBe(1);
+    expect((await findAuthState(testDb, b?.id ?? ""))?.tokenVersion).toBe(0);
+  });
+
+  it("finds a user's hash and email by id, and nothing for an unknown id", async () => {
+    const a = await createUser(testDb, { email: "a@example.com", passwordHash: "h" });
+    expect(await findPasswordHash(testDb, a?.id ?? "")).toEqual({
+      email: "a@example.com",
+      passwordHash: "h",
+      role: "user",
+    });
+    expect(await findAuthState(testDb, "00000000-0000-4000-8000-000000000000")).toBeNull();
+    expect(await findPasswordHash(testDb, "00000000-0000-4000-8000-000000000000")).toBeNull();
   });
 });

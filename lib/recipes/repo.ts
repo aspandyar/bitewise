@@ -2,6 +2,7 @@ import { and, asc, desc, eq, isNull, max, sql } from "drizzle-orm";
 import { lockUserWrites } from "@/db/locks";
 import { foodPortions, foods, recipeItems, recipes } from "@/db/schema";
 import type { Db } from "@/db/types";
+import { purgeDeletedFoods } from "@/lib/foods/purge";
 import {
   isStorableGrams,
   portionToPick,
@@ -212,6 +213,7 @@ export async function updateRecipe(
 
 export async function deleteRecipe(db: Db, userId: string, recipeId: string): Promise<boolean> {
   return db.transaction(async (tx) => {
+    await lockUserWrites(tx, userId);
     const recipe = await lockOwnRecipe(tx, userId, recipeId);
     if (!recipe) return false;
     // Soft delete: diary entries keep pointing at the recipe's food. They hold their own snapshot,
@@ -220,9 +222,13 @@ export async function deleteRecipe(db: Db, userId: string, recipeId: string): Pr
       .update(foods)
       .set({ deletedAt: sql`now()`, updatedAt: sql`now()` })
       .where(eq(foods.id, recipe.foodId));
-    await tx
+    const items = await tx
       .delete(recipeItems)
-      .where(and(eq(recipeItems.recipeId, recipeId), eq(recipeItems.userId, userId)));
+      .where(and(eq(recipeItems.recipeId, recipeId), eq(recipeItems.userId, userId)))
+      .returning({ foodId: recipeItems.foodId });
+    // A dish nothing logged goes for good with its recipe row (cascade), and so do deleted
+    // ingredients only it still used (#108).
+    await purgeDeletedFoods(tx, userId, [recipe.foodId, ...items.map((item) => item.foodId)]);
     return true;
   });
 }
@@ -238,7 +244,9 @@ export async function addItem(
   return db.transaction(async (tx) => {
     // The key is unique per user, not per dish: the user lock (before the row lock, as in
     // createRecipe) serializes twins aimed at two dishes too (#95).
-    if (input.requestId) await lockUserWrites(tx, userId);
+    // Always: deletes take it too before removing a food for good (#108), and an ingredient
+    // must not lose its food between the read and the insert.
+    await lockUserWrites(tx, userId);
     const recipe = await lockOwnRecipe(tx, userId, recipeId);
     if (!recipe) return "not_found";
     if (input.requestId) {
@@ -328,14 +336,20 @@ export async function deleteItem(
   itemId: string,
 ): Promise<boolean> {
   return db.transaction(async (tx) => {
+    await lockUserWrites(tx, userId);
     const recipe = await lockOwnRecipe(tx, userId, recipeId);
     if (!recipe) return false;
     const rows = await tx
       .delete(recipeItems)
       .where(ownItem(userId, recipeId, itemId))
-      .returning({ id: recipeItems.id });
+      .returning({ id: recipeItems.id, foodId: recipeItems.foodId });
     if (rows.length === 0) return false;
     await recomputeRecipe(tx, recipeId);
+    await purgeDeletedFoods(
+      tx,
+      userId,
+      rows.map((row) => row.foodId),
+    );
     return true;
   });
 }

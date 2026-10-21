@@ -7,7 +7,7 @@ import {
   addPortion,
   deleteOwnPortion,
   listVisiblePortions,
-  softDeleteOwnFood,
+  deleteOwnFood,
   updateOwnFood,
 } from "@/lib/foods/repo";
 import { closeTestDb, resetDb, testDb } from "@/tests/db";
@@ -183,7 +183,7 @@ describe("addEntry", () => {
       amount: { mode: "grams", grams: 300 },
     });
     await updateOwnFood(testDb, alice, foodId, { ...ownSoup, name: "Суп 2", kcal100: 10 });
-    await softDeleteOwnFood(testDb, alice, foodId);
+    await deleteOwnFood(testDb, alice, foodId);
     expect(await onlyEntry(alice)).toMatchObject({ foodName: "Мой суп", kcal100: 343, grams: 300 });
   });
 
@@ -217,7 +217,7 @@ describe("addEntry", () => {
     await addPortion(testDb, bob, shared, { label: "тарелка Боба", grams: 300 });
     const bobsPortion = await ownPortionId(bob, shared, "тарелка Боба");
     const { id: deleted } = await createOwnFood(alice, ownSoup);
-    await softDeleteOwnFood(testDb, alice, deleted);
+    await deleteOwnFood(testDb, alice, deleted);
 
     const add = (foodId: string, amount: Parameters<typeof addEntry>[2]["amount"]) =>
       addEntry(testDb, alice, { date: DAY, meal: "lunch", foodId, amount });

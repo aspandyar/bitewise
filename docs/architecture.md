@@ -29,6 +29,7 @@ tags:
 > **Калории и БЖУ считает только код в `lib/nutrition.ts`** — чистые функции с тестами. AI возвращает лишь структуру «что и сколько граммов».
 
 - Все константы (коэффициенты активности, % жиров, лимиты AI, модели) — в одном `lib/config.ts`.
+- `db/client.ts` и `lib/env.ts` помечены `server-only`: импорт базы или секретов в клиентский компонент — ошибка сборки (#32). Скрипты (сид, админ, миграции, drizzle-kit) идут через `db/connect.ts` и `lib/env-read.ts`.
 - **Снимок нутриентов в записи дневника:** при добавлении копируем название и значения продукта на 100 г, итоги записи считает код. Исправил продукт — история прошлых дней не поменялась.
 - Источник каждой записи (`manual | barcode | ai_text | ai_photo | quick`) появится колонкой `source` с default на этапах 5–10.
 - Блюдо — тоже строка `foods`: поиск, порции и дневник работают с ним как с продуктом, цифры на 100 г пересчитываются из состава.
@@ -38,10 +39,10 @@ tags:
 
 | Таблица | Поля (основные) |
 | --- | --- |
-| `users` | id (uuid), email (уникальный, в нижнем регистре), password_hash (scrypt), role (`user/manager/admin`, по умолчанию `user`; admin — только bootstrap-скриптом), client_request_id? (ключ формы регистрации, глобально уникален — частичный индекс; повтор регистрации находит созданный аккаунт, #107), created_at |
+| `users` | id (uuid), email (уникальный, в нижнем регистре), password_hash (scrypt), role (`user/manager/admin`, по умолчанию `user`; admin — только bootstrap-скриптом), client_request_id? (ключ формы регистрации, глобально уникален — частичный индекс; повтор регистрации находит созданный аккаунт, #107), token_version integer (0; смена пароля и «Выйти на всех устройствах» увеличивают — сессии со старой версией не действуют, #29), created_at |
 | `profiles` | user_id (pk → users, cascade), sex, birth_date, height_cm numeric(5,1), weight_kg numeric(5,1), activity_level, goal, updated_at |
 | `targets` | id, user_id (→ users, cascade, индекс), name («По умолчанию»), mode (`auto/manual`), kcal, protein_g, fat_g, carbs_g — numeric(8,2), is_default (частичный уникальный индекс: одна норма по умолчанию на пользователя), created_at, updated_at |
-| `foods` | id, owner_id (→ users, cascade, индекс; null = общий из сида), name, search_name (generated: `replace(lower(name), 'ё', 'е')`, GIN `gin_trgm_ops`), kcal_100, protein_100, fat_100, carbs_100 (без клетчатки), fiber_100? — numeric(8,2), source (`user/usda/label`; позже `off/ai_estimate`), seed_key (уникальный: `usda:<fdcId>` / `label:<slug>`), source_url?, copied_from? (`food_source` — откуда скопирован свой продукт, только у `source = user`), deleted_at (мягкое удаление), created_at, updated_at. CHECK: `source = user` ⇔ есть владелец ⇔ нет seed_key; нутриенты ≥ 0; source_url — только `https://`; copied_from — только у своих и никогда не `user` (копия своего продукта получает null, #87) (страница выводит ссылку ещё и через `safeSourceUrl`). Штрихкод — этап 7 |
+| `foods` | id, owner_id (→ users, cascade, индекс; null = общий из сида), name, search_name (generated: `replace(lower(name), 'ё', 'е')`, GIN `gin_trgm_ops`), kcal_100, protein_100, fat_100, carbs_100 (без клетчатки), fiber_100? — numeric(8,2), source (`user/usda/label`; позже `off/ai_estimate`), seed_key (уникальный: `usda:<fdcId>` / `label:<slug>`), source_url?, copied_from? (`food_source` — откуда скопирован свой продукт, только у `source = user`), deleted_at (мягкое удаление — только пока на продукт ссылаются записи дневника или ингредиенты; без ссылок строка удаляется совсем, #108), created_at, updated_at. CHECK: `source = user` ⇔ есть владелец ⇔ нет seed_key; нутриенты ≥ 0; source_url — только `https://`; copied_from — только у своих и никогда не `user` (копия своего продукта получает null, #87) (страница выводит ссылку ещё и через `safeSourceUrl`). Штрихкод — этап 7 |
 | `food_portions` | id, food_id (→ foods, cascade, индекс), user_id (→ users, cascade, индекс; null = общая из сида), label («1 шт»), grams numeric(8,2) > 0, created_at |
 | `recipes` | id, user_id (→ users, cascade, индекс), food_id (→ foods, cascade, unique — блюдо само строка `foods`: название, цифры на 100 г, мягкое удаление), cooked_weight_g numeric(8,2)? > 0 (null — по сырому весу), servings integer? > 0 (1–100 в форме), created_at, updated_at. Цифры на 100 г считает `calcRecipe` и пишет `lib/recipes/recompute.ts` в строку `foods` — при каждом изменении блюда, правке своего продукта-ингредиента и сиде; порция «1 порция» — единственная `food_portion` строки-блюда (0,1–5000 г, иначе нет). Блюдо в блюде нельзя |
 | `recipe_items` | id, recipe_id (→ recipes, cascade, индекс), user_id (→ users, cascade, индекс), food_id (→ foods, без каскада, индекс — поиск блюд для пересчёта), grams numeric(8,2) > 0, снимок порции portion_label, portion_grams, portion_count (все null или все заданы), created_at. Удаление блюда удаляет состав |
@@ -87,8 +88,10 @@ Postgres 17 (+ pg_trgm)                            db/schema.ts → db/migration
 - Подробно: [[Projects/Bitewise/deploy|deploy]].
 
 ## Безопасность (коротко)
-- **Сессии и пароли.** Сессия — JWT Auth.js. Пароли — scrypt (N = 2^15). При неизвестном email считается фиктивный хеш, чтобы время ответа было тем же.
-- **Rate limit в памяти** (fail-closed, до 100 тыс. ключей): вход — 10 за 15 минут, регистрация — 5 в час с IP, поиск — 120 в минуту. Снаружи — `limit_req` nginx. Хеширование паролей — не больше 2 одновременно, очередь до 20 (семафор).
+- **Сессии и пароли.** Сессия — JWT Auth.js. Каждое чтение сессии сверяет `token_version` и роль с базой (`checkToken`, один запрос по ключу): после смены пароля или «Выйти на всех устройствах» старые токены не действуют, роль не снимок на момент входа (#29). Пароли — scrypt (N = 2^15). При неизвестном email считается фиктивный хеш, чтобы время ответа было тем же. Смена пароля — с текущим паролем, 5 попыток за 15 минут на аккаунт и версию токена (после «Выйти на всех устройствах» у владельца новый запас); устройство после неё входит заново новым паролем. Ни смена пароля, ни «выйти везде» не подчиняются лимиту записи — вор с украденной сессией не может помешать себя отозвать. Пароль админа в приложении не меняется: он задаётся `ADMIN_PASSWORD`, и bootstrap вернул бы его при деплое.
+- **Регистрация** закрыта, пока `REGISTRATION=open` не открыл её (#27): страница и `registerAction` отвечают «Регистрация пока закрыта» до любой работы.
+- **Метка устройства (#30).** После входа браузер получает httpOnly-cookie `bw-device` (`__Host-` на https) — HMAC от id пользователя на `NEXTAUTH_SECRET`. Попытки входа с ней считаются в своём счётчике аккаунта: чужие неверные пароли не блокируют владельца.
+- **Rate limit в памяти** (fail-closed, до 100 тыс. ключей): вход — 10 за 15 минут, регистрация — 5 в час с IP, поиск — 120 в минуту, любая запись (server actions через `requireActionUser` / `requireWriteUser`) — 60 в минуту на пользователя (#31), смена пароля — 5 за 15 минут. Снаружи — `limit_req` nginx. Хеширование паролей — не больше 2 одновременно, очередь до 20 (семафор).
 - **Роли.** Новые аккаунты всегда `user`. `admin` появляется только через `pnpm admin:bootstrap`; привилегированные действия читают роль из БД.
 - **Доступ.** Каждый repo-запрос ограничен `user_id` из сессии. Чужое → 404.
 - **Лимиты объёма:** 1000 своих продуктов и блюд, 20 порций на продукт, 50 ингредиентов в блюде, 100 записей дневника в день и 100 000 на аккаунт.
@@ -149,7 +152,7 @@ bitewise/
 │   ├── date.ts, format.ts, forms.ts, ids.ts, env.ts, i18n/ru.ts
 │   ├── appearance.ts    # тема и акцент: палитра → CSS, скрипт в <head>, контраст
 │   ├── pwa/             # иконки, service worker, офлайн-страница, подсказка установки
-│   ├── auth/            # Auth.js, пароли, лимиты, регистрация, роли
+│   ├── auth/            # Auth.js, пароли, лимиты, регистрация, роли, версия токена, метка устройства
 │   ├── foods/ diary/ recipes/ profile/ targets/ users/   # repo.ts · schema.ts · types.ts (+ тесты)
 │   └── ai/              # этапы 9–12
 ├── db/                  # schema.ts, migrations/, seed/ (foods.json + sources/), client.ts

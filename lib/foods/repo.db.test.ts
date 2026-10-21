@@ -17,7 +17,7 @@ import {
   listColumnsFor,
   listOwnFoods,
   listVisiblePortions,
-  softDeleteOwnFood,
+  deleteOwnFood,
   updateOwnFood,
 } from "./repo";
 
@@ -119,7 +119,7 @@ describe("own foods", () => {
     const alice = await newUserId("alice@mail.com");
     const shared = await insertSharedFood({ name: "Гречка" });
     expect(await updateOwnFood(testDb, alice, shared, oats)).toBe(false);
-    expect(await softDeleteOwnFood(testDb, alice, shared)).toBe(false);
+    expect(await deleteOwnFood(testDb, alice, shared)).toBe(false);
     expect((await getVisibleFood(testDb, alice, shared))?.name).toBe("Гречка");
   });
 
@@ -127,11 +127,11 @@ describe("own foods", () => {
     const alice = await newUserId("alice@mail.com");
     const { id } = await createOwnFood(alice, oats);
 
-    expect(await softDeleteOwnFood(testDb, alice, id)).toBe(true);
+    expect(await deleteOwnFood(testDb, alice, id)).toBe(true);
     expect(await getVisibleFood(testDb, alice, id)).toBeNull();
     expect(await listOwnFoods(testDb, alice, 20)).toEqual([]);
     expect(await updateOwnFood(testDb, alice, id, oats)).toBe(false);
-    expect(await softDeleteOwnFood(testDb, alice, id)).toBe(false);
+    expect(await deleteOwnFood(testDb, alice, id)).toBe(false);
     expect(await copyFood(testDb, alice, id)).toBeNull();
     expect(await addPortion(testDb, alice, id, { label: "1 шт", grams: 50 })).toBe("not_found");
     expect(await listVisiblePortions(testDb, alice, id)).toEqual([]);
@@ -292,7 +292,7 @@ describe("portions", () => {
     await addPortion(testDb, alice, id, { label: "миска", grams: 50 });
     const [own] = await listVisiblePortions(testDb, alice, id);
     if (!own) throw new Error("no own portion");
-    await softDeleteOwnFood(testDb, alice, id);
+    await deleteOwnFood(testDb, alice, id);
 
     expect(await deleteOwnPortion(testDb, alice, id, own.id)).toBe(false);
   });
@@ -373,7 +373,7 @@ describe("own food cap", () => {
     await fillOwnFoods(alice, FOOD_LIMITS.maxOwnFoods - 1);
     const created = await createFood(testDb, alice, oats);
     if (created === "limit") throw new Error("unexpected limit");
-    await softDeleteOwnFood(testDb, alice, created.id);
+    await deleteOwnFood(testDb, alice, created.id);
 
     expect(await createFood(testDb, alice, oats)).not.toBe("limit");
   });
@@ -393,7 +393,7 @@ describe("recipe foods", () => {
     const alice = await newUserId("alice@mail.com");
     const { foodId } = await insertRecipeFood(alice, "Борщ");
     expect(await updateOwnFood(testDb, alice, foodId, values)).toBe(false);
-    expect(await softDeleteOwnFood(testDb, alice, foodId)).toBe(false);
+    expect(await deleteOwnFood(testDb, alice, foodId)).toBe(false);
     expect(await copyFood(testDb, alice, foodId)).toBeNull();
     expect(await addPortion(testDb, alice, foodId, { label: "1 тарелка", grams: 300 })).toBe(
       "not_found",

@@ -1,10 +1,14 @@
 // Creates or syncs the single admin account from ADMIN_EMAIL / ADMIN_PASSWORD.
 // Run on every deploy, before the app starts accepting sign-ups: pnpm admin:bootstrap
-import { db, sql } from "@/db/client";
+import { connectDb } from "@/db/connect";
+import { readDbEnv } from "@/lib/env-read";
 import { bootstrapAdmin, BootstrapError } from "@/lib/auth/bootstrap-admin";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { loggableError } from "@/lib/log";
 import { createAdmin, findUserByEmail, updatePasswordHash } from "@/lib/users/repo";
+
+// Scripts run outside Next, where "server-only" throws (#32).
+const { db, sql } = connectDb(readDbEnv().DATABASE_URL);
 
 const messages = {
   created: "Admin account created.",

@@ -51,6 +51,9 @@ export const users = pgTable(
     // The sign-up form's request key: a replayed registration finds the account it already made
     // instead of answering "email taken" (#107). Global, since there is no owner yet.
     clientRequestId: uuid("client_request_id"),
+    // Bumped by a password change or "sign out everywhere": a session carrying an older version
+    // is no longer valid (#29).
+    tokenVersion: integer("token_version").notNull().default(0),
     createdAt: createdAt(),
   },
   (t) => [

@@ -2,13 +2,21 @@
 
 import { redirect } from "next/navigation";
 import { db } from "@/db/client";
-import { requireActionUser } from "@/lib/auth/session";
+import { changePassword, type ChangePasswordResult } from "@/lib/auth/change-password";
+import { passwordChangeLimiter } from "@/lib/auth/limiters";
+import { hashPassword, verifyPassword } from "@/lib/auth/password";
+import { requireAccountUser, requireActionUser } from "@/lib/auth/session";
 import { todayIsoDate } from "@/lib/date";
 import { firstFieldErrors, type FormState } from "@/lib/forms";
 import { resetTargetToAuto, saveProfile } from "@/lib/profile/repo";
 import { makeProfileSchema } from "@/lib/profile/schema";
 import { setManualTarget } from "@/lib/targets/repo";
 import { targetsSchema } from "@/lib/targets/schema";
+import {
+  bumpTokenVersion,
+  findPasswordHash,
+  updatePasswordHash,
+} from "@/lib/users/repo";
 
 export async function saveProfileAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const userId = await requireActionUser(formData);
@@ -36,4 +44,23 @@ export async function resetTargetAction(formData?: FormData): Promise<void> {
   const userId = await requireActionUser(formData);
   const reset = await resetTargetToAuto(db, userId, todayIsoDate(new Date()));
   redirect(reset ? "/" : "/onboarding");
+}
+
+// Every other session ends with the old password (#29); the form signs this device in again.
+export async function changePasswordAction(formData: FormData): Promise<ChangePasswordResult> {
+  const account = await requireAccountUser(formData);
+  return changePassword(Object.fromEntries(formData), account, {
+    limiter: passwordChangeLimiter,
+    nowMs: Date.now(),
+    findPasswordHash: (id) => findPasswordHash(db, id),
+    verifyPassword,
+    hashPassword,
+    updatePasswordHash: (id, passwordHash) => updatePasswordHash(db, id, passwordHash),
+  });
+}
+
+// Ends every session of the account, this one included; the button signs out right after (#29).
+export async function signOutEverywhereAction(formData?: FormData): Promise<void> {
+  const { id } = await requireAccountUser(formData);
+  await bumpTokenVersion(db, id);
 }

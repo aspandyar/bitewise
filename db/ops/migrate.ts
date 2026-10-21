@@ -2,7 +2,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import * as schema from "@/db/schema";
-import { readDbEnv } from "@/lib/env";
+import { readDbEnv } from "@/lib/env-read";
 import { checkDatabase } from "@/lib/ops/db-checks";
 
 // Same journal table as drizzle-kit (drizzle.__drizzle_migrations), so dev and prod agree on what

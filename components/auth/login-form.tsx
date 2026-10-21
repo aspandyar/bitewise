@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useState, type FormEvent } from "react";
 import { FormError, SubmitButton, TextField } from "@/components/ui/form";
+import { rememberDeviceAction } from "@/app/(auth)/login/actions";
 import { signInErrorMessage } from "@/lib/auth/sign-in-error";
 import { ru } from "@/lib/i18n/ru";
 
@@ -28,6 +28,9 @@ export function LoginForm() {
         setError(signInErrorMessage(result?.error));
         return;
       }
+      // This browser is now one the account signed in from: its attempts skip the lockout
+      // strangers can cause (#30). Best effort: signing in already worked.
+      await rememberDeviceAction().catch(() => undefined);
       router.push("/");
       router.refresh();
     } catch {
@@ -55,12 +58,6 @@ export function LoginForm() {
       />
       <FormError message={error} />
       <SubmitButton pending={pending}>{ru.auth.loginSubmit}</SubmitButton>
-      <Link
-        href="/register"
-        className="flex min-h-11 items-center justify-center text-sm underline text-accent-text"
-      >
-        {ru.auth.toRegister}
-      </Link>
     </form>
   );
 }

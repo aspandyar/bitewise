@@ -1,16 +1,26 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import { cache } from "react";
 import { isForeignRequest } from "@/lib/request-id";
 import { withToast } from "@/lib/toast";
 import { authOptions } from "./options";
+import { allowWrite } from "./write-limit";
 
-export async function getSessionUserId(): Promise<string | null> {
+// The token version is the one checkToken just matched against the database for this request.
+// Cached per request: a layout, a page and an action may each ask, and since #29 every read
+// checks the database.
+const getSessionAccount = cache(async (): Promise<{ id: string; tokenVersion: number } | null> => {
   // Marks the read as request-time: getServerSession touches cookies and crypto randomness,
   // which cacheComponents would otherwise try to evaluate during prerendering.
   await connection();
   const session = await getServerSession(authOptions);
-  return session?.user.id || null;
+  if (!session?.user.id) return null;
+  return { id: session.user.id, tokenVersion: session.user.tokenVersion };
+});
+
+export async function getSessionUserId(): Promise<string | null> {
+  return (await getSessionAccount())?.id ?? null;
 }
 
 // Server actions call this first; pages call it inside their own <Suspense> boundary so the
@@ -27,5 +37,33 @@ export async function requireUserId(): Promise<string> {
 export async function requireActionUser(formData: FormData | undefined): Promise<string> {
   const userId = await requireUserId();
   if (isForeignRequest(formData, userId)) redirect(withToast("/", "otherAccount"));
+  limitWrites(userId);
   return userId;
+}
+
+// For the actions that end a stolen session (#29): no write cap, since a thief who keeps the
+// cap used up must not stop the owner from signing out everywhere or changing the password.
+// Replays under another account are still refused.
+// It returns the session's own token version: read from the database instead, a concurrent
+// "sign out everywhere" could hand in-flight requests a fresh password-change budget.
+export async function requireAccountUser(
+  formData: FormData | undefined,
+): Promise<{ id: string; tokenVersion: number }> {
+  const account = await getSessionAccount();
+  if (!account) redirect("/login");
+  if (isForeignRequest(formData, account.id)) redirect(withToast("/", "otherAccount"));
+  return account;
+}
+
+// For actions that write without a form (deletes, Undo): the same per-user write cap (#31).
+export async function requireWriteUser(): Promise<string> {
+  const userId = await requireUserId();
+  limitWrites(userId);
+  return userId;
+}
+
+// Past the cap nothing is written: a script looping creates and deletes is slowed to a crawl,
+// and the rare person who gets here sees why.
+function limitWrites(userId: string): void {
+  if (!allowWrite(userId, Date.now())) redirect(withToast("/", "tooFast"));
 }

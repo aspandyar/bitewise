@@ -1,7 +1,11 @@
 import { readFileSync } from "node:fs";
-import { db, sql } from "@/db/client";
+import { connectDb } from "@/db/connect";
+import { readDbEnv } from "@/lib/env-read";
 import { loadFoodSeed } from "@/lib/foods/seed";
 import { seedFileSchema } from "@/lib/foods/seed-schema";
+
+// Scripts run outside Next, where "server-only" throws (#32).
+const { db, sql } = connectDb(readDbEnv().DATABASE_URL);
 
 // Safe to run on every deploy: upserts by seed key and never touches users' own foods.
 // Scripts run as CommonJS through tsx, so no top-level await and paths are from the repo root.

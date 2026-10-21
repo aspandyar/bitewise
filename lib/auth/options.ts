@@ -3,13 +3,25 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { db } from "@/db/client";
 import { AUTH } from "@/lib/config";
 import { readAuthEnv } from "@/lib/env";
-import { findUserByEmail } from "@/lib/users/repo";
+import { loggableError } from "@/lib/log";
+import { findAuthState, findUserByEmail } from "@/lib/users/repo";
 import { authorizeCredentials } from "./authorize";
 import { loginLimiter } from "./limiters";
 import { getDummyPasswordHash, verifyPassword } from "./password";
 import { clientIpFromForwardedFor, forwardedForHeader } from "./request";
+import { checkToken } from "./token";
+import { isTrustedDevice } from "./device";
 
 const env = readAuthEnv();
+const deviceOptions = {
+  secret: env.NEXTAUTH_SECRET,
+  https: new URL(env.NEXTAUTH_URL).protocol === "https:",
+};
+
+// Auth.js hands headers through as Node's IncomingHttpHeaders; a cookie header is one string.
+function cookieHeader(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
 
 export const authOptions: NextAuthOptions = {
   secret: env.NEXTAUTH_SECRET,
@@ -31,6 +43,11 @@ export const authOptions: NextAuthOptions = {
           getDummyPasswordHash,
           limiter: loginLimiter,
           nowMs: Date.now(),
+          isTrustedDevice: (account) =>
+            isTrustedDevice(cookieHeader(req.headers?.cookie), account, {
+              ...deviceOptions,
+              nowMs: Date.now(),
+            }),
         });
         // Auth.js passes a thrown message to the client as `error`; this one is a fixed code.
         if (result === "busy") throw new Error(AUTH.busySignInError);
@@ -39,16 +56,30 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user }) {
       if (user) {
         token.sub = user.id;
         token.role = user.role;
+        token.ver = user.tokenVersion;
+        return token;
       }
-      return token;
+      // A revoked token (password changed, signed out everywhere) becomes an empty one: the
+      // session then has no user id, and every page sends the visitor to /login (#29).
+      try {
+        return (await checkToken(token, { findAuthState: (id) => findAuthState(db, id) })) ?? {};
+      } catch (error) {
+        // next-auth logs a callback error inside a plain metadata object, which the console
+        // scrubber (#76) does not walk: log it here and pass on nothing a query could carry.
+        console.error("session check failed", loggableError(error));
+        throw new Error("session check failed");
+      }
     },
     session({ session, token }) {
       // A token without a role predates roles; treating it as "user" never grants extra rights.
-      return { ...session, user: { id: token.sub ?? "", role: token.role ?? "user" } };
+      return {
+        ...session,
+        user: { id: token.sub ?? "", role: token.role ?? "user", tokenVersion: token.ver ?? 0 },
+      };
     },
   },
 };

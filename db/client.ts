@@ -1,9 +1,6 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import "server-only";
 import { readDbEnv } from "@/lib/env";
-import * as schema from "./schema";
+import { connectDb } from "./connect";
 
-const { DATABASE_URL } = readDbEnv();
-
-export const sql = postgres(DATABASE_URL);
-export const db = drizzle(sql, { schema });
+// A client component importing the database fails the build (#32); scripts use db/connect.
+export const { sql, db } = connectDb(readDbEnv().DATABASE_URL);
