@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { db } from "@/db/client";
 import { AUTH } from "@/lib/config";
 import { readAuthEnv } from "@/lib/env";
+import { loggableError } from "@/lib/log";
 import { findAuthState, findUserByEmail } from "@/lib/users/repo";
 import { authorizeCredentials } from "./authorize";
 import { loginLimiter } from "./limiters";
@@ -64,7 +65,14 @@ export const authOptions: NextAuthOptions = {
       }
       // A revoked token (password changed, signed out everywhere) becomes an empty one: the
       // session then has no user id, and every page sends the visitor to /login (#29).
-      return (await checkToken(token, { findAuthState: (id) => findAuthState(db, id) })) ?? {};
+      try {
+        return (await checkToken(token, { findAuthState: (id) => findAuthState(db, id) })) ?? {};
+      } catch (error) {
+        // next-auth logs a callback error inside a plain metadata object, which the console
+        // scrubber (#76) does not walk: log it here and pass on nothing a query could carry.
+        console.error("session check failed", loggableError(error));
+        throw new Error("session check failed");
+      }
     },
     session({ session, token }) {
       // A token without a role predates roles; treating it as "user" never grants extra rights.
