@@ -92,6 +92,21 @@ describe("diary entries", () => {
     expect(await entryCount(alice)).toBe(1);
   });
 
+  it("a replayed quick add at the day limit returns the first entry", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const food = await insertSharedFood({ name: "Овсянка" });
+    await addEntry(testDb, alice, {
+      date: "2026-10-20",
+      meal: "breakfast",
+      foodId: food,
+      amount: { mode: "grams", grams: 60 },
+    });
+    const input = { date: DAY, meal: "breakfast" as const, foodId: food, requestId: randomUUID() };
+    const limits = { maxEntriesPerDay: 1, maxEntriesTotal: 10 };
+    const first = await quickAddEntry(testDb, alice, input, limits);
+    expect(await quickAddEntry(testDb, alice, input, limits)).toEqual(first);
+  });
+
   it("concurrent requests with one key add one entry", async () => {
     const alice = await newUserId("alice@mail.com");
     const input = { date: DAY, meal: "snack" as const, values: coffee, requestId: randomUUID() };
@@ -121,6 +136,57 @@ describe("diary entries", () => {
   });
 });
 
+describe("a key reused for something else", () => {
+  it("is refused instead of answering with the other row", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const food = await insertSharedFood({ name: "Овсянка" });
+    const requestId = randomUUID();
+    const grams = { mode: "grams" as const, grams: 60 };
+    await addEntry(testDb, alice, {
+      date: DAY,
+      meal: "breakfast",
+      foodId: food,
+      amount: grams,
+      requestId,
+    });
+    expect(
+      await addEntry(testDb, alice, {
+        date: "2026-10-20",
+        meal: "breakfast",
+        foodId: food,
+        amount: grams,
+        requestId,
+      }),
+    ).toBe("not_found");
+    expect(
+      await quickAddEntry(testDb, alice, { date: DAY, meal: "lunch", foodId: food, requestId }),
+    ).toBe("not_found");
+    expect(
+      await addQuickEntry(testDb, alice, { date: DAY, meal: "snack", values: coffee, requestId }),
+    ).toBe("not_found");
+    expect(await entryCount(alice)).toBe(1);
+  });
+
+  it("refuses a portion or an ingredient for another food or dish", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const bread = await insertSharedFood({ name: "Хлеб" });
+    const cheese = await insertSharedFood({ name: "Сыр" });
+    const requestId = randomUUID();
+    const portion = { label: "ломтик", grams: 30 };
+    expect(await addPortion(testDb, alice, bread, portion, requestId)).toBe("ok");
+    expect(await addPortion(testDb, alice, cheese, portion, requestId)).toBe("not_found");
+    const [a, b] = [
+      await createRecipe(testDb, alice, { name: "А", cookedWeightG: null, servings: null }),
+      await createRecipe(testDb, alice, { name: "Б", cookedWeightG: null, servings: null }),
+    ];
+    if (a === "limit" || b === "limit") throw new Error("recipe cap reached in a test");
+    const input = { foodId: bread, amount: { mode: "grams" as const, grams: 50 }, requestId };
+    expect(await addItem(testDb, alice, a.id, input)).toBe("ok");
+    expect(await addItem(testDb, alice, b.id, input)).toBe("not_found");
+    expect(await rows(recipeItems)).toBe(1);
+  });
+});
+
 describe("foods and portions", () => {
   it("createFood with the same key creates one food and says the second was a replay", async () => {
     const alice = await newUserId("alice@mail.com");
@@ -130,6 +196,17 @@ describe("foods and portions", () => {
     expect(first).toEqual({ id: expect.any(String), replayed: false });
     expect(second).toEqual({ id: first !== "limit" ? first.id : "", replayed: true });
     expect(await rows(foods)).toBe(1);
+  });
+
+  it("keys are per owner", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const bob = await newUserId("bob@mail.com");
+    const requestId = randomUUID();
+    await createFood(testDb, alice, ownFood, { requestId });
+    expect(await createFood(testDb, bob, ownFood, { requestId })).toMatchObject({
+      replayed: false,
+    });
+    expect(await rows(foods)).toBe(2);
   });
 
   it("copyFood with the same key makes one copy with its portions copied once", async () => {
@@ -164,6 +241,53 @@ describe("recipes", () => {
     expect(await createRecipe(testDb, alice, porridge, requestId)).toEqual(first);
     expect(await rows(recipes)).toBe(1);
     expect(await rows(foods)).toBe(1);
+  });
+
+  it("concurrent creates with one key make one dish", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const requestId = randomUUID();
+    const [a, b] = await Promise.all([
+      createRecipe(testDb, alice, porridge, requestId),
+      createRecipe(testDb, alice, porridge, requestId),
+    ]);
+    expect(a).toEqual(b);
+    expect(await rows(recipes)).toBe(1);
+  });
+
+  it("concurrent ingredient adds with one key, even into two dishes, add one row", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const [a, b] = [
+      await createRecipe(testDb, alice, porridge),
+      await createRecipe(testDb, alice, { ...porridge, name: "Суп" }),
+    ];
+    if (a === "limit" || b === "limit") throw new Error("recipe cap reached in a test");
+    const oats = await insertSharedFood({ name: "Овсянка" });
+    const input = {
+      foodId: oats,
+      amount: { mode: "grams" as const, grams: 80 },
+      requestId: randomUUID(),
+    };
+    const results = await Promise.all([
+      addItem(testDb, alice, a.id, input),
+      addItem(testDb, alice, a.id, input),
+      addItem(testDb, alice, b.id, input),
+    ]);
+    expect(results.filter((result) => result === "ok").length).toBeGreaterThanOrEqual(2);
+    expect(await rows(recipeItems)).toBe(1);
+  });
+
+  it("a replay of the last allowed ingredient is not refused by the cap", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const recipe = await createRecipe(testDb, alice, porridge);
+    if (recipe === "limit") throw new Error("recipe cap reached in a test");
+    const oats = await insertSharedFood({ name: "Овсянка" });
+    const input = {
+      foodId: oats,
+      amount: { mode: "grams" as const, grams: 80 },
+      requestId: randomUUID(),
+    };
+    expect(await addItem(testDb, alice, recipe.id, input, { maxItems: 1 })).toBe("ok");
+    expect(await addItem(testDb, alice, recipe.id, input, { maxItems: 1 })).toBe("ok");
   });
 
   it("addItem with the same key adds one ingredient", async () => {

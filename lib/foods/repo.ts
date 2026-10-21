@@ -208,6 +208,17 @@ export async function copyFood(
   requestId: string | null = null,
 ): Promise<{ id: string } | null | "limit"> {
   return db.transaction(async (tx) => {
+    // The key first, under the lock createFood takes: a replay returns the copy even if the
+    // source has gone out of sight since.
+    await lockUserWrites(tx, userId);
+    if (requestId) {
+      const [existing] = await tx
+        .select({ id: foods.id })
+        .from(foods)
+        .where(and(eq(foods.ownerId, userId), eq(foods.clientRequestId, requestId)))
+        .limit(1);
+      if (existing) return existing;
+    }
     const [source] = await tx
       .select({
         name: foods.name,
@@ -255,11 +266,12 @@ export async function addPortion(
     await lockUserWrites(tx, userId);
     if (requestId) {
       const [existing] = await tx
-        .select({ id: foodPortions.id })
+        .select({ foodId: foodPortions.foodId })
         .from(foodPortions)
         .where(and(eq(foodPortions.userId, userId), eq(foodPortions.clientRequestId, requestId)))
         .limit(1);
-      if (existing) return "ok";
+      // A key reused for another food is refused, not answered with this portion.
+      if (existing) return existing.foodId === foodId ? "ok" : "not_found";
     }
     const [food] = await tx
       .select({ id: foods.id })

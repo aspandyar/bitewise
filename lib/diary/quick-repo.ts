@@ -8,7 +8,13 @@ import type { IsoDate } from "@/lib/date";
 import { listColumnsFor, visibleTo } from "@/lib/foods/repo";
 import { calcEntryNutrients } from "@/lib/nutrition";
 import { lastAmount } from "./quick";
-import { checkEntryLimits, entryColumns, findEntryByRequest, type EntryLimits } from "./repo";
+import {
+  checkEntryLimits,
+  entryColumns,
+  findEntryByRequest,
+  sameTarget,
+  type EntryLimits,
+} from "./repo";
 import type { DiaryEntry } from "./types";
 
 export type QuickFood = {
@@ -161,7 +167,7 @@ export async function quickAddEntry(
   return db.transaction(async (tx) => {
     await lockUserWrites(tx, userId);
     const replayed = await findEntryByRequest(tx, userId, input.requestId);
-    if (replayed) return replayed;
+    if (replayed) return sameTarget(replayed, input) ? { id: replayed.id } : "not_found";
     const [food] = await tx
       .select({
         name: foods.name,

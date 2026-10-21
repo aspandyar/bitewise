@@ -169,6 +169,8 @@ export async function addQuickEntryAction(
     values,
     requestId: readRequestId(formData),
   });
+  // A request key already used for another entry: a tampered request, not a person.
+  if (result === "not_found") notFound();
   if (result === "limit") return { formError: ru.diary.entryLimit(DIARY_LIMITS.maxEntriesPerDay) };
   if (result === "total_limit") {
     return { formError: ru.diary.entryTotalLimit(DIARY_LIMITS.maxEntriesTotal) };

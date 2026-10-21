@@ -1,4 +1,4 @@
-import { expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import { REQUEST_ID } from "@/lib/config";
 import { readRequestId, stampRequestId } from "./request-id";
 
@@ -25,4 +25,19 @@ it("stamps every submit with a fresh key the server accepts", () => {
   const second = stampRequestId(new FormData());
   expect(readRequestId(first)).not.toBeNull();
   expect(readRequestId(first)).not.toBe(readRequestId(second));
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+it("reads nothing from an argument that is not a form", () => {
+  expect(readRequestId("0b6f3f0e-5a7c-4c1e-9d2a-3f4b5c6d7e8f" as unknown as FormData)).toBeNull();
+  expect(readRequestId(42 as unknown as FormData)).toBeNull();
+});
+
+it("sends the form without a key where randomUUID is missing (plain http on a LAN address)", () => {
+  vi.stubGlobal("crypto", {});
+  const data = stampRequestId(new FormData());
+  expect(data.has(REQUEST_ID.field)).toBe(false);
 });

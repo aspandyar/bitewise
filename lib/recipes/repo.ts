@@ -236,18 +236,21 @@ export async function addItem(
   limits: { maxItems: number } = RECIPE_LIMITS,
 ): Promise<RecipeWriteResult | "grams_out_of_range"> {
   return db.transaction(async (tx) => {
+    // The key is unique per user, not per dish: the user lock (before the row lock, as in
+    // createRecipe) serializes twins aimed at two dishes too (#95).
+    if (input.requestId) await lockUserWrites(tx, userId);
     const recipe = await lockOwnRecipe(tx, userId, recipeId);
     if (!recipe) return "not_found";
-    // Under the recipe's row lock, so a concurrent twin (#95) waits and then finds this row.
     if (input.requestId) {
       const [existing] = await tx
-        .select({ id: recipeItems.id })
+        .select({ recipeId: recipeItems.recipeId })
         .from(recipeItems)
         .where(
           and(eq(recipeItems.userId, userId), eq(recipeItems.clientRequestId, input.requestId)),
         )
         .limit(1);
-      if (existing) return "ok";
+      // A key reused for another dish is refused, not answered with this ingredient.
+      if (existing) return existing.recipeId === recipeId ? "ok" : "not_found";
     }
     // Not a recipe: dishes inside dishes are not supported, which also rules out cycles.
     const [food] = await tx
