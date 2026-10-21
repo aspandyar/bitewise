@@ -37,3 +37,15 @@ export function readDbEnv(source: NodeJS.ProcessEnv = process.env): DbEnv {
 export function readAuthEnv(source: NodeJS.ProcessEnv = process.env): AuthEnv {
   return authEnvSchema.parse(source);
 }
+
+// Sign-up stays closed until bots and email probing are handled (#27): the owner opens it with
+// REGISTRATION=open. A typo fails fast rather than silently opening or closing it.
+const registrationSchema = z.object({
+  REGISTRATION: z.enum(["open", "closed"]).default("closed"),
+});
+
+export function isRegistrationOpen(
+  source: Record<string, string | undefined> = process.env,
+): boolean {
+  return registrationSchema.parse(source).REGISTRATION === "open";
+}

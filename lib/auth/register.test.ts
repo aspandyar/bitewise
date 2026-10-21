@@ -11,6 +11,7 @@ function makeDeps(overrides: Partial<RegisterDeps> = {}): RegisterDeps {
     nowMs: 0,
     hashPassword: async (password) => `hashed:${password}`,
     createUser: async () => ({ id: "u1" }),
+    registrationOpen: true,
     ...overrides,
   };
 }
@@ -18,6 +19,19 @@ function makeDeps(overrides: Partial<RegisterDeps> = {}): RegisterDeps {
 const valid = { email: "  ME@mail.com ", password: "12345678" };
 
 describe("registerUser", () => {
+  it("refuses everyone while registration is closed, before any hashing or counting (#27)", async () => {
+    const hashPassword = vi.fn(async (password: string) => `hashed:${password}`);
+    const createUser = vi.fn(async () => ({ id: "u1" }));
+    const result = await registerUser(
+      valid,
+      "1.1.1.1",
+      makeDeps({ registrationOpen: false, hashPassword, createUser }),
+    );
+    expect(result).toEqual({ ok: false, formError: ru.auth.registrationClosed });
+    expect(hashPassword).not.toHaveBeenCalled();
+    expect(createUser).not.toHaveBeenCalled();
+  });
+
   it("creates a user with a normalized email and hashed password", async () => {
     const createUser = vi.fn(async () => ({ id: "u1" }));
     expect(await registerUser(valid, "1.1.1.1", makeDeps({ createUser }))).toEqual({ ok: true });

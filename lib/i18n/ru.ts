@@ -43,6 +43,7 @@ export const ru = {
     signOut: "Выйти",
     invalidCredentials: "Неверный email или пароль",
     registerFailed: "Не удалось зарегистрироваться с этим email",
+    registrationClosed: "Регистрация пока закрыта",
     tooManyAttempts: "Слишком много попыток. Попробуйте позже",
   },
   profile: {

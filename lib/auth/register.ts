@@ -10,6 +10,7 @@ export type RegisterDeps = {
   nowMs: number;
   hashPassword(password: string): Promise<string>;
   createUser(email: string, passwordHash: string): Promise<{ id: string } | null>;
+  registrationOpen: boolean;
 };
 
 export type RegisterResult =
@@ -22,6 +23,8 @@ export async function registerUser(
   ip: string,
   deps: RegisterDeps,
 ): Promise<RegisterResult> {
+  // Closed sign-up answers the same for every email, before any work a bot could make us do.
+  if (!deps.registrationOpen) return { ok: false, formError: ru.auth.registrationClosed };
   const parsed = credentialsSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, fieldErrors: firstFieldErrors(parsed.error) };
   const { email, password } = parsed.data;

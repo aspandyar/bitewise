@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readAuthEnv } from "./env-read";
+import { isRegistrationOpen, readAuthEnv } from "./env-read";
 
 const secret = "x".repeat(32);
 
@@ -42,5 +42,17 @@ describe("readAuthEnv", () => {
         NEXTAUTH_URL: "http://localhost:3000",
       }).NEXTAUTH_URL,
     ).toBe("http://localhost:3000");
+  });
+});
+
+describe("isRegistrationOpen", () => {
+  it("is closed unless REGISTRATION=open says otherwise (#27)", () => {
+    expect(isRegistrationOpen({})).toBe(false);
+    expect(isRegistrationOpen({ REGISTRATION: "closed" })).toBe(false);
+    expect(isRegistrationOpen({ REGISTRATION: "open" })).toBe(true);
+  });
+
+  it("fails fast on a value it does not know", () => {
+    expect(() => isRegistrationOpen({ REGISTRATION: "yes" })).toThrow();
   });
 });
