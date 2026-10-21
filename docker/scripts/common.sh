@@ -1,11 +1,10 @@
 # Shared by the release scripts: run from the stack root (/opt/bitewise or the repo).
-# COMPOSE_ENV_FILE / APP_ENV_FILE point the local run at .local-prod/app.env instead of .env.
+# COMPOSE_ENV_FILE points the local run at .local-prod/app.env instead of .env.
 # -E: the ERR trap (release rollback) also fires for failures inside functions.
 set -Eeuo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 
 ENV_FILE="${COMPOSE_ENV_FILE:-.env}"
-export APP_ENV_FILE="${APP_ENV_FILE:-$ENV_FILE}"
 # DOCKER=podman runs the same scripts with podman (podman compose) on a laptop.
 COMPOSE=("${DOCKER:-docker}" compose -p bitewise-prod -f docker-compose.prod.yml --env-file "$ENV_FILE")
 
@@ -14,6 +13,15 @@ COMPOSE=("${DOCKER:-docker}" compose -p bitewise-prod -f docker-compose.prod.yml
 env_value() {
   { grep -E "^$1=" "$ENV_FILE" || true; } | tail -n 1 | cut -d= -f2-
 }
+
+# Compose resolves the app image even for commands that only touch db or nginx (backup, TLS), so
+# they run with the live release. Before the first release "unreleased" names no image: db and
+# nginx start, app cannot.
+if [ -z "${IMAGE_TAG:-}" ]; then
+  IMAGE_TAG="$(cat .release-tag 2> /dev/null || true)"
+  IMAGE_TAG="${IMAGE_TAG:-$(env_value IMAGE_TAG)}"
+  export IMAGE_TAG="${IMAGE_TAG:-unreleased}"
+fi
 
 log() {
   printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"

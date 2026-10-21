@@ -25,13 +25,16 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials, req) {
         const ip = clientIpFromForwardedFor(forwardedForHeader(req.headers?.["x-forwarded-for"]));
-        return authorizeCredentials(credentials, ip, {
+        const result = await authorizeCredentials(credentials, ip, {
           findUserByEmail: (email) => findUserByEmail(db, email),
           verifyPassword,
           getDummyPasswordHash,
           limiter: loginLimiter,
           nowMs: Date.now(),
         });
+        // Auth.js passes a thrown message to the client as `error`; this one is a fixed code.
+        if (result === "busy") throw new Error(AUTH.busySignInError);
+        return result;
       },
     }),
   ],

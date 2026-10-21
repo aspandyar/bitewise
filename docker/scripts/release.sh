@@ -1,10 +1,35 @@
 #!/usr/bin/env bash
-# One release: backup → migrations → seed → admin → new app container → health.
-# Usage: docker/scripts/release.sh <image tag>   (SKIP_PULL=1 for a locally built image)
-# Any failure after the backup puts the previous tag back and exits non-zero.
+# One release: backup → pull by digest → app role → migrations → seed → admin → new app → health.
+# Usage: docker/scripts/release.sh <commit sha> <sha256:digest>
+#        docker/scripts/release.sh "$(cat .release-tag.prev)"   (rollback: <sha>@<digest>)
+#        SKIP_PULL=1 docker/scripts/release.sh <tag>   (locally built image, no digest)
+# The image is pulled by digest (from the workflow's image-digest artifact), so a tag re-pointed
+# in the registry cannot change what runs (#103).
+# Any failure after the backup puts the previous release back and exits non-zero.
 source "$(dirname "$0")/common.sh"
 
-tag="${1:?usage: release.sh <image tag>}"
+usage="usage: release.sh <commit sha> <sha256:digest>"
+tag="${1:?$usage}"
+digest="${2:-}"
+if [[ "$tag" == *@* ]]; then
+  digest="${tag#*@}"
+  tag="${tag%%@*}"
+fi
+commit="$tag"
+if [ -n "${SKIP_PULL:-}" ]; then
+  # A local image has its own digest; one from the registry would never match it.
+  if [ -n "$digest" ]; then
+    log "SKIP_PULL runs a locally built image: pass its tag without a digest"
+    exit 1
+  fi
+else
+  if [[ ! "$commit" =~ ^[0-9a-f]{40}$ ]] || [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+    log "$usage (full commit sha; digest: gh run download <run id> -n image-digest)"
+    exit 1
+  fi
+  tag="$commit@$digest"
+fi
+image="ghcr.io/aspandyar/bitewise:$tag"
 health_wait_sec="${HEALTH_WAIT_SEC:-60}"
 current_file=".release-tag"
 previous_tag="$(cat "$current_file" 2> /dev/null || true)"
@@ -20,8 +45,9 @@ if [ "$perm" != "600" ]; then
   exit 1
 fi
 
-run_app() {
-  IMAGE_TAG="$tag" "${COMPOSE[@]}" run --rm --no-deps app "$@"
+# One release step (a service of the "ops" profile) on the new image.
+run_step() {
+  IMAGE_TAG="$tag" "${COMPOSE[@]}" --profile ops run --rm --no-deps "$1"
 }
 
 rollback() {
@@ -49,16 +75,29 @@ restart_nginx_if_changed() {
 wait_for_db
 docker/scripts/backup.sh
 
+# Before the rollback trap: until here nothing about the running app has changed, and a refused
+# role or a failed pull must not recreate it.
+docker/scripts/db-role.sh
+
 if [ -z "${SKIP_PULL:-}" ]; then
-  IMAGE_TAG="$tag" "${COMPOSE[@]}" pull app
+  # Pulled here, not by compose (pull_policy: never): the digest pins the content, and the label
+  # ties it to the commit, so an image built from another branch is refused (#103).
+  "${DOCKER:-docker}" pull "$image"
+  revision="$("${DOCKER:-docker}" image inspect --format \
+    '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$image")"
+  if [ "$revision" != "$commit" ]; then
+    log "image $digest was built from ${revision:-an unknown commit}, not $commit"
+    exit 1
+  fi
 fi
 
 trap rollback ERR
 # Migrations run before the new container starts, so it never meets an old schema (deploy rules).
-run_app node ops/migrate.js
-run_app node ops/seed.js
+# They alone run as the owner; seed and admin only change rows, so they use the app role.
+run_step migrate
+run_step seed
 # Before the app accepts sign-ups, so no one can register the admin email first (#17).
-run_app node ops/bootstrap-admin.js
+run_step bootstrap-admin
 IMAGE_TAG="$tag" "${COMPOSE[@]}" up -d app
 
 for ((i = 0; i < health_wait_sec; i++)); do

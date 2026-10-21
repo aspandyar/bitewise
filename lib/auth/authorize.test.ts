@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { authorizeCredentials, type AuthorizeDeps } from "./authorize";
 import { createRateLimiter } from "./rate-limit";
 import { UNKNOWN_IP } from "./request";
+import { BusyError } from "./semaphore";
 
 function makeDeps(overrides: Partial<AuthorizeDeps> = {}): AuthorizeDeps {
   return {
@@ -108,5 +109,36 @@ describe("authorizeCredentials", () => {
     );
     expect(user).toBeNull();
     consoleError.mockRestore();
+  });
+
+  it("answers busy and keeps the attempt when the hashing queue is full", async () => {
+    const limiter = createRateLimiter({ max: 1, windowMs: 1000, maxKeys: 100 });
+    const busy = makeDeps({
+      limiter,
+      verifyPassword: async () => {
+        throw new BusyError();
+      },
+    });
+    expect(await authorizeCredentials(right, "1.1.1.1", busy)).toBe("busy");
+    // Neither the IP nor the account budget was spent: the same client signs in right after.
+    expect(await authorizeCredentials(right, "1.1.1.1", makeDeps({ limiter }))).not.toBeNull();
+  });
+
+  it("answers busy for an unknown email when even the dummy hash cannot be computed", async () => {
+    const limiter = createRateLimiter({ max: 1, windowMs: 1000, maxKeys: 100 });
+    const deps = makeDeps({
+      limiter,
+      getDummyPasswordHash: async () => {
+        throw new BusyError();
+      },
+    });
+    expect(
+      await authorizeCredentials(
+        { email: "nobody@mail.com", password: "x".repeat(8) },
+        "1.1.1.1",
+        deps,
+      ),
+    ).toBe("busy");
+    expect(await authorizeCredentials(right, "1.1.1.1", makeDeps({ limiter }))).not.toBeNull();
   });
 });
