@@ -91,7 +91,7 @@
 - Субагенты: reviewer, security-reviewer.
 
 ## Документы
-- `docs/deploy.md` — runbook первого запуска: пользователь, Docker, файрвол (22/80/443), `.env`, DNS, `init-tls.sh`, cron, первый `/deploy`.
+- `docs/ru/deploy.md` — runbook первого запуска: пользователь, Docker, файрвол (22/80/443), `.env`, DNS, `init-tls.sh`, cron, первый `/deploy`.
 - Скилл `/deploy` — под новые скрипты.
 - `architecture.md`, `notes.md`, `PROJECT_PLAN.md`.
 

@@ -20,7 +20,7 @@ tags:
 ```bash
 pnpm install
 cp .env.example .env
-docker compose up -d db
+docker compose up -d --wait db
 pnpm db:migrate
 pnpm db:seed
 pnpm admin:bootstrap   # по желанию
@@ -33,7 +33,7 @@ pnpm dev
 
 | Переменная | Где нужна | Примечание |
 | --- | --- | --- |
-| `DATABASE_URL` | приложение, drizzle-kit, сид, скрипты | dev-база: `127.0.0.1:5433/bitewise` |
+| `DATABASE_URL` | приложение, drizzle-kit, сид, скрипты | dev-база: `localhost:5433/bitewise` |
 | `DATABASE_URL_TEST` | `pnpm test` (db-тесты) | отдельная база `bitewise_test`; тесты её очищают |
 | `NEXTAUTH_SECRET` | приложение | не короче 32 символов, подписывает JWT-сессии; `openssl rand -base64 32` |
 | `NEXTAUTH_URL` | приложение | в production — только `https` (кроме localhost) |
@@ -84,7 +84,7 @@ Vitest с двумя проектами (`vitest.config.ts`):
 
 ## Линт и формат
 - `pnpm lint` = ESLint → `next typegen` (типы роутов, без них `tsc` падает) → `tsc --noEmit`. TypeScript: `strict` + `noUncheckedIndexedAccess`.
-- Prettier запускается хуком Claude Code после каждой правки ts/tsx/md/json. Вручную — `pnpm format`. Каталоги `docs/` и `.claude/` и файл `CLAUDE.md` Prettier не трогает: `docs/ru/` — заметки Obsidian.
+- Хук Claude Code после каждой правки: Prettier + `eslint --fix` для ts/tsx, Prettier для css/json/md. Вручную — `pnpm format`. Каталоги `docs/` и `.claude/` и файл `CLAUDE.md` Prettier не трогает: `docs/ru/` — заметки Obsidian.
 
 ## CI
 `.github/workflows/ci.yml` на каждый push и PR: Postgres 17 как service → `pnpm install --frozen-lockfile` → `pnpm lint` → `pnpm test`. Полный прогон занимает около минуты. Мерж в `master` — только при зелёном CI.

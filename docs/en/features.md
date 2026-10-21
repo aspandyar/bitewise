@@ -12,7 +12,7 @@ Marks: ✅ works, 🟨 partly (what is missing is in brackets), no mark — not 
 - ✅ Onboarding: sex, birth date, height, weight, activity level, goal (lose / maintain / gain).
 - ✅ Target: BMR by the **Mifflin-St Jeor** formula × activity factor (TDEE) ± a goal adjustment.
 - ✅ Macros: protein in g per kg of body weight, fat as % of kcal, carbs are the rest.
-- 🟨 Manual override of the target (several target profiles per day, such as "training day" / "rest day", not yet).
+- 🟨 Manual override of the target (several target profiles per day — not yet).
 
 ### Food database
 - 🟨 A food is stored **per 100 g**: kcal, protein, fat, carbs, fiber (sugar and salt not yet).

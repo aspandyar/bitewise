@@ -100,4 +100,4 @@ Close or push the previous branch before a new chat. The state between chats liv
 - `README.md` is for GitHub visitors, in English; `README.ru.md` is the Russian version. Screenshots live in `docs/images/`.
 
 ## Obsidian
-`docs/ru/*.md` are notes in an Obsidian vault: `type/status/review/tags` frontmatter, an "up" line and wiki links. That is why Prettier skips them. `/sync-notes` copies the status to the vault by hand; the vault path is in `CLAUDE.local.md`.
+`docs/ru/*.md` (except the `README.md` index) are notes in an Obsidian vault: `type/status/review/tags` frontmatter, an "up" line and wiki links. That is why Prettier skips them. `/sync-notes` copies the status to the vault by hand; the vault path is in `CLAUDE.local.md`.

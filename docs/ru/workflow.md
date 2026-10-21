@@ -108,4 +108,4 @@ tags:
 - `README.md` — для посетителя GitHub, по-английски; `README.ru.md` — русская версия. Скриншоты — `docs/images/`.
 
 ## Obsidian
-`docs/ru/*.md` — это заметки волта: frontmatter `type/status/review/tags`, строка «Наверх» и wiki-ссылки. Поэтому Prettier их не форматирует. `/sync-notes` переносит статус в волт вручную, путь к волту лежит в `CLAUDE.local.md`.
+`docs/ru/*.md` (кроме оглавления `README.md`) — это заметки волта: frontmatter `type/status/review/tags`, строка «Наверх» и wiki-ссылки. Поэтому Prettier их не форматирует. `/sync-notes` переносит статус в волт вручную, путь к волту лежит в `CLAUDE.local.md`.

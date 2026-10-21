@@ -12,7 +12,7 @@ Principle: **numbers come from the food database and a formula, never from a neu
 ---
 
 ## Current status
-The MVP is done (stages 0–6); production is built and tested on a laptop. **Next step**: the first `/deploy` once there is a server and a domain (#8); then v0.2, starting with barcodes (`ft/barcode`).
+Stages 0–5 and 6a are done, 6b without a server: production is built and tested on a laptop. **Next step**: the first `/deploy` once there is a server and a domain (#8); then v0.2, starting with barcodes (`ft/barcode`).
 
 - **Skeleton** (`ft/karkas`): Next.js, TypeScript strict, Tailwind, Postgres in Docker, Drizzle, Vitest, CI.
 - **Sign-in, profile, target** (`ft/auth-profile`): Auth.js v4 (email + password, JWT), roles user/manager/admin (the admin comes from `pnpm admin:bootstrap`), onboarding, kcal/macro target automatic or manual.
@@ -59,7 +59,7 @@ The MVP is done (stages 0–6); production is built and tested on a laptop. **Ne
 | 11 | `ft/ai-photo` | a photo of a plate → "food + grams + confidence" list → confirmation card |
 | 12 | `ft/ai-chat` | a short chat to correct the recognition: "there were 8, not 6" |
 
-### Later (see [features](features.md), Tier 3)
+### Later (see [features](features.md), Tier 4)
 Dishes that fit the remaining target, a shopping list, a weekly meal plan, reminders, CSV/Markdown export.
 
 ---

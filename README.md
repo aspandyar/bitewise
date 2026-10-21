@@ -19,7 +19,7 @@ Most calorie counters are either slow (five screens per entry) or "smart" and im
 
 - **Targets.** A profile (sex, age, height, weight, activity, goal) → a calorie target by the Mifflin-St Jeor formula plus macros; or set your own.
 - **Diary.** Breakfast, lunch, dinner, snack; a food in grams or portions ("1 piece = 60 g"); day totals and progress to the target; day navigation in the phone's time zone.
-- **Fast input.** Favorites and recent foods in one tap, with Undo; "Repeat" yesterday's breakfast; "just 450 kcal" without a food.
+- **Fast input.** Favorites and recent foods in one tap, with Undo; "Repeat" your last breakfast; "just 450 kcal" without a food.
 - **Foods.** 222 base foods (USDA, translated, plus product labels), search from the first letter and with typos, your own foods and portions, copying a shared food to your own.
 - **Your dishes.** A borscht of eight ingredients with the cooked weight → kcal per 100 g and per serving; it goes into the diary like any food.
 - **A phone app.** Installs to the home screen (PWA), dark theme and your own accent color, a clear screen offline, and actions retry by themselves once the network is back.
@@ -29,7 +29,7 @@ The interface is in Russian.
 
 ## Status
 
-The MVP is done: stages 0–6 and several polish batches. The production setup (Docker Compose, nginx, TLS, backups, release with rollback) is built and tested locally; a server and a domain are not chosen yet, so there is no public address, and sign-up is closed by default.
+Stages 0–5 and 6a are done, plus several polish and security batches; stage 6b (production) is built without a server. The production setup (Docker Compose, nginx, TLS, backups, release with rollback) is built and tested locally; a server and a domain are not chosen yet, so there is no public address, and sign-up is closed by default.
 
 Next: a barcode scanner (Open Food Facts), weight and water, then AI input by text and by photo. Details: [project plan](docs/en/PROJECT_PLAN.md).
 
@@ -44,7 +44,7 @@ You need Node 24+, pnpm and Docker (or Podman) for Postgres.
 ```bash
 pnpm install
 cp .env.example .env     # fill in NEXTAUTH_SECRET and ADMIN_PASSWORD
-docker compose up -d db
+docker compose up -d --wait db
 pnpm db:migrate && pnpm db:seed && pnpm admin:bootstrap
 pnpm dev                 # http://localhost:3000, sign in as the admin
 ```

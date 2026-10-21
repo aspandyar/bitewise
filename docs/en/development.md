@@ -12,7 +12,7 @@ Related: [architecture](architecture.md) · [workflow](workflow.md) · [API](api
 ```bash
 pnpm install
 cp .env.example .env
-docker compose up -d db
+docker compose up -d --wait db
 pnpm db:migrate
 pnpm db:seed
 pnpm admin:bootstrap   # optional
@@ -25,7 +25,7 @@ The template is `.env.example` (in git). `.env` itself never goes into git. Vari
 
 | Variable | Used by | Notes |
 | --- | --- | --- |
-| `DATABASE_URL` | the app, drizzle-kit, seed, scripts | dev database: `127.0.0.1:5433/bitewise` |
+| `DATABASE_URL` | the app, drizzle-kit, seed, scripts | dev database: `localhost:5433/bitewise` |
 | `DATABASE_URL_TEST` | `pnpm test` (db tests) | a separate `bitewise_test` database; tests wipe it |
 | `NEXTAUTH_SECRET` | the app | at least 32 characters, signs JWT sessions; `openssl rand -base64 32` |
 | `NEXTAUTH_URL` | the app | only `https` in production (except localhost) |
@@ -76,7 +76,7 @@ Vitest with two projects (`vitest.config.ts`):
 
 ## Lint and format
 - `pnpm lint` = ESLint → `next typegen` (route types; `tsc` fails without them) → `tsc --noEmit`. TypeScript: `strict` + `noUncheckedIndexedAccess`.
-- A Claude Code hook runs Prettier after every edit of ts/tsx/md/json; by hand, `pnpm format`. Prettier skips `docs/`, `.claude/` and `CLAUDE.md`: `docs/ru/` are Obsidian notes.
+- A Claude Code hook runs after every edit: Prettier + `eslint --fix` for ts/tsx, Prettier for css/json/md; by hand, `pnpm format`. Prettier skips `docs/`, `.claude/` and `CLAUDE.md`: `docs/ru/` are Obsidian notes.
 
 ## CI
 `.github/workflows/ci.yml` on every push and PR: Postgres 17 as a service → `pnpm install --frozen-lockfile` → `pnpm lint` → `pnpm test`. A full run takes about a minute. Merging into `master` only on green CI.
@@ -84,6 +84,6 @@ Vitest with two projects (`vitest.config.ts`):
 ## Common issues
 - **A form or search shows old values after returning to a screen.** `cacheComponents` keeps hidden screens alive with their state. A client form on such a screen needs a `key` from its input data or the `ResetOnHide` wrapper (`components/ui/reset-on-hide.tsx`). See `.claude/rules/ui.md`.
 - **The session and cookies are read only inside `<Suspense>`.** Every page is `Page` → `<Suspense fallback={<PageLoading />}>` → `…Content`, and `requireUserId()` is called inside `…Content`.
-- **Locally `pnpm test` sometimes takes 15–30 minutes with almost no CPU.** Not the code: CI runs the same code in under a minute. It is the environment (Podman or macOS with the process in the background); a re-run in the foreground usually takes 10–20 seconds. Under heavy machine load the scrypt tests can time out; they pass on their own.
+- **Locally `pnpm test` sometimes takes 15–30 minutes with almost no CPU.** Not the code: CI runs the same code in under a minute. It is the environment (Podman or macOS with the process in the background); a re-run in the foreground usually takes 10–20 seconds. Under heavy machine load the scrypt tests can time out; they pass when run separately.
 - **The full production stack on a laptop** (nginx, TLS, the database role, release and rollback): the "Run on a laptop" section in [deploy.md](deploy.md).
 - **`next dev` rewrites `AGENTS.md`.** It is a block of Next.js rules for agents and can be committed as is.

@@ -64,7 +64,7 @@ type FoodListItem = {
 };
 ```
 
-How it searches: under 3 characters, the start of any word (`LIKE` with `%`, `_`, `\` escaped); from 3 characters also `word_similarity` from `pg_trgm` (threshold 0.4). Shared and own foods are visible, deleted ones are not.
+How it searches: under 3 characters, the start of any word (`LIKE` with `%`, `_`, `\` escaped); from 3 characters also fuzzy matches from `pg_trgm`: `word_similarity` ≥ 0.4 and `strict_word_similarity` ≥ 0.28 (whole words, so typos pass and look-alikes do not). Shared and own foods are visible, deleted ones are not.
 
 ### `GET /api/health`
 A liveness check for `release.sh` and monitoring: `select 1` against the database with the `HEALTH.timeoutMs` timeout. No session.
