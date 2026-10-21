@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useState, type FormEvent } from "react";
+import { rememberDeviceAction } from "@/app/(auth)/login/actions";
 import { registerAction } from "@/app/(auth)/register/actions";
 import { FormError, SubmitButton, TextField } from "@/components/ui/form";
 import type { RegisterResult } from "@/lib/auth/register";
@@ -30,6 +31,7 @@ export function RegisterForm() {
         password: String(formData.get("password") ?? ""),
         redirect: false,
       });
+      if (signedIn?.ok) await rememberDeviceAction().catch(() => undefined);
       router.push(signedIn?.ok ? "/onboarding" : "/login");
       router.refresh();
     } catch {

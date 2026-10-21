@@ -12,6 +12,7 @@ function makeDeps(overrides: Partial<AuthorizeDeps> = {}): AuthorizeDeps {
     getDummyPasswordHash: async () => "dummy",
     limiter: createRateLimiter({ max: 100, windowMs: 1000, maxKeys: 100 }),
     nowMs: 0,
+    isTrustedDevice: () => false,
     ...overrides,
   };
 }
@@ -19,6 +20,26 @@ function makeDeps(overrides: Partial<AuthorizeDeps> = {}): AuthorizeDeps {
 const right = { email: "me@mail.com", password: "right-pass" };
 
 describe("authorizeCredentials", () => {
+  it("lets the owner's own device in after strangers used up the account's attempts (#30)", async () => {
+    const limiter = createRateLimiter({ max: 3, windowMs: 1000, maxKeys: 100 });
+    const wrong = { email: "me@mail.com", password: "wrong-pass" };
+    for (const ip of ["2.2.2.1", "2.2.2.2", "2.2.2.3"]) {
+      await authorizeCredentials(wrong, ip, makeDeps({ limiter }));
+    }
+    expect(await authorizeCredentials(right, "3.3.3.3", makeDeps({ limiter }))).toBeNull();
+    const owner = makeDeps({ limiter, isTrustedDevice: (userId) => userId === "u1" });
+    expect(await authorizeCredentials(right, "3.3.3.3", owner)).toMatchObject({ id: "u1" });
+  });
+
+  it("still limits guesses from a trusted device, in their own bucket", async () => {
+    const limiter = createRateLimiter({ max: 2, windowMs: 1000, maxKeys: 100 });
+    const trusted = makeDeps({ limiter, isTrustedDevice: () => true });
+    const wrong = { email: "me@mail.com", password: "wrong-pass" };
+    await authorizeCredentials(wrong, "4.4.4.1", trusted);
+    await authorizeCredentials(wrong, "4.4.4.2", trusted);
+    expect(await authorizeCredentials(right, "4.4.4.3", trusted)).toBeNull();
+  });
+
   it("returns the user for correct credentials, normalizing the email", async () => {
     const user = await authorizeCredentials(
       { email: " Me@Mail.com", password: "right-pass" },

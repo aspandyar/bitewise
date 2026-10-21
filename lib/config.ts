@@ -92,6 +92,10 @@ export const AUTH = {
   // Error code authorize throws when the hashing queue is full; the login form maps it to
   // "too many attempts" instead of "wrong password" (#104).
   busySignInError: "busy",
+  // The cookie that marks a browser the account signed in from (#30): its attempts skip the
+  // per-account lockout, which strangers guessing the password would otherwise trigger.
+  deviceCookie: "bw-device",
+  deviceMaxAgeSec: 365 * SECONDS_PER_DAY,
 } as const;
 
 // A key the client adds to every submit (#95): when a response is lost and Next replays the

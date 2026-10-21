@@ -9,8 +9,18 @@ import { loginLimiter } from "./limiters";
 import { getDummyPasswordHash, verifyPassword } from "./password";
 import { clientIpFromForwardedFor, forwardedForHeader } from "./request";
 import { checkToken } from "./token";
+import { isTrustedDevice } from "./device";
 
 const env = readAuthEnv();
+const deviceOptions = {
+  secret: env.NEXTAUTH_SECRET,
+  https: new URL(env.NEXTAUTH_URL).protocol === "https:",
+};
+
+// Auth.js hands headers through as Node's IncomingHttpHeaders; a cookie header is one string.
+function cookieHeader(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
 
 export const authOptions: NextAuthOptions = {
   secret: env.NEXTAUTH_SECRET,
@@ -32,6 +42,8 @@ export const authOptions: NextAuthOptions = {
           getDummyPasswordHash,
           limiter: loginLimiter,
           nowMs: Date.now(),
+          isTrustedDevice: (userId) =>
+            isTrustedDevice(cookieHeader(req.headers?.cookie), userId, deviceOptions),
         });
         // Auth.js passes a thrown message to the client as `error`; this one is a fixed code.
         if (result === "busy") throw new Error(AUTH.busySignInError);
