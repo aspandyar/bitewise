@@ -118,10 +118,16 @@ export const foods = pgTable(
     copiedFrom: foodSourceEnum("copied_from"),
     // Soft delete: diary entries (stage 3) will keep pointing at foods the user removed.
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    // Key the client sends with a create: a replayed request (response lost, Next retried it)
+    // finds the row it already made instead of adding a second one (#95).
+    clientRequestId: uuid("client_request_id"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (t) => [
+    uniqueIndex("foods_owner_request_unique")
+      .on(t.ownerId, t.clientRequestId)
+      .where(sql`${t.clientRequestId} IS NOT NULL`),
     index("foods_owner_id_idx").on(t.ownerId),
     uniqueIndex("foods_seed_key_unique").on(t.seedKey),
     index("foods_search_name_trgm_idx").using("gin", t.searchName.op("gin_trgm_ops")),
@@ -149,9 +155,15 @@ export const foodPortions = pgTable(
     userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
     label: text("label").notNull(),
     grams: nutrient("grams"),
+    // Key the client sends with a create: a replayed request (response lost, Next retried it)
+    // finds the row it already made instead of adding a second one (#95).
+    clientRequestId: uuid("client_request_id"),
     createdAt: createdAt(),
   },
   (t) => [
+    uniqueIndex("food_portions_user_request_unique")
+      .on(t.userId, t.clientRequestId)
+      .where(sql`${t.clientRequestId} IS NOT NULL`),
     index("food_portions_food_id_idx").on(t.foodId),
     index("food_portions_user_id_idx").on(t.userId),
     check("food_portions_grams_positive", sql`${t.grams} > 0`),
@@ -185,10 +197,16 @@ export const diaryEntries = pgTable(
     portionLabel: text("portion_label"),
     portionGrams: optionalNutrient("portion_grams"),
     portionCount: optionalNutrient("portion_count"),
+    // Key the client sends with a create: a replayed request (response lost, Next retried it)
+    // finds the row it already made instead of adding a second one (#95).
+    clientRequestId: uuid("client_request_id"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (t) => [
+    uniqueIndex("diary_entries_user_request_unique")
+      .on(t.userId, t.clientRequestId)
+      .where(sql`${t.clientRequestId} IS NOT NULL`),
     index("diary_entries_user_id_date_idx").on(t.userId, t.date),
     // Lets the FK check on cascaded food deletes use an index instead of a full scan.
     index("diary_entries_food_id_idx").on(t.foodId),
@@ -247,10 +265,16 @@ export const recipes = pgTable(
     cookedWeightG: optionalNutrient("cooked_weight_g"),
     // Null: no "1 serving" portion. The 1–100 range is checked by the form schema.
     servings: integer("servings"),
+    // Key the client sends with a create: a replayed request (response lost, Next retried it)
+    // finds the row it already made instead of adding a second one (#95).
+    clientRequestId: uuid("client_request_id"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (t) => [
+    uniqueIndex("recipes_user_request_unique")
+      .on(t.userId, t.clientRequestId)
+      .where(sql`${t.clientRequestId} IS NOT NULL`),
     index("recipes_user_id_idx").on(t.userId),
     uniqueIndex("recipes_food_id_unique").on(t.foodId),
     check(
@@ -280,9 +304,15 @@ export const recipeItems = pgTable(
     portionLabel: text("portion_label"),
     portionGrams: optionalNutrient("portion_grams"),
     portionCount: optionalNutrient("portion_count"),
+    // Key the client sends with a create: a replayed request (response lost, Next retried it)
+    // finds the row it already made instead of adding a second one (#95).
+    clientRequestId: uuid("client_request_id"),
     createdAt: createdAt(),
   },
   (t) => [
+    uniqueIndex("recipe_items_user_request_unique")
+      .on(t.userId, t.clientRequestId)
+      .where(sql`${t.clientRequestId} IS NOT NULL`),
     index("recipe_items_recipe_id_idx").on(t.recipeId),
     index("recipe_items_user_id_idx").on(t.userId),
     // Finds the recipes to recompute when a food changes, and serves the FK check on deletes.
