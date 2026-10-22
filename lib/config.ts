@@ -253,6 +253,11 @@ export const RATE_LIMITS = {
   write: { max: 60, windowMs: MS_PER_MINUTE, maxKeys: 100_000 },
   // Guesses at the current password from a signed-in session, per account (#29).
   passwordChange: { max: 5, windowMs: 15 * MS_PER_MINUTE, maxKeys: 100_000 },
+  // Scans per user: a person scanning a shopping bag stays far below, a script trying codes does not.
+  barcodeLookup: { max: 30, windowMs: MS_PER_MINUTE, maxKeys: 100_000 },
+  // Calls to Open Food Facts from this process, all users together; they allow 15 product reads
+  // a minute per IP, and our own users must never get the server's IP blocked there.
+  offOutbound: { max: 10, windowMs: MS_PER_MINUTE, maxKeys: 1 },
 } as const;
 
 // Number of reverse proxies we control in front of the app (nginx, stage 6). Each one appends the

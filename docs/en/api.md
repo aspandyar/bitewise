@@ -30,6 +30,7 @@ The app has two kinds of server entry points:
   - sign-in: 10 attempts per 15 minutes per IP and per account; trusted devices (a mark set after sign-in) count in a separate account bucket (#30);
   - sign-up: 5 per hour per IP (and only with `REGISTRATION=open`);
   - food search: 120 requests per minute per user;
+  - barcode lookup: 30 per minute per user; calls to Open Food Facts: 10 per minute for the whole process (theirs is 15 per IP), beyond that the answer is "unavailable";
   - any action that writes: 60 per minute per user (#31);
   - password change: 5 attempts per 15 minutes per account.
 
@@ -58,13 +59,32 @@ type FoodListItem = {
   id: string;
   name: string;
   kcal100: number; protein100: number; fat100: number; carbs100: number; // per 100 g, carbs net of fiber
-  source: "user" | "usda" | "label";
+  source: "user" | "usda" | "label" | "off";
   isOwn: boolean;    // computed on the server, owner_id never leaves it
   isRecipe: boolean; // a dish row (stage 4)
 };
 ```
 
 How it searches: under 3 characters, the start of any word (`LIKE` with `%`, `_`, `\` escaped); from 3 characters also fuzzy matches from `pg_trgm`: `word_similarity` ≥ 0.4 and `strict_word_similarity` ≥ 0.28 (whole words, so typos pass and look-alikes do not). Shared and own foods are visible, deleted ones are not.
+
+### `GET /api/foods/barcode`
+Barcode lookup for the scanner. The logic is `handleBarcodeLookup` (`lib/foods/barcode-lookup.ts`). Order: the user's own food with this code → a shared one → Open Food Facts (`lib/foods/off.ts`, our own `User-Agent`, `OFF.timeoutMs` timeout) → what was found is saved as a shared food with `source = 'off'` (with a "1 шт" portion when the serving weight is known), so the next scan of the same code stays local.
+
+| Parameter | Type | Rules |
+| --- | --- | --- |
+| `code` | string | digits only, length 8, 12, 13 or 14, GS1 check digit; UPC-A and zero-led GTIN-14 become EAN-13 (`normalizeBarcode`) |
+
+Responses (always `Cache-Control: no-store`):
+
+| Status | Body |
+| --- | --- |
+| 200 | `{ status: "found", foodId }` |
+| 200 | `{ status: "not_found", code, hints }`: found nowhere, or Open Food Facts data is incomplete (no kcal or any of protein/fat/carbs, numbers outside the limits); `hints` is what is known, for the own-food form |
+| 200 | `{ status: "unavailable", code }`: Open Food Facts did not answer or the shared budget is spent; our database was checked |
+| 400 | `{ error: "bad_code" }`: before the database and before any outside call |
+| 401 | `{ error: "unauthorized" }` |
+| 429 | `{ error: "rate_limited" }` |
+| 500 | `{ error: "server_error" }`: the log holds neither the code nor the Open Food Facts response |
 
 ### `GET /api/health`
 A liveness check for `release.sh` and monitoring: `select 1` against the database with the `HEALTH.timeoutMs` timeout. No session.

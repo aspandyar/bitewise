@@ -183,6 +183,8 @@ export const ru = {
     noPortions: "Порций пока нет",
     portionLabel: "Порция",
     portionLabelPlaceholder: "Например, 1 шт",
+    // The portion a pack from Open Food Facts gets when its serving weight is known.
+    piecePortion: "1 шт",
     portionGrams: "Граммы",
     addPortion: "Добавить порцию",
     deletePortion: "Удалить",
