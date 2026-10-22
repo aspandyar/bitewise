@@ -145,11 +145,12 @@ export const ru = {
     searchFailed: "Не удалось выполнить поиск",
     tooManyRequests: "Слишком часто. Подождите немного",
     per100g: PER_100G,
-    sources: { user: "моё", usda: "USDA", label: "этикетка" },
+    sources: { user: "моё", usda: "USDA", label: "этикетка", off: "OFF" },
     sourceNames: {
       user: "Ваш продукт",
       usda: "USDA FoodData Central",
       label: "Этикетка (ВкусВилл)",
+      off: "Open Food Facts",
     },
     newTitle: "Новый продукт",
     editTitle: "Изменить продукт",

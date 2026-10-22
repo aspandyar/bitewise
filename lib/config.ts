@@ -259,10 +259,13 @@ export const RATE_LIMITS = {
 // peer it saw to X-Forwarded-For, so the client IP sits that many entries from the right.
 export const TRUSTED_PROXY_HOPS = 1;
 
-// Where a food's numbers come from; shown as a badge in search. "off" and "ai_estimate" arrive
-// with their own stages through a migration.
-export const FOOD_SOURCES = ["user", "usda", "label"] as const;
+// Where a food's numbers come from; shown as a badge in search. "ai_estimate" arrives with its
+// own stage through a migration.
+export const FOOD_SOURCES = ["user", "usda", "label", "off"] as const;
 export type FoodSource = (typeof FOOD_SOURCES)[number];
+// Only these come from the seed file, so only these may be retired when a key leaves it: shared
+// foods cached from Open Food Facts were never in the file.
+export const SEED_FOOD_SOURCES = ["usda", "label"] as const;
 
 // Per 100 g: pure fat is ~900 kcal, and no 100 g of food holds more than 100 g of nutrients.
 export const FOOD_LIMITS = {

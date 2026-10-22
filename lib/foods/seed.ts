@@ -1,6 +1,7 @@
 import { and, eq, inArray, isNotNull, isNull, notInArray, sql } from "drizzle-orm";
 import { foodPortions, foods } from "@/db/schema";
 import type { Db } from "@/db/types";
+import { SEED_FOOD_SOURCES } from "@/lib/config";
 import { recomputeRecipesEach, staleRecipesUsingSharedFoods } from "@/lib/recipes/recompute";
 import type { PortionValues } from "./types";
 import type { SeedFood } from "./seed-schema";
@@ -73,6 +74,7 @@ export async function loadFoodSeed(
       .where(
         and(
           isNotNull(foods.seedKey),
+          inArray(foods.source, SEED_FOOD_SOURCES),
           isNull(foods.deletedAt),
           keys.length > 0 ? notInArray(foods.seedKey, keys) : undefined,
         ),
