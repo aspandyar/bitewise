@@ -34,6 +34,12 @@ describe("expandUpcE", () => {
     expect(expandUpcE("01234565")).toBe("012345000065");
   });
 
+  it("expands every UPC-E pattern by its last digit", () => {
+    expect(expandUpcE("04252614")).toBe("042100005264"); // 0–2: manufacturer d1 d2 d6
+    expect(expandUpcE("01234531")).toBe("012300000451"); // 3
+    expect(expandUpcE("01234543")).toBe("012340000053"); // 4
+  });
+
   it("rejects a UPC-E with a wrong check digit or shape", () => {
     expect(expandUpcE("01234566")).toBeNull();
     expect(expandUpcE("21234569")).toBeNull();

@@ -257,8 +257,11 @@ export const RATE_LIMITS = {
   // Scans per user: a person scanning a shopping bag stays far below, a script trying codes does not.
   barcodeLookup: { max: 30, windowMs: MS_PER_MINUTE, maxKeys: 100_000 },
   // Calls to Open Food Facts from this process, all users together; they allow 15 product reads
-  // a minute per IP, and our own users must never get the server's IP blocked there.
-  offOutbound: { max: 10, windowMs: MS_PER_MINUTE, maxKeys: 1 },
+  // a minute per IP, and our own users must never get the server's IP blocked there. A fixed
+  // window lets 2 × max through around its edge, so max stays at half their limit.
+  offOutbound: { max: 7, windowMs: MS_PER_MINUTE, maxKeys: 1 },
+  // One user's share of the calls above: a script scanning random codes cannot spend everyone's.
+  offOutboundPerUser: { max: 3, windowMs: MS_PER_MINUTE, maxKeys: 100_000 },
 } as const;
 
 // Number of reverse proxies we control in front of the app (nginx, stage 6). Each one appends the

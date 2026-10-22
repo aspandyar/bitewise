@@ -9,26 +9,33 @@ export type BarcodeLookupBody =
   | { status: "found"; foodId: string }
   | { status: "not_found"; code: string; hints: FoodHints }
   | { status: "unavailable"; code: string }
-  | { error: "bad_code" | "unauthorized" | "rate_limited" | "server_error" };
+  | { error: "bad_code" | "unauthorized" | "forbidden" | "rate_limited" | "server_error" };
 
 // One key for the whole process: the budget protects their server, not one user's quota.
 const OFF_LIMITER_KEY = "off";
 
 // Kept free of Next so every branch is unit-testable; route.ts only wires request and response.
 export async function handleBarcodeLookup(
-  input: { userId: string | null; rawCode: string | null; nowMs: number },
+  // fetchSite: the Sec-Fetch-Site header, null when the browser does not send it.
+  input: { userId: string | null; rawCode: string | null; nowMs: number; fetchSite: string | null },
   deps: {
     userLimiter: RateLimiter;
     offLimiter: RateLimiter;
+    offUserLimiter: RateLimiter;
     find: (userId: string, code: string) => Promise<{ id: string; isOwn: boolean } | null>;
     fetchOff: (code: string) => Promise<OffProduct | { kind: "unavailable" }>;
     saveOff: (
       code: string,
       product: { values: FoodValues; portionGrams: number | null; sourceUrl: string },
-    ) => Promise<{ id: string }>;
+    ) => Promise<{ id: string } | null>;
   },
 ): Promise<{ status: number; body: BarcodeLookupBody }> {
   if (!input.userId) return { status: 401, body: { error: "unauthorized" } };
+  // A GET that writes a shared row: a link on another site must not make a signed-in user's
+  // browser spend their budget and fill the cache.
+  if (input.fetchSite !== null && input.fetchSite !== "same-origin") {
+    return { status: 403, body: { error: "forbidden" } };
+  }
   if (!deps.userLimiter.hit(input.userId, input.nowMs)) {
     return { status: 429, body: { error: "rate_limited" } };
   }
@@ -39,7 +46,10 @@ export async function handleBarcodeLookup(
     const known = await deps.find(input.userId, code);
     if (known) return { status: 200, body: { status: "found", foodId: known.id } };
 
-    if (!deps.offLimiter.hit(OFF_LIMITER_KEY, input.nowMs)) {
+    if (
+      !deps.offUserLimiter.hit(input.userId, input.nowMs) ||
+      !deps.offLimiter.hit(OFF_LIMITER_KEY, input.nowMs)
+    ) {
       return { status: 200, body: { status: "unavailable", code } };
     }
     const product = await deps.fetchOff(code);
@@ -47,6 +57,9 @@ export async function handleBarcodeLookup(
       case "found": {
         const { values, portionGrams, sourceUrl } = product;
         const saved = await deps.saveOff(code, { values, portionGrams, sourceUrl });
+        // Null: the cached product was deleted (bad data there); the code stays blocked and the
+        // user makes their own food.
+        if (!saved) return { status: 200, body: { status: "not_found", code, hints: {} } };
         return { status: 200, body: { status: "found", foodId: saved.id } };
       }
       case "incomplete":

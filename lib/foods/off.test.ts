@@ -92,6 +92,14 @@ describe("parseOffProduct", () => {
     expect(product.values.fiber100).toBeCloseTo(33.33, 2);
   });
 
+  it("does not scale per-serving numbers by a serving weight outside the portion limits", () => {
+    const product = parseOffProduct(
+      { ...servingOnly, product: { ...servingOnly.product, serving_quantity: 9000 } },
+      BOMBBAR,
+    );
+    expect(product.kind).toBe("incomplete");
+  });
+
   it("treats per-serving numbers without a serving weight as incomplete", () => {
     expect(parseOffProduct(servingOnlyNoWeight, BOMBBAR)).toEqual({
       kind: "incomplete",
@@ -211,6 +219,8 @@ describe("fetchOffProduct", () => {
     expect(String(url)).toBe(`${OFF.productUrl}${BOMBBAR}?fields=${OFF.fields.join(",")}`);
     expect(new Headers(init?.headers).get("User-Agent")).toBe(userAgent);
     expect(init?.signal).toBeInstanceOf(AbortSignal);
+    // A redirect would mean their API moved or something sits in between; neither is followed.
+    expect(init?.redirect).toBe("error");
   });
 
   it("reports a 404 with status 0 as not found", async () => {

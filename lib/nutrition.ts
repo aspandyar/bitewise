@@ -8,6 +8,7 @@ import {
   MIFFLIN_ST_JEOR,
   NUTRIENT_BASE_GRAMS,
   NUTRIENT_STORAGE_SCALE,
+  OFF,
   PORTION_LIMITS,
   TARGET_LIMITS,
   type ActivityLevel,
@@ -286,4 +287,14 @@ export function calcKcalFromMacros(macros: MacroGrams): number {
 export function isKcalConsistentWithMacros(kcal: number, macros: MacroGrams): boolean {
   const off = Math.abs(kcal - calcKcalFromMacros(macros));
   return off <= Math.max(kcal * KCAL_CHECK.maxShareOff, KCAL_CHECK.minKcalOff);
+}
+
+// A label's energy given only in kilojoules: a unit conversion, not an estimate.
+export function calcKcalFromKj(kj: number): number {
+  return kj / OFF.kjPerKcal;
+}
+
+// A label's per-serving figure on our per-100 g basis; the caller vouches for the serving weight.
+export function calcPer100gFromServing(valuePerServing: number, servingGrams: number): number {
+  return (valuePerServing * NUTRIENT_BASE_GRAMS) / servingGrams;
 }

@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
-import { FOOD_LIMITS, NUTRIENT_BASE_GRAMS, OFF, PORTION_LIMITS } from "@/lib/config";
+import { FOOD_LIMITS, OFF, PORTION_LIMITS } from "@/lib/config";
+import { calcKcalFromKj, calcPer100gFromServing } from "@/lib/nutrition";
 import { version } from "@/package.json";
 import { foodSchema } from "./schema";
 import type { FoodHints } from "./hints";
@@ -69,15 +70,15 @@ function per100(
   const direct = toNumber(nutriments[`${key}_100g`]);
   if (direct !== undefined) return direct;
   const perServing = toNumber(nutriments[`${key}_serving`]);
-  if (perServing === undefined || !servingGrams) return undefined;
-  return (perServing * NUTRIENT_BASE_GRAMS) / servingGrams;
+  if (perServing === undefined || servingGrams === undefined) return undefined;
+  return calcPer100gFromServing(perServing, servingGrams);
 }
 
 function kcalPer100(nutriments: Record<string, unknown>, servingGrams: number | undefined) {
   const kcal = per100(nutriments, "energy-kcal", servingGrams);
   if (kcal !== undefined) return kcal;
   const kj = per100(nutriments, "energy-kj", servingGrams) ?? per100(nutriments, "energy", servingGrams);
-  return kj === undefined ? undefined : kj / OFF.kjPerKcal;
+  return kj === undefined ? undefined : calcKcalFromKj(kj);
 }
 
 // A hint is only offered when it would pass the food form on its own.
@@ -90,7 +91,9 @@ export function parseOffProduct(json: unknown, code: string): OffProduct {
   if (!parsed.success) return { kind: "not_found" };
   const product = parsed.data.product;
   const nutriments = product.nutriments ?? {};
-  const servingGrams = toNumber(product.serving_quantity);
+  // A serving weight outside the portion limits is a typo there; scaling by it would turn
+  // 173 kcal a bar into 1.9 kcal per 100 g, so it counts as unknown for both uses.
+  const servingGrams = withinLimits(toNumber(product.serving_quantity), PORTION_LIMITS.grams);
 
   const hints: FoodHints = {
     name: productName(product),
@@ -110,7 +113,7 @@ export function parseOffProduct(json: unknown, code: string): OffProduct {
   return {
     kind: "found",
     values: values.data,
-    portionGrams: withinLimits(servingGrams, PORTION_LIMITS.grams) ?? null,
+    portionGrams: servingGrams ?? null,
     sourceUrl: `${OFF.productPageUrl}${code}`,
   };
 }
@@ -125,8 +128,13 @@ export async function fetchOffProduct(
     const response = await deps.fetch(`${OFF.productUrl}${code}?fields=${OFF.fields.join(",")}`, {
       headers: { "User-Agent": deps.userAgent, Accept: "application/json" },
       signal: AbortSignal.timeout(deps.timeoutMs),
+      redirect: "error",
     });
-    if (!response.ok && response.status !== NOT_FOUND_STATUS) return { kind: "unavailable" };
+    if (!response.ok && response.status !== NOT_FOUND_STATUS) {
+      // Unread bodies hold the connection until garbage collection.
+      await response.body?.cancel();
+      return { kind: "unavailable" };
+    }
     const json: unknown = await response.json();
     if (response.status === NOT_FOUND_STATUS) {
       // An unknown code is a 404 with their JSON; a 404 page from a proxy is an outage.

@@ -5,13 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { SCANNER } from "@/lib/config";
 import { expandUpcE, normalizeBarcode } from "@/lib/foods/barcode";
-import type { BarcodeLookupBody } from "@/lib/foods/barcode-lookup";
-import {
-  newFoodForCode,
-  scanTargetHref,
-  shouldSubmitCode,
-  type ScanTarget,
-} from "@/lib/foods/scan";
+import { lookupBarcode, openCamera } from "@/lib/foods/camera";
+import { newFoodForCode, shouldSubmitCode, type ScanTarget } from "@/lib/foods/scan";
 import { ru } from "@/lib/i18n/ru";
 
 type CameraState = "starting" | "on" | "denied" | "noCamera" | "insecure" | "loadFailed";
@@ -29,6 +24,15 @@ const cameraMessages: Partial<Record<CameraState, string>> = {
   loadFailed: ru.scanner.loadFailed,
 };
 
+const failedMessages = {
+  rate_limited: ru.foods.tooManyRequests,
+  unauthorized: ru.scanner.signedOut,
+  other: ru.scanner.failed,
+};
+
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 function cameraErrorState(error: unknown): CameraState {
   return error instanceof DOMException && error.name === "NotAllowedError" ? "denied" : "noCamera";
 }
@@ -39,6 +43,10 @@ export function BarcodeScanner({ target, onClose }: { target: ScanTarget; onClos
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const manualRef = useRef<HTMLInputElement>(null);
+  // Aborted on unmount: an answer arriving after "Закрыть" or Back must not navigate.
+  const lookupAbortRef = useRef<AbortController | null>(null);
   const [camera, setCamera] = useState<CameraState>("starting");
   const [lookup, setLookup] = useState<Lookup>({ kind: "idle" });
   const [manualError, setManualError] = useState<string | null>(null);
@@ -49,29 +57,23 @@ export function BarcodeScanner({ target, onClose }: { target: ScanTarget; onClos
   async function submit(code: string) {
     busyRef.current = true;
     setLookup({ kind: "looking" });
-    try {
-      const response = await fetch(`/api/foods/barcode?code=${encodeURIComponent(code)}`);
-      const body = (await response.json()) as BarcodeLookupBody;
-      const href = scanTargetHref(body, target);
-      if (href) {
+    lookupAbortRef.current?.abort();
+    const controller = new AbortController();
+    lookupAbortRef.current = controller;
+    const outcome = await lookupBarcode(code, target, { fetch, signal: controller.signal });
+    switch (outcome.kind) {
+      case "aborted":
+        return;
+      case "navigate":
         // Closed first: the screen stays cached, and Back must not reopen the camera.
         onClose();
-        router.push(href);
+        router.push(outcome.href);
         return;
-      }
-      setLookup(
-        "status" in body && body.status === "unavailable"
-          ? { kind: "unavailable", code: body.code }
-          : {
-              kind: "failed",
-              message:
-                "error" in body && body.error === "rate_limited"
-                  ? ru.foods.tooManyRequests
-                  : ru.scanner.failed,
-            },
-      );
-    } catch {
-      setLookup({ kind: "failed", message: ru.scanner.failed });
+      case "unavailable":
+        setLookup({ kind: "unavailable", code: outcome.code });
+        return;
+      case "failed":
+        setLookup({ kind: "failed", message: failedMessages[outcome.reason] });
     }
   }
 
@@ -104,6 +106,20 @@ export function BarcodeScanner({ target, onClose }: { target: ScanTarget; onClos
     const close = () => onCloseRef.current();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") close();
+      // aria-modal alone does not stop Tab from reaching the page underneath.
+      if (event.key === "Tab" && dialogRef.current) {
+        const items = [...dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)];
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (!first || !last) return;
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
     };
     // The camera must not keep running behind a locked phone or another app.
     const onVisibility = () => {
@@ -114,8 +130,14 @@ export function BarcodeScanner({ target, onClose }: { target: ScanTarget; onClos
     return () => {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("visibilitychange", onVisibility);
+      lookupAbortRef.current?.abort();
     };
   }, []);
+
+  // Without a camera the digits field is the only way in.
+  useEffect(() => {
+    if (camera !== "starting" && camera !== "on") manualRef.current?.focus();
+  }, [camera]);
 
   useEffect(() => {
     let stopped = false;
@@ -126,16 +148,16 @@ export function BarcodeScanner({ target, onClose }: { target: ScanTarget; onClos
       if (!window.isSecureContext) return setCamera("insecure");
       if (!navigator.mediaDevices?.getUserMedia) return setCamera("noCamera");
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } },
-          audio: false,
-        });
+        stream = await openCamera(
+          (constraints) => navigator.mediaDevices.getUserMedia(constraints),
+          () => stopped,
+        );
       } catch (error) {
         if (!stopped) setCamera(cameraErrorState(error));
         return;
       }
-      // Closed while the permission prompt was up: the late stream is stopped below.
-      if (stopped) return;
+      // Closed while the permission prompt was up: openCamera already stopped the late stream.
+      if (!stream) return;
       const video = videoRef.current;
       if (!video) return;
       video.srcObject = stream;
@@ -198,6 +220,7 @@ export function BarcodeScanner({ target, onClose }: { target: ScanTarget; onClos
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label={ru.scanner.title}
@@ -272,6 +295,7 @@ export function BarcodeScanner({ target, onClose }: { target: ScanTarget; onClos
           </label>
           <div className="flex gap-2">
             <input
+              ref={manualRef}
               id="barcode-manual"
               name="code"
               inputMode="numeric"
@@ -279,7 +303,7 @@ export function BarcodeScanner({ target, onClose }: { target: ScanTarget; onClos
               enterKeyHint="search"
               aria-invalid={manualError ? true : undefined}
               aria-describedby={manualError ? "barcode-manual-error" : undefined}
-              className="min-h-11 min-w-0 flex-1 rounded-lg border border-foreground/40 bg-background px-3 text-base"
+              className="min-h-11 min-w-0 flex-1 rounded-lg border border-foreground/40 bg-background px-3 text-base aria-invalid:border-red-600 dark:aria-invalid:border-red-400"
             />
             <button
               type="submit"

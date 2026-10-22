@@ -4,7 +4,11 @@ import { getSessionUserId } from "@/lib/auth/session";
 import { OFF } from "@/lib/config";
 import { findFoodByBarcode, saveOffFood } from "@/lib/foods/barcode-repo";
 import { handleBarcodeLookup } from "@/lib/foods/barcode-lookup";
-import { barcodeLookupLimiter, offOutboundLimiter } from "@/lib/foods/limiters";
+import {
+  barcodeLookupLimiter,
+  offOutboundLimiter,
+  offOutboundPerUserLimiter,
+} from "@/lib/foods/limiters";
 import { fetchOffProduct, OFF_USER_AGENT } from "@/lib/foods/off";
 
 export async function GET(request: NextRequest) {
@@ -13,10 +17,12 @@ export async function GET(request: NextRequest) {
       userId: await getSessionUserId(),
       rawCode: request.nextUrl.searchParams.get("code"),
       nowMs: Date.now(),
+      fetchSite: request.headers.get("sec-fetch-site"),
     },
     {
       userLimiter: barcodeLookupLimiter,
       offLimiter: offOutboundLimiter,
+      offUserLimiter: offOutboundPerUserLimiter,
       find: (userId, code) => findFoodByBarcode(db, userId, code),
       fetchOff: (code) =>
         fetchOffProduct(code, { fetch, timeoutMs: OFF.timeoutMs, userAgent: OFF_USER_AGENT }),

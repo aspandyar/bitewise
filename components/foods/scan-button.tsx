@@ -1,13 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ScanTarget } from "@/lib/foods/scan";
 import { ru } from "@/lib/i18n/ru";
 import { BarcodeScanner } from "./barcode-scanner";
 
 export function ScanButton({ target }: { target: ScanTarget }) {
   const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const close = useCallback(() => setOpen(false), []);
+  // Focus goes back where it came from; a scan that navigates away unmounts the button first.
+  const closeAndRefocus = useCallback(() => {
+    setOpen(false);
+    buttonRef.current?.focus();
+  }, []);
   // cacheComponents hides a screen left by Back with its state and runs effect cleanups;
   // reopened, it must show the search, not the camera. Here and not in the scanner: this effect
   // starts with the layer closed, so StrictMode's extra cleanup on mount changes nothing.
@@ -15,6 +21,7 @@ export function ScanButton({ target }: { target: ScanTarget }) {
   return (
     <>
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen(true)}
         aria-label={ru.scanner.open}
@@ -33,7 +40,7 @@ export function ScanButton({ target }: { target: ScanTarget }) {
           <path d="M7 8v8M10 8v8M13 8v8M17 8v8" />
         </svg>
       </button>
-      {open ? <BarcodeScanner target={target} onClose={close} /> : null}
+      {open ? <BarcodeScanner target={target} onClose={closeAndRefocus} /> : null}
     </>
   );
 }

@@ -1,4 +1,4 @@
-import { and, asc, eq, isNotNull, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { lockSharedBarcode } from "@/db/locks";
 import { foodPortions, foods } from "@/db/schema";
 import type { Db } from "@/db/types";
@@ -22,25 +22,21 @@ export async function findFoodByBarcode(
 }
 
 // Two people scanning a new pack at once both reach here; the lock makes the second one find
-// the first one's row. A cached food someone soft-deleted by hand is revived, not duplicated:
-// seed_key stays unique across deleted rows.
+// the first one's row. A cached food that was deleted (its data was wrong) stays deleted and its
+// code blocked: null, and a rescan cannot bring the bad row back.
 export async function saveOffFood(
   db: Db,
   code: string,
   product: { values: FoodValues; portionGrams: number | null; sourceUrl: string },
-): Promise<{ id: string }> {
+): Promise<{ id: string } | null> {
   const seedKey = `off:${code}`;
   return db.transaction(async (tx) => {
     await lockSharedBarcode(tx, code);
     const [existing] = await tx
-      .update(foods)
-      .set({ deletedAt: null, updatedAt: sql`now()` })
-      .where(and(eq(foods.seedKey, seedKey), isNotNull(foods.deletedAt)))
-      .returning({ id: foods.id });
-    const [live] = existing
-      ? [existing]
-      : await tx.select({ id: foods.id }).from(foods).where(eq(foods.seedKey, seedKey));
-    if (live) return { id: live.id };
+      .select({ id: foods.id, deletedAt: foods.deletedAt })
+      .from(foods)
+      .where(eq(foods.seedKey, seedKey));
+    if (existing) return existing.deletedAt ? null : { id: existing.id };
 
     const [row] = await tx
       .insert(foods)

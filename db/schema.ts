@@ -153,7 +153,8 @@ export const foods = pgTable(
       .on(t.ownerId, t.barcode)
       .where(sql`${t.ownerId} IS NOT NULL AND ${t.barcode} IS NOT NULL AND ${t.deletedAt} IS NULL`),
     index("foods_search_name_trgm_idx").using("gin", t.searchName.op("gin_trgm_ops")),
-    // A user's own food is never seed data, and every shared food comes from the seed.
+    // A user's own food is never seed data, and every shared food comes from the seed or is
+    // cached from Open Food Facts (seed_key "off:<barcode>").
     check("foods_user_source_has_owner", sql`(${t.source} = 'user') = (${t.ownerId} IS NOT NULL)`),
     check("foods_seed_key_iff_shared", sql`(${t.ownerId} IS NULL) = (${t.seedKey} IS NOT NULL)`),
     // A copy of an own food gets null, so 'user' is never a valid origin.

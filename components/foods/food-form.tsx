@@ -83,6 +83,8 @@ export function FoodForm({
         </>
       ) : null}
       {draft?.fromOff ? <input type="hidden" name="from" value={OFF_MARK} /> : null}
+      {/* A scan lands here when the code is unknown; the field itself sits at the bottom. */}
+      {draft?.barcode ? <p className="text-sm text-foreground/60">{ru.foods.barcodeNew}</p> : null}
       <TextField
         label={ru.foods.name}
         name="name"

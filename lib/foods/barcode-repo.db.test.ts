@@ -40,7 +40,7 @@ describe("findFoodByBarcode", () => {
 
     expect(await findFoodByBarcode(testDb, alice, CODE)).toEqual({ id: own, isOwn: true });
     const bob = await newUserId("bob@mail.com");
-    expect(await findFoodByBarcode(testDb, bob, CODE)).toEqual({ id: shared.id, isOwn: false });
+    expect(await findFoodByBarcode(testDb, bob, CODE)).toEqual({ id: shared?.id, isOwn: false });
   });
 
   it("never finds someone else's own food or a deleted one", async () => {
@@ -56,7 +56,7 @@ describe("findFoodByBarcode", () => {
 
 describe("saveOffFood", () => {
   it("stores a shared Open Food Facts food with its code, link and a piece portion", async () => {
-    const { id } = await saveOffFood(testDb, CODE, offBar);
+    const { id } = (await saveOffFood(testDb, CODE, offBar))!;
     const [row] = await testDb.select().from(foods).where(eq(foods.id, id));
     expect(row).toMatchObject({
       ownerId: null,
@@ -72,25 +72,25 @@ describe("saveOffFood", () => {
   });
 
   it("adds no portion without a serving weight", async () => {
-    const { id } = await saveOffFood(testDb, CODE, { ...offBar, portionGrams: null });
+    const { id } = (await saveOffFood(testDb, CODE, { ...offBar, portionGrams: null }))!;
     expect(await testDb.select().from(foodPortions).where(eq(foodPortions.foodId, id))).toEqual([]);
   });
 
   it("keeps one row and one portion when the same code is saved twice", async () => {
     const first = await saveOffFood(testDb, CODE, offBar);
     const second = await saveOffFood(testDb, CODE, offBar);
-    expect(second.id).toBe(first.id);
+    expect(second?.id).toBe(first?.id);
     expect(await testDb.select().from(foods)).toHaveLength(1);
     expect(await testDb.select().from(foodPortions)).toHaveLength(1);
   });
 
-  it("revives a cached food that was soft-deleted instead of failing on its key", async () => {
+  it("keeps a cached food that was deleted deleted: the code stays blocked", async () => {
     const first = await saveOffFood(testDb, CODE, offBar);
+    if (!first) throw new Error("not saved");
     await testDb.update(foods).set({ deletedAt: new Date() }).where(eq(foods.id, first.id));
-    const again = await saveOffFood(testDb, CODE, offBar);
-    expect(again.id).toBe(first.id);
-    expect((await testDb.select().from(foods))[0]?.deletedAt).toBeNull();
-    expect(await testDb.select().from(foodPortions)).toHaveLength(1);
+    expect(await saveOffFood(testDb, CODE, offBar)).toBeNull();
+    expect((await testDb.select().from(foods))[0]?.deletedAt).not.toBeNull();
+    expect(await testDb.select().from(foods)).toHaveLength(1);
   });
 
   it("keeps one row and one portion when two scans of a new code race", async () => {
@@ -100,7 +100,7 @@ describe("saveOffFood", () => {
       const results = await Promise.all(
         Array.from({ length: parallelCount }, () => saveOffFood(pool.db, CODE, offBar)),
       );
-      expect(new Set(results.map((result) => result.id)).size).toBe(1);
+      expect(new Set(results.map((result) => result?.id)).size).toBe(1);
     } finally {
       await pool.close();
     }
