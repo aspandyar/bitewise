@@ -109,7 +109,7 @@ tags:
 Задачи ведутся в [GitHub Issues](https://github.com/aspandyar/bitewise/issues) — по одной на задачу, метки `question`, `stage-5`, `stage-6`, `security`, `polish`, `tooling`. Здесь — оглавление; закрытая задача отмечается в issue, а не здесь.
 
 ### Решает владелец (продукт)
-- [#8](https://github.com/aspandyar/bitewise/issues/8) Домен и проверка имени Bitewise
+- [#8](https://github.com/aspandyar/bitewise/issues/8) Домен и проверка имени Bitewise — домен: `aspandyar.org` (в Cloudflare владельца), поддомен приложения — при деплое; остаётся выбрать VPS
 - [#9](https://github.com/aspandyar/bitewise/issues/9) Модель для распознавания фото: сравнить точность и цену
 - [#10](https://github.com/aspandyar/bitewise/issues/10) Хранить ли фото еды
 - [#11](https://github.com/aspandyar/bitewise/issues/11) Офлайн-ввод с синхронизацией или только онлайн
