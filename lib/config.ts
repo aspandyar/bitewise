@@ -281,6 +281,9 @@ export const PORTION_LIMITS = {
   maxOwnPerFood: 20,
 } as const;
 
+// GTIN lengths a pack can carry: EAN-8, UPC-A, EAN-13, GTIN-14.
+export const BARCODE = { lengths: [8, 12, 13, 14] } as const;
+
 export const FOOD_SEARCH = {
   limit: 20,
   maxQueryLength: 50,
