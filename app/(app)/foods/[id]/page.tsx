@@ -75,7 +75,12 @@ async function FoodContent({ params }: { params: Promise<{ id: string }> }) {
         <p className="text-sm text-foreground/60">
           {ru.foods.sourceLabel}{" "}
           {sourceUrl ? (
-            <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="underline text-accent-text">
+            <a
+              href={sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-11 items-center underline text-accent-text"
+            >
               {ru.foods.sourceNames[food.source]}
             </a>
           ) : (

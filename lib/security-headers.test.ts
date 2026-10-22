@@ -22,6 +22,14 @@ describe("securityHeaders", () => {
     }
   });
 
+  it("lets the barcode scanner compile its WebAssembly and nothing more", () => {
+    const scriptSrc = (header("Content-Security-Policy") ?? "")
+      .split(";")
+      .map((directive) => directive.trim())
+      .find((directive) => directive.startsWith("script-src"));
+    expect(scriptSrc).toBe("script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'");
+  });
+
   it("allows the camera for this site only and nothing else", () => {
     expect(header("Permissions-Policy")).toBe("camera=(self), microphone=(), geolocation=()");
   });

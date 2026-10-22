@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { FOOD_LIMITS, PORTION_LIMITS } from "@/lib/config";
+import { FOOD_LIMITS, PORTION_LIMITS, SEED_FOOD_SOURCES } from "@/lib/config";
 
 const { nameLength, kcal100, nutrient100G } = FOOD_LIMITS;
 const grams100 = z.number().min(nutrient100G.min).max(nutrient100G.max);
@@ -38,7 +38,7 @@ const seedFood = z
   .object({
     key: z.string(),
     name,
-    source: z.enum(["usda", "label"]),
+    source: z.enum(SEED_FOOD_SOURCES),
     ...values,
     sourceUrl: httpsUrl.nullable(),
     portions: z.array(portion),

@@ -8,6 +8,11 @@ describe("safeSourceUrl", () => {
     );
   });
 
+  it("keeps an Open Food Facts product link", () => {
+    const url = "https://world.openfoodfacts.org/product/4610169567113";
+    expect(safeSourceUrl(url)).toBe(url);
+  });
+
   it.each(["javascript:alert(1)", "http://example.com", "data:text/html,x", "not a url", ""])(
     "drops %j",
     (url) => {

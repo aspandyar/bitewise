@@ -5,7 +5,7 @@ import { FoodSearch } from "@/components/foods/food-search";
 import { BackLink } from "@/components/ui/back-link";
 import { PageLoading } from "@/components/ui/page-loading";
 import { requireUserId } from "@/lib/auth/session";
-import { FOOD_SEARCH, USDA_FDC_URL } from "@/lib/config";
+import { FOOD_SEARCH, OFF, USDA_FDC_URL } from "@/lib/config";
 import { listOwnFoods } from "@/lib/foods/repo";
 import { parseSearchQuery } from "@/lib/foods/search-query";
 import { ru } from "@/lib/i18n/ru";
@@ -27,9 +27,10 @@ async function FoodsContent({ searchParams }: Pick<PageProps<"/foods">, "searchP
         </Link>
       </div>
       {/* Keyed by the query: a screen kept alive from another search starts from this one. */}
-      <FoodSearch key={query} ownFoods={ownFoods} initialQuery={query} />
-      <p className="mt-auto pt-4 text-xs text-foreground/60">
-        {ru.foods.attribution}{" "}
+      <FoodSearch key={query} ownFoods={ownFoods} initialQuery={query} scan={{ kind: "foods" }} />
+      {/* Flex, not inline text: the 44 px tap areas would otherwise leave a tall gap on wrap. */}
+      <p className="mt-auto flex flex-wrap items-center gap-x-1 pt-4 text-xs text-foreground/60">
+        <span>{ru.foods.attribution}</span>
         <a
           href={USDA_FDC_URL}
           target="_blank"
@@ -38,6 +39,16 @@ async function FoodsContent({ searchParams }: Pick<PageProps<"/foods">, "searchP
         >
           {ru.foods.sourceNames.usda}
         </a>
+        <span aria-hidden>·</span>
+        <a
+          href={OFF.siteUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-11 items-center underline text-accent-text"
+        >
+          {ru.foods.sourceNames.off}
+        </a>
+        <span>{ru.foods.offLicense}</span>
       </p>
     </main>
   );

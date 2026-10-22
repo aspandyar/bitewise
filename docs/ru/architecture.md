@@ -44,7 +44,7 @@ tags:
 | `users` | id (uuid), email (уникальный, в нижнем регистре), password_hash (scrypt), role (`user/manager/admin`, по умолчанию `user`; admin — только bootstrap-скриптом), client_request_id? (ключ формы регистрации, глобально уникален — частичный индекс; повтор регистрации находит созданный аккаунт, #107), token_version integer (0; смена пароля и «Выйти на всех устройствах» увеличивают — сессии со старой версией не действуют, #29), created_at |
 | `profiles` | user_id (pk → users, cascade), sex, birth_date, height_cm numeric(5,1), weight_kg numeric(5,1), activity_level, goal, updated_at |
 | `targets` | id, user_id (→ users, cascade, индекс), name («По умолчанию»), mode (`auto/manual`), kcal, protein_g, fat_g, carbs_g — numeric(8,2), is_default (частичный уникальный индекс: одна норма по умолчанию на пользователя), created_at, updated_at |
-| `foods` | id, owner_id (→ users, cascade, индекс; null = общий из сида), name, search_name (generated: `replace(lower(name), 'ё', 'е')`, GIN `gin_trgm_ops`), kcal_100, protein_100, fat_100, carbs_100 (без клетчатки), fiber_100? — numeric(8,2), source (`user/usda/label`; позже `off/ai_estimate`), seed_key (уникальный: `usda:<fdcId>` / `label:<slug>`), source_url?, copied_from? (`food_source` — откуда скопирован свой продукт, только у `source = user`), deleted_at (мягкое удаление — только пока на продукт ссылаются записи дневника или ингредиенты; без ссылок строка удаляется совсем, #108), created_at, updated_at. CHECK: `source = user` ⇔ есть владелец ⇔ нет seed_key; нутриенты ≥ 0; source_url — только `https://`; copied_from — только у своих и никогда не `user` (копия своего продукта получает null, #87) (страница выводит ссылку ещё и через `safeSourceUrl`). Штрихкод — этап 7 |
+| `foods` | id, owner_id (→ users, cascade, индекс; null = общий: из сида или из Open Food Facts), name, search_name (generated: `replace(lower(name), 'ё', 'е')`, GIN `gin_trgm_ops`), kcal_100, protein_100, fat_100, carbs_100 (без клетчатки), fiber_100? — numeric(8,2), source (`user/usda/label/off`; позже `ai_estimate`), seed_key (уникальный: `usda:<fdcId>` / `label:<slug>` / `off:<штрихкод>`; сид помечает удалёнными только свои источники `usda/label`), barcode? (нормализованный GTIN: UPC-A и GTIN-14 с ведущим нулём — как EAN-13; один на код среди общих и один на код у каждого владельца, удалённые не держат код; CHECK — 8–14 цифр), source_url?, copied_from? (`food_source` — откуда скопирован свой продукт, только у `source = user`), deleted_at (мягкое удаление — только пока на продукт ссылаются записи дневника или ингредиенты; без ссылок строка удаляется совсем, #108), created_at, updated_at. CHECK: `source = user` ⇔ есть владелец ⇔ нет seed_key; нутриенты ≥ 0; source_url — только `https://`; copied_from — только у своих и никогда не `user` (копия своего продукта получает null, #87) (страница выводит ссылку ещё и через `safeSourceUrl`) |
 | `food_portions` | id, food_id (→ foods, cascade, индекс), user_id (→ users, cascade, индекс; null = общая из сида), label («1 шт»), grams numeric(8,2) > 0, created_at |
 | `recipes` | id, user_id (→ users, cascade, индекс), food_id (→ foods, cascade, unique — блюдо само строка `foods`: название, цифры на 100 г, мягкое удаление), cooked_weight_g numeric(8,2)? > 0 (null — по сырому весу), servings integer? > 0 (1–100 в форме), created_at, updated_at. Цифры на 100 г считает `calcRecipe` и пишет `lib/recipes/recompute.ts` в строку `foods` — при каждом изменении блюда, правке своего продукта-ингредиента и сиде; порция «1 порция» — единственная `food_portion` строки-блюда (0,1–5000 г, иначе нет). Блюдо в блюде нельзя |
 | `recipe_items` | id, recipe_id (→ recipes, cascade, индекс), user_id (→ users, cascade, индекс), food_id (→ foods, без каскада, индекс — поиск блюд для пересчёта), grams numeric(8,2) > 0, снимок порции portion_label, portion_grams, portion_count (все null или все заданы), created_at. Удаление блюда удаляет состав |
@@ -115,8 +115,24 @@ TDEE       = BMR × активность (1.2 … 1.9)
 | --- | --- | --- |
 | Свои продукты | всё, что ввёл пользователь | основной источник |
 | Сид-набор | 222 базовых продукта на русском: 209 из USDA SR Legacy (перевод названий, порции из `food_portion.csv`) + 13 «с этикетки» (страницы ВкусВилла) | `db/seed/sources/*.json` → `pnpm seed:build` → `db/seed/foods.json` → `pnpm db:seed` |
-| **Open Food Facts** | штрихкоды, упакованные продукты, есть СНГ | лицензия ODbL — указать атрибуцию; данные бывают неполными → кэш + пометка |
+| **Open Food Facts** (этап 7) | штрихкоды, упакованные продукты, есть СНГ | только по коду со сканера; найденное сохраняется общим продуктом `source = 'off'`; неполные данные не сохраняются; атрибуция ODbL — внизу «Продуктов» и на карточке |
 | **USDA FoodData Central** | «сырые» ингредиенты, точные данные | названия на английском; бесплатный API-ключ |
+
+### Поиск по штрихкоду
+```text
+камера (barcode-detector, zxing-wasm с нашего сайта) или цифры руками
+   │  normalizeBarcode: цифры, длина, контрольная цифра; UPC-A и GTIN-14 → EAN-13
+   ▼
+GET /api/foods/barcode?code=  (сессия, 30/мин на пользователя)
+   │
+   ├─ свой продукт с этим кодом ─────────────┐
+   ├─ общий (в т. ч. ранее найденный в OFF) ─┤→ found → экран количества / карточка
+   └─ Open Food Facts (7/мин на процесс, 3/мин на пользователя, таймаут 4 с)
+        ├─ все цифры есть → общий продукт `off` (+ порция «1 шт») → found
+        ├─ неполные / не найден → not_found + подсказки → форма своего продукта со штрихкодом
+        └─ не ответил → unavailable → «создать самому» или «сканировать ещё раз»
+```
+Ккал не досчитываются из БЖУ; кДж → ккал делением на 4,184; значения на порцию — на 100 г только при известном весе порции; 100 мл = 100 г. Разбор ответа — `lib/foods/off.ts`, оркестрация — `lib/foods/barcode-lookup.ts`, сохранение — `lib/foods/barcode-repo.ts` (advisory-блокировка на код против гонки двух сканов).
 
 ## AI-конвейер (v0.3)
 ```text

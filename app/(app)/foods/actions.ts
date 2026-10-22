@@ -14,9 +14,10 @@ import {
   deleteOwnFood,
   updateOwnFood,
 } from "@/lib/foods/repo";
-import { foodSchema, parseFoodId, portionSchema } from "@/lib/foods/schema";
+import { ownFoodSchema, parseFoodId, portionSchema } from "@/lib/foods/schema";
 import { addFoodHref } from "@/lib/diary/paths";
 import { parseEntryContext } from "@/lib/diary/schema";
+import { OFF_MARK } from "@/lib/foods/hints";
 import { getUserToday } from "@/lib/diary/today";
 import { ru } from "@/lib/i18n/ru";
 import { readRequestId } from "@/lib/request-id";
@@ -32,12 +33,17 @@ function requireId(value: unknown): string {
 export async function createFoodAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const userId = await requireActionUser(formData);
   const raw = Object.fromEntries(formData);
-  const parsed = foodSchema.safeParse(raw);
+  const parsed = ownFoodSchema.safeParse(raw);
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
+  // The form came from a scan with Open Food Facts hints. The mark is only a credit on the
+  // user's own food and only with a code, so a forged one changes nothing but that label.
+  const fromOff = raw.from === OFF_MARK && parsed.data.barcode !== null;
   const created = await createFood(db, userId, parsed.data, {
+    copiedFrom: fromOff ? "off" : null,
     requestId: readRequestId(formData),
   });
   if (created === "limit") return { formError: ru.foods.foodLimit(FOOD_LIMITS.maxOwnFoods) };
+  if (created === "barcode_taken") return { fieldErrors: { barcode: ru.foods.barcodeTaken } };
   // Started from the diary search: back to logging it, not to the food card. The form's history
   // entry is replaced, so system Back cannot reopen it and save the same food twice.
   const entry = parseEntryContext(raw.date, raw.meal, await getUserToday(new Date()));
@@ -57,9 +63,11 @@ export async function updateFoodAction(
 ): Promise<FormState> {
   const userId = await requireActionUser(formData);
   const id = requireId(foodId);
-  const parsed = foodSchema.safeParse(Object.fromEntries(formData));
+  const parsed = ownFoodSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
-  if (!(await updateOwnFood(db, userId, id, parsed.data))) notFound();
+  const updated = await updateOwnFood(db, userId, id, parsed.data);
+  if (updated === "barcode_taken") return { fieldErrors: { barcode: ru.foods.barcodeTaken } };
+  if (!updated) notFound();
   redirect(withToast(`/foods/${id}`, "saved"));
 }
 

@@ -7,7 +7,8 @@ import { formatInputNumber, formatKcal } from "@/lib/format";
 import type { Meal } from "@/lib/config";
 import type { IsoDate } from "@/lib/date";
 import type { FormState } from "@/lib/forms";
-import type { FoodValues } from "@/lib/foods/types";
+import { OFF_MARK, type FoodHints } from "@/lib/foods/hints";
+import type { OwnFoodValues } from "@/lib/foods/types";
 import { ru } from "@/lib/i18n/ru";
 
 const numberFields = [
@@ -21,24 +22,31 @@ const numberFields = [
 export function FoodForm({
   action,
   initial,
-  draftName,
+  draft,
   entry,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
-  initial?: FoodValues;
-  // A new food started from an empty search opens with the query as its name.
-  draftName?: string;
+  initial?: OwnFoodValues;
+  // A new food started from an empty search opens with the query as its name; one started from a
+  // scan also has the code and whatever Open Food Facts knew.
+  draft?: { hints: FoodHints; barcode: string | null; fromOff: boolean };
   // Started from the diary search: saving returns to the amount screen of that day and meal.
   entry?: { date: IsoDate; meal: Meal };
 }) {
   const { state, pending, fieldErrors: errors, formProps } = usePreservingFormAction(action);
+  const start = initial ?? draft?.hints;
+  // With the name already known, the first thing to type is the first missing number.
+  const firstMissing =
+    draft?.hints.name === undefined
+      ? undefined
+      : numberFields.find((field) => draft.hints[field.name] === undefined)?.name;
   const [kcalEstimate, setKcalEstimate] = useState(() =>
     kcalMismatchEstimate({
-      kcal100: formatInputNumber(initial?.kcal100),
-      protein100: formatInputNumber(initial?.protein100),
-      fat100: formatInputNumber(initial?.fat100),
-      carbs100: formatInputNumber(initial?.carbs100),
-      fiber100: formatInputNumber(initial?.fiber100),
+      kcal100: formatInputNumber(start?.kcal100),
+      protein100: formatInputNumber(start?.protein100),
+      fat100: formatInputNumber(start?.fat100),
+      carbs100: formatInputNumber(start?.carbs100),
+      fiber100: formatInputNumber(start?.fiber100),
     }),
   );
 
@@ -74,11 +82,14 @@ export function FoodForm({
           <input type="hidden" name="meal" value={entry.meal} />
         </>
       ) : null}
+      {draft?.fromOff ? <input type="hidden" name="from" value={OFF_MARK} /> : null}
+      {/* A scan lands here when the code is unknown; the field itself sits at the bottom. */}
+      {draft?.barcode ? <p className="text-sm text-foreground/60">{ru.foods.barcodeNew}</p> : null}
       <TextField
         label={ru.foods.name}
         name="name"
         autoComplete="off"
-        defaultValue={initial?.name ?? draftName}
+        defaultValue={start?.name}
         error={errors.name}
       />
       <p className="text-sm text-foreground/60">{ru.foods.valuesHint}</p>
@@ -88,9 +99,8 @@ export function FoodForm({
             label={field.label}
             name={field.name}
             inputMode="decimal"
-            defaultValue={formatInputNumber(initial?.[field.name])}
-            // With the name already taken from the search, the first thing to type is kcal.
-            autoFocus={draftName !== undefined && field.name === "kcal100"}
+            defaultValue={formatInputNumber(start?.[field.name])}
+            autoFocus={field.name === firstMissing}
             error={errors[field.name]}
           />
           {/* Always mounted (empty takes no space), so a screen reader announces the warning
@@ -102,6 +112,17 @@ export function FoodForm({
           ) : null}
         </div>
       ))}
+      <div className="flex flex-col gap-1">
+        <TextField
+          label={ru.foods.barcode}
+          name="barcode"
+          inputMode="numeric"
+          autoComplete="off"
+          defaultValue={initial?.barcode ?? draft?.barcode ?? undefined}
+          error={errors.barcode}
+        />
+        <p className="text-sm text-foreground/60">{ru.foods.barcodeHint}</p>
+      </div>
       <FormError message={state.formError} />
       <SubmitButton pending={pending}>{ru.common.save}</SubmitButton>
     </form>

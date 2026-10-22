@@ -66,6 +66,7 @@ async function AddContent({ searchParams }: Pick<PageProps<"/diary/add">, "searc
         initialQuery={query}
         link={{ prefix: "/diary/add/", search: diarySearch(date, meal) }}
         newFoodSearch={diarySearch(date, meal)}
+        scan={{ kind: "diary", date, meal }}
         idle={
           hasQuick ? (
             <QuickLists favorites={favorites} recent={recent} date={date} meal={meal} />

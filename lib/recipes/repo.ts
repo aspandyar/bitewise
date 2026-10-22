@@ -164,6 +164,7 @@ export async function createRecipe(
       fiber100: null,
     });
     if (food === "limit") return food;
+    if (food === "barcode_taken") throw new Error("a recipe food has no barcode");
     const [row] = await tx
       .insert(recipes)
       .values({

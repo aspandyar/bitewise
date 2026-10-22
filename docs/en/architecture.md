@@ -35,7 +35,7 @@ Built: the tables up to and including `favorites`; below the line is the plan.
 | `users` | id (uuid), email (unique, lowercased), password_hash (scrypt), role (`user/manager/admin`, default `user`; admin only via the bootstrap script), client_request_id? (the sign-up form's request key, globally unique via a partial index; a replayed sign-up finds the account it made, #107), token_version integer (0; a password change and "sign out everywhere" bump it, and sessions with an older version stop working, #29), created_at |
 | `profiles` | user_id (pk → users, cascade), sex, birth_date, height_cm numeric(5,1), weight_kg numeric(5,1), activity_level, goal, updated_at |
 | `targets` | id, user_id (→ users, cascade, index), name ("По умолчанию", "Default"), mode (`auto/manual`), kcal, protein_g, fat_g, carbs_g numeric(8,2), is_default (a partial unique index: one default target per user), created_at, updated_at |
-| `foods` | id, owner_id (→ users, cascade, index; null = shared, from the seed), name, search_name (generated: `replace(lower(name), 'ё', 'е')`, GIN `gin_trgm_ops`), kcal_100, protein_100, fat_100, carbs_100 (net of fiber), fiber_100? numeric(8,2), source (`user/usda/label`; later `off/ai_estimate`), seed_key (unique: `usda:<fdcId>` / `label:<slug>`), source_url?, copied_from? (`food_source`: where an own food was copied from, only with `source = user`), deleted_at (soft delete, only while diary entries or ingredients point at the food; without references the row is removed for good, #108), created_at, updated_at. CHECKs: `source = user` ⇔ has an owner ⇔ no seed_key; nutrients ≥ 0; source_url only `https://`; copied_from only on own foods and never `user` (a copy of an own food gets null, #87) (the page also renders the link through `safeSourceUrl`). Barcode: stage 7 |
+| `foods` | id, owner_id (→ users, cascade, index; null = shared: from the seed or from Open Food Facts), name, search_name (generated: `replace(lower(name), 'ё', 'е')`, GIN `gin_trgm_ops`), kcal_100, protein_100, fat_100, carbs_100 (net of fiber), fiber_100? numeric(8,2), source (`user/usda/label/off`; later `ai_estimate`), seed_key (unique: `usda:<fdcId>` / `label:<slug>` / `off:<barcode>`; the seed retires only its own sources `usda/label`), barcode? (normalized GTIN: UPC-A and zero-led GTIN-14 stored as EAN-13; one per code among shared foods and one per code for each owner, a deleted food frees its code; CHECK: 8–14 digits), source_url?, copied_from? (`food_source`: where an own food was copied from, only with `source = user`), deleted_at (soft delete, only while diary entries or ingredients point at the food; without references the row is removed for good, #108), created_at, updated_at. CHECKs: `source = user` ⇔ has an owner ⇔ no seed_key; nutrients ≥ 0; source_url only `https://`; copied_from only on own foods and never `user` (a copy of an own food gets null, #87) (the page also renders the link through `safeSourceUrl`) |
 | `food_portions` | id, food_id (→ foods, cascade, index), user_id (→ users, cascade, index; null = shared, from the seed), label ("1 piece"), grams numeric(8,2) > 0, created_at |
 | `recipes` | id, user_id (→ users, cascade, index), food_id (→ foods, cascade, unique: the dish itself is a `foods` row with its name, per-100 g numbers and soft delete), cooked_weight_g numeric(8,2)? > 0 (null = by raw weight), servings integer? > 0 (1–100 in the form), created_at, updated_at. `calcRecipe` computes the per-100 g numbers and `lib/recipes/recompute.ts` writes them to the `foods` row whenever the dish, an own ingredient food or the seed changes; "1 serving" is the dish row's only `food_portion` (0.1–5000 g, else none). No dishes inside dishes |
 | `recipe_items` | id, recipe_id (→ recipes, cascade, index), user_id (→ users, cascade, index), food_id (→ foods, no cascade, index: finds dishes to recompute), grams numeric(8,2) > 0, portion snapshot portion_label, portion_grams, portion_count (all null or all set), created_at. Deleting a dish deletes its ingredients |
@@ -106,8 +106,24 @@ Carbs        = (target − protein×4 − fat×9) / 4
 | --- | --- | --- |
 | Own foods | everything the user typed | the main source |
 | Seed set | 222 base foods in Russian: 209 from USDA SR Legacy (translated names, portions from `food_portion.csv`) + 13 from product labels (VkusVill pages) | `db/seed/sources/*.json` → `pnpm seed:build` → `db/seed/foods.json` → `pnpm db:seed` |
-| **Open Food Facts** | barcodes, packaged products, covers CIS countries | ODbL license, attribution required; data can be incomplete → cache + a mark |
+| **Open Food Facts** (stage 7) | barcodes, packaged products, covers CIS countries | by scanned code only; what is found is saved as a shared food with `source = 'off'`; incomplete data is not saved; ODbL attribution at the bottom of "Продукты" and on the card |
 | **USDA FoodData Central** | raw ingredients, precise data | English names; free API key |
+
+### Barcode lookup
+```text
+camera (barcode-detector, zxing-wasm served by our site) or typed digits
+   │  normalizeBarcode: digits, length, check digit; UPC-A and GTIN-14 → EAN-13
+   ▼
+GET /api/foods/barcode?code=  (session, 30/min per user)
+   │
+   ├─ the user's own food with this code ───────┐
+   ├─ a shared one (incl. one found in OFF) ────┤→ found → amount screen / food card
+   └─ Open Food Facts (7/min per process, 3/min per user, 4 s timeout)
+        ├─ all numbers present → shared `off` food (+ a "1 шт" portion) → found
+        ├─ incomplete / unknown → not_found + hints → own-food form with the barcode
+        └─ no answer → unavailable → "create it yourself" or "scan again"
+```
+Kcal are never derived from the macros; kJ → kcal by dividing by 4.184; per-serving values become per-100 g only with a known serving weight; 100 ml = 100 g. Parsing is `lib/foods/off.ts`, orchestration `lib/foods/barcode-lookup.ts`, saving `lib/foods/barcode-repo.ts` (an advisory lock per code against two racing scans).
 
 ## AI pipeline (v0.3)
 ```text

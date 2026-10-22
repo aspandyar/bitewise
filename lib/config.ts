@@ -131,7 +131,8 @@ export const LOG_SCRUB = { maxDepth: 5 } as const;
 export const SECURITY_HEADERS = {
   csp: {
     "default-src": ["'self'"],
-    "script-src": ["'self'", "'unsafe-inline'"],
+    // The barcode scanner decodes with WebAssembly (stage 7); this compiles it, not eval() for JS.
+    "script-src": ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'"],
     "style-src": ["'self'", "'unsafe-inline'"],
     "img-src": ["'self'", "data:", "blob:"],
     "connect-src": ["'self'"],
@@ -253,16 +254,27 @@ export const RATE_LIMITS = {
   write: { max: 60, windowMs: MS_PER_MINUTE, maxKeys: 100_000 },
   // Guesses at the current password from a signed-in session, per account (#29).
   passwordChange: { max: 5, windowMs: 15 * MS_PER_MINUTE, maxKeys: 100_000 },
+  // Scans per user: a person scanning a shopping bag stays far below, a script trying codes does not.
+  barcodeLookup: { max: 30, windowMs: MS_PER_MINUTE, maxKeys: 100_000 },
+  // Calls to Open Food Facts from this process, all users together; they allow 15 product reads
+  // a minute per IP, and our own users must never get the server's IP blocked there. A fixed
+  // window lets 2 × max through around its edge, so max stays at half their limit.
+  offOutbound: { max: 7, windowMs: MS_PER_MINUTE, maxKeys: 1 },
+  // One user's share of the calls above: a script scanning random codes cannot spend everyone's.
+  offOutboundPerUser: { max: 3, windowMs: MS_PER_MINUTE, maxKeys: 100_000 },
 } as const;
 
 // Number of reverse proxies we control in front of the app (nginx, stage 6). Each one appends the
 // peer it saw to X-Forwarded-For, so the client IP sits that many entries from the right.
 export const TRUSTED_PROXY_HOPS = 1;
 
-// Where a food's numbers come from; shown as a badge in search. "off" and "ai_estimate" arrive
-// with their own stages through a migration.
-export const FOOD_SOURCES = ["user", "usda", "label"] as const;
+// Where a food's numbers come from; shown as a badge in search. "ai_estimate" arrives with its
+// own stage through a migration.
+export const FOOD_SOURCES = ["user", "usda", "label", "off"] as const;
 export type FoodSource = (typeof FOOD_SOURCES)[number];
+// Only these come from the seed file, so only these may be retired when a key leaves it: shared
+// foods cached from Open Food Facts were never in the file.
+export const SEED_FOOD_SOURCES = ["usda", "label"] as const;
 
 // Per 100 g: pure fat is ~900 kcal, and no 100 g of food holds more than 100 g of nutrients.
 export const FOOD_LIMITS = {
@@ -279,6 +291,45 @@ export const PORTION_LIMITS = {
   grams: { min: 0.1, max: 5000 },
   // Keeps a portion list scannable on a phone screen.
   maxOwnPerFood: 20,
+} as const;
+
+// GTIN lengths a pack can carry: EAN-8, UPC-A, EAN-13, GTIN-14.
+export const BARCODE = { lengths: [8, 12, 13, 14] } as const;
+
+// The camera scanner (stage 7). The decoder's .wasm is copied from node_modules into public/ by
+// scripts/copy-zxing-wasm.ts and served from this site: the library's default is a CDN, which
+// the CSP blocks.
+export const SCANNER = {
+  wasmPath: "/zxing/",
+  formats: ["ean_13", "ean_8", "upc_a", "upc_e"],
+  // ~5 tries a second is plenty for a pack held still and leaves the phone cool.
+  frameIntervalMs: 200,
+  // A code still in view keeps being read; it is sent again only after this pause.
+  sameCodeMs: 3000,
+} as const;
+
+// Open Food Facts product API v2. They ask every app for its own User-Agent ("AppName/Version
+// (contact)"); the version comes from package.json in lib/foods/off.ts.
+export const OFF = {
+  productUrl: "https://world.openfoodfacts.org/api/v2/product/",
+  productPageUrl: "https://world.openfoodfacts.org/product/",
+  // Credited on the foods screen: their database is under ODbL, which requires attribution.
+  siteUrl: "https://world.openfoodfacts.org/",
+  fields: [
+    "code",
+    "product_name",
+    "product_name_ru",
+    "generic_name",
+    "generic_name_ru",
+    "brands",
+    "serving_quantity",
+    "nutriments",
+  ],
+  appName: "Bitewise",
+  contactUrl: "https://github.com/aspandyar/bitewise",
+  // A scan waits on this before the user sees anything; their API answers in well under a second.
+  timeoutMs: 4000,
+  kjPerKcal: 4.184,
 } as const;
 
 export const FOOD_SEARCH = {

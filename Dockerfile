@@ -28,6 +28,8 @@ ENV NODE_ENV=production \
 # Code stays owned by root: the server process (user node) can read it but not rewrite it (#102).
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
+# Only the barcode decoder lives in public/ (`pnpm wasm:copy` during the build).
+COPY --from=build /app/public ./public
 COPY --from=build /app/ops ./ops
 COPY --from=build /app/db/migrations ./db/migrations
 COPY --from=build /app/db/seed/foods.json ./db/seed/foods.json

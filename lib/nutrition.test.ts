@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   calcAgeYears,
+  calcKcalFromKj,
+  calcPer100gFromServing,
   calcKcalFromMacros,
   isKcalConsistentWithMacros,
   calcDayProgress,
@@ -535,5 +537,21 @@ describe("isKcalConsistentWithMacros", () => {
     expect(
       isKcalConsistentWithMacros(85, { proteinG: 0.1, fatG: 0, carbsG: 2.6, fiberG: null }),
     ).toBe(false);
+  });
+});
+
+describe("calcKcalFromKj", () => {
+  it("converts kilojoules at 4.184 kJ per kcal", () => {
+    // 1937.32 / 4.184 = 463.03
+    expect(calcKcalFromKj(1937.32)).toBeCloseTo(463.03, 2);
+    expect(calcKcalFromKj(0)).toBe(0);
+  });
+});
+
+describe("calcPer100gFromServing", () => {
+  it("scales a per-serving value to 100 g by the serving weight", () => {
+    // 173 kcal in a 60 g bar → 288.33 per 100 g
+    expect(calcPer100gFromServing(173, 60)).toBeCloseTo(288.33, 2);
+    expect(calcPer100gFromServing(0, 60)).toBe(0);
   });
 });

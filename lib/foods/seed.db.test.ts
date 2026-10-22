@@ -151,6 +151,34 @@ describe("loadFoodSeed", () => {
     expect(await getVisibleFood(testDb, alice, id)).not.toBeNull();
   });
 
+  it("never retires shared foods cached from Open Food Facts", async () => {
+    await loadFoodSeed(testDb, [buckwheat]);
+    const [off] = await testDb
+      .insert(foods)
+      .values({
+        name: "Батончик протеиновый",
+        kcal100: 380,
+        protein100: 30,
+        fat100: 12,
+        carbs100: 35,
+        source: "off",
+        seedKey: "off:4607001771456",
+        barcode: "4607001771456",
+        ownerId: null,
+      })
+      .returning({ id: foods.id });
+
+    expect((await loadFoodSeed(testDb, [])).retired).toBe(1);
+    const rows = await testDb
+      .select({ seedKey: foods.seedKey, deletedAt: foods.deletedAt })
+      .from(foods)
+      .where(eq(foods.id, off!.id));
+    expect(rows).toEqual([{ seedKey: "off:4607001771456", deletedAt: null }]);
+    expect(
+      (await testDb.select().from(foods).where(eq(foods.seedKey, "usda:170286")))[0]?.deletedAt,
+    ).not.toBeNull();
+  });
+
   it("never retires users' own foods", async () => {
     const alice = await newUserId("alice@mail.com");
     await loadFoodSeed(testDb, [buckwheat]);
@@ -186,7 +214,11 @@ describe("loadFoodSeed and recipes", () => {
   it("retries a recipe whose recompute failed on the next seed run, even with no seed changes", async () => {
     const alice = await newUserId("alice@mail.com");
     await loadFoodSeed(testDb, [buckwheat]);
-    const created = await createRecipe(testDb, alice, { name: "Каша", cookedWeightG: null, servings: null });
+    const created = await createRecipe(testDb, alice, {
+      name: "Каша",
+      cookedWeightG: null,
+      servings: null,
+    });
     if (created === "limit") throw new Error("cap");
     await addItem(testDb, alice, created.id, {
       foodId: await idOf(buckwheat.key),
@@ -209,7 +241,11 @@ describe("loadFoodSeed and recipes", () => {
   it("leaves up-to-date recipes alone on a re-run", async () => {
     const alice = await newUserId("alice@mail.com");
     await loadFoodSeed(testDb, [buckwheat]);
-    const created = await createRecipe(testDb, alice, { name: "Каша", cookedWeightG: null, servings: null });
+    const created = await createRecipe(testDb, alice, {
+      name: "Каша",
+      cookedWeightG: null,
+      servings: null,
+    });
     if (created === "limit") throw new Error("cap");
     await addItem(testDb, alice, created.id, {
       foodId: await idOf(buckwheat.key),
@@ -224,7 +260,11 @@ describe("loadFoodSeed and recipes", () => {
     const buckwheatId = await idOf(buckwheat.key);
     const recipeIds: string[] = [];
     for (const name of ["Каша", "Гарнир"]) {
-      const created = await createRecipe(testDb, alice, { name, cookedWeightG: null, servings: null });
+      const created = await createRecipe(testDb, alice, {
+        name,
+        cookedWeightG: null,
+        servings: null,
+      });
       if (created === "limit") throw new Error("cap");
       await addItem(testDb, alice, created.id, {
         foodId: buckwheatId,

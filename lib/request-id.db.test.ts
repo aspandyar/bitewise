@@ -195,7 +195,7 @@ describe("foods and portions", () => {
     const first = await createFood(testDb, alice, ownFood, { requestId });
     const second = await createFood(testDb, alice, ownFood, { requestId });
     expect(first).toEqual({ id: expect.any(String), replayed: false });
-    expect(second).toEqual({ id: first !== "limit" ? first.id : "", replayed: true });
+    expect(second).toEqual({ id: typeof first !== "string" ? first.id : "", replayed: true });
     expect(await rows(foods)).toBe(1);
   });
 

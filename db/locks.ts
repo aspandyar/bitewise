@@ -6,3 +6,9 @@ import type { Db } from "./types";
 export async function lockUserWrites(tx: Db, userId: string): Promise<void> {
   await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${userId}))`);
 }
+
+// Serializes saving one scanned code: two scans of a new pack must not both insert it. The
+// two-key form keeps these locks apart from the per-user ones above.
+export async function lockSharedBarcode(tx: Db, code: string): Promise<void> {
+  await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('barcode'), hashtext(${code}))`);
+}

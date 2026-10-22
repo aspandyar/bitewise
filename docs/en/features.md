@@ -20,6 +20,7 @@ Marks: ✅ works, 🟨 partly (what is missing is in brackets), no mark — not 
 - ✅ Portions: "1 piece", "1 spoon", "1 glass" → grams.
 - ✅ Name search with typos (`pg_trgm`), own foods first; recent foods are on the "+ Add" screen.
 - ✅ A starter set of base foods: 222 items (USDA, translated, plus product labels).
+- ✅ Barcode scanner (camera or typed digits) → own, shared, Open Food Facts → the amount screen; what Open Food Facts has is saved as a shared food, an unknown code becomes an own food with the barcode.
 
 ### Own dishes (recipes)
 - ✅ A dish = a list of "food × grams" + the cooked weight (water boils off, the weight changes).
@@ -42,7 +43,6 @@ Marks: ✅ works, 🟨 partly (what is missing is in brackets), no mark — not 
 - 🟨 Own VPS, Docker, backups (everything is ready and tested locally; a server and a domain are not chosen yet).
 
 ## 🟡 Tier 2 — SHOULD HAVE (v0.2)
-- Barcode scanner (camera) → Open Food Facts → cached locally.
 - Water: quick +250 / +500 ml buttons.
 - Body weight: entries + a chart + a 7-day moving average.
 - Statistics: weekly/monthly kcal and macro averages, "days on target".

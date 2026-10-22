@@ -122,8 +122,11 @@ export const foods = pgTable(
     carbs100: nutrient("carbs_100"),
     fiber100: optionalNutrient("fiber_100"),
     source: foodSourceEnum("source").notNull(),
-    // Stable key the seed upserts by: "usda:<fdcId>" or "label:<slug>".
+    // Stable key the seed upserts by: "usda:<fdcId>" or "label:<slug>"; "off:<barcode>" for a
+    // shared food cached from Open Food Facts, which the seed never touches.
     seedKey: text("seed_key"),
+    // Normalized GTIN (lib/foods/barcode.ts), so a scan as UPC-A and as EAN-13 finds one row.
+    barcode: text("barcode"),
     sourceUrl: text("source_url"),
     // A copy is the user's own food, but its numbers came from somewhere: shown as "копия: USDA".
     copiedFrom: foodSourceEnum("copied_from"),
@@ -141,8 +144,17 @@ export const foods = pgTable(
       .where(sql`${t.clientRequestId} IS NOT NULL`),
     index("foods_owner_id_idx").on(t.ownerId),
     uniqueIndex("foods_seed_key_unique").on(t.seedKey),
+    // One shared food per code, and one own food per code for each user; a deleted food frees
+    // its code. These also serve the lookup, which always filters on the same predicate.
+    uniqueIndex("foods_shared_barcode_unique")
+      .on(t.barcode)
+      .where(sql`${t.ownerId} IS NULL AND ${t.barcode} IS NOT NULL AND ${t.deletedAt} IS NULL`),
+    uniqueIndex("foods_own_barcode_unique")
+      .on(t.ownerId, t.barcode)
+      .where(sql`${t.ownerId} IS NOT NULL AND ${t.barcode} IS NOT NULL AND ${t.deletedAt} IS NULL`),
     index("foods_search_name_trgm_idx").using("gin", t.searchName.op("gin_trgm_ops")),
-    // A user's own food is never seed data, and every shared food comes from the seed.
+    // A user's own food is never seed data, and every shared food comes from the seed or is
+    // cached from Open Food Facts (seed_key "off:<barcode>").
     check("foods_user_source_has_owner", sql`(${t.source} = 'user') = (${t.ownerId} IS NOT NULL)`),
     check("foods_seed_key_iff_shared", sql`(${t.ownerId} IS NULL) = (${t.seedKey} IS NOT NULL)`),
     // A copy of an own food gets null, so 'user' is never a valid origin.
@@ -150,6 +162,7 @@ export const foods = pgTable(
       "foods_copied_from_only_own",
       sql`${t.copiedFrom} IS NULL OR (${t.source} = 'user' AND ${t.copiedFrom} <> 'user')`,
     ),
+    check("foods_barcode_digits", sql`${t.barcode} IS NULL OR ${t.barcode} ~ '^[0-9]{8,14}$'`),
     // Rendered as a link on the food card; the seed validates it, the database guarantees it.
     check("foods_source_url_https", sql`${t.sourceUrl} IS NULL OR ${t.sourceUrl} LIKE 'https://%'`),
     check(

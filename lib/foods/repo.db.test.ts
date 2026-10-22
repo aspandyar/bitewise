@@ -55,6 +55,7 @@ describe("food visibility", () => {
       source: "user",
       sourceUrl: null,
       copiedFrom: null,
+      barcode: null,
       isOwn: true,
       isRecipe: false,
     });
@@ -372,7 +373,7 @@ describe("own food cap", () => {
     await fillOwnFoods(bob, FOOD_LIMITS.maxOwnFoods);
     await fillOwnFoods(alice, FOOD_LIMITS.maxOwnFoods - 1);
     const created = await createFood(testDb, alice, oats);
-    if (created === "limit") throw new Error("unexpected limit");
+    if (typeof created === "string") throw new Error(`unexpected ${created}`);
     await deleteOwnFood(testDb, alice, created.id);
 
     expect(await createFood(testDb, alice, oats)).not.toBe("limit");
@@ -447,5 +448,70 @@ describe("updateOwnFood and recipes", () => {
     const recipe = await getRecipe(testDb, alice, created.id);
     const food = recipe && (await getVisibleFood(testDb, alice, recipe.foodId));
     expect(food?.kcal100).toBe(50);
+  });
+});
+
+describe("barcodes on own foods", () => {
+  const CODE = "4610169567113";
+
+  async function barcodeOf(foodId: string) {
+    const [row] = await testDb.select({ barcode: foods.barcode }).from(foods).where(eq(foods.id, foodId));
+    return row?.barcode;
+  }
+
+  it("stores the code and returns it with the food", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const created = await createFood(testDb, alice, { ...oats, barcode: CODE });
+    if (typeof created === "string") throw new Error(created);
+    expect((await getVisibleFood(testDb, alice, created.id))?.barcode).toBe(CODE);
+  });
+
+  it("refuses a second own food with the same code, on create and on edit", async () => {
+    const alice = await newUserId("alice@mail.com");
+    await createFood(testDb, alice, { ...oats, barcode: CODE });
+    expect(await createFood(testDb, alice, { ...oats, barcode: CODE })).toBe("barcode_taken");
+
+    const other = await createOwnFood(alice, oats);
+    expect(await updateOwnFood(testDb, alice, other.id, { ...oats, barcode: CODE })).toBe("barcode_taken");
+    expect(await barcodeOf(other.id)).toBeNull();
+  });
+
+  it("lets a food keep its own code on edit and lets another user use the code", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const bob = await newUserId("bob@mail.com");
+    const created = await createFood(testDb, alice, { ...oats, barcode: CODE });
+    if (typeof created === "string") throw new Error(created);
+    expect(await updateOwnFood(testDb, alice, created.id, { ...oats, name: "Овсянка", barcode: CODE })).toBe(true);
+    expect(await createFood(testDb, bob, { ...oats, barcode: CODE })).toMatchObject({ replayed: false });
+  });
+
+  it("frees the code of a deleted own food", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const created = await createFood(testDb, alice, { ...oats, barcode: CODE });
+    if (typeof created === "string") throw new Error(created);
+    await deleteOwnFood(testDb, alice, created.id);
+    expect(await createFood(testDb, alice, { ...oats, barcode: CODE })).toMatchObject({ replayed: false });
+  });
+
+  it("keeps the Open Food Facts credit on a food made from scan hints", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const created = await createFood(testDb, alice, { ...oats, barcode: CODE }, { copiedFrom: "off" });
+    if (typeof created === "string") throw new Error(created);
+    expect((await getVisibleFood(testDb, alice, created.id))?.copiedFrom).toBe("off");
+  });
+
+  it("copies a shared food's code unless the user already has an own food with it", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const shared = await insertSharedFood({ name: "Батончик", key: `off:${CODE}` });
+    await testDb.update(foods).set({ barcode: CODE, source: "off" }).where(eq(foods.id, shared));
+
+    const first = await copyFood(testDb, alice, shared);
+    if (!first || first === "limit") throw new Error("no copy");
+    expect(await barcodeOf(first.id)).toBe(CODE);
+    expect((await getVisibleFood(testDb, alice, first.id))?.copiedFrom).toBe("off");
+
+    const second = await copyFood(testDb, alice, shared);
+    if (!second || second === "limit") throw new Error("no copy");
+    expect(await barcodeOf(second.id)).toBeNull();
   });
 });
