@@ -172,6 +172,7 @@ export const ru = {
     sourceLabel: "Источник:",
     copiedFrom: (source: string) => ` · копия: ${source}`,
     attribution: "Данные о продуктах:",
+    offLicense: "(лицензия ODbL)",
     favorite: "В избранное",
     favoriteOn: "★",
     favoriteOff: "☆",

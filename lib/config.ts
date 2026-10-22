@@ -297,6 +297,8 @@ export const BARCODE = { lengths: [8, 12, 13, 14] } as const;
 export const OFF = {
   productUrl: "https://world.openfoodfacts.org/api/v2/product/",
   productPageUrl: "https://world.openfoodfacts.org/product/",
+  // Credited on the foods screen: their database is under ODbL, which requires attribution.
+  siteUrl: "https://world.openfoodfacts.org/",
   fields: [
     "code",
     "product_name",
