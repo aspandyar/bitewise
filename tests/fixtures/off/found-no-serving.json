@@ -1,0 +1,41 @@
+{
+  "code": "4631162064096",
+  "product": {
+    "brands": "Rock it with protein",
+    "code": "4631162064096",
+    "nutriments": {
+      "carbohydrates": 29.75,
+      "carbohydrates_100g": 29.75,
+      "carbohydrates_unit": "g",
+      "carbohydrates_value": 29.75,
+      "energy": 1937.32,
+      "energy-kcal": 463.03,
+      "energy-kcal_100g": 463.03,
+      "energy-kcal_unit": "kcal",
+      "energy-kcal_value": 463.03,
+      "energy-kj": 1937.32,
+      "energy-kj_100g": 1937.32,
+      "energy-kj_unit": "kJ",
+      "energy-kj_value": 1937.32,
+      "energy_100g": 1937.32,
+      "energy_unit": "kJ",
+      "energy_value": 1937.32,
+      "fat": 29.27,
+      "fat_100g": 29.27,
+      "fat_unit": "g",
+      "fat_value": 29.27,
+      "proteins": 20.15,
+      "proteins_100g": 20.15,
+      "proteins_unit": "g",
+      "proteins_value": 20.15
+    },
+    "nutrition_data": "on",
+    "nutrition_data_per": "100g",
+    "nutrition_data_prepared_per": "100g",
+    "product_name": "Двойной арахис",
+    "product_name_ru": "Двойной арахис",
+    "serving_quantity": null
+  },
+  "status": 1,
+  "status_verbose": "product found"
+}

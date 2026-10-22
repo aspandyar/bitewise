@@ -1,0 +1,34 @@
+{
+  "code": "4610169567113",
+  "product": {
+    "brands": "Bombbar",
+    "code": "4610169567113",
+    "nutriments": {
+      "carbohydrates_serving": 3.5,
+      "carbohydrates_unit": "g",
+      "energy-kcal_serving": 173,
+      "energy-kcal_unit": "kcal",
+      "energy-kj_serving": 723,
+      "energy-kj_unit": "kJ",
+      "energy_serving": 723,
+      "energy_unit": "kJ",
+      "fat_serving": 4.3,
+      "fat_unit": "g",
+      "fiber_serving": 20,
+      "fiber_unit": "g",
+      "nova-group": 4,
+      "nova-group_serving": 4,
+      "nova-group_unit": "",
+      "proteins_serving": 20,
+      "proteins_unit": "g"
+    },
+    "nutrition_data": "on",
+    "nutrition_data_per": "serving",
+    "nutrition_data_prepared_per": "100g",
+    "product_name": "Батончик неглазированный со вкусом «Малиновый чизкейк»",
+    "product_name_ru": "Батончик неглазированный со вкусом «Малиновый чизкейк»",
+    "serving_quantity": null
+  },
+  "status": 1,
+  "status_verbose": "product found"
+}

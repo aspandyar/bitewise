@@ -287,6 +287,28 @@ export const PORTION_LIMITS = {
 // GTIN lengths a pack can carry: EAN-8, UPC-A, EAN-13, GTIN-14.
 export const BARCODE = { lengths: [8, 12, 13, 14] } as const;
 
+// Open Food Facts product API v2. They ask every app for its own User-Agent ("AppName/Version
+// (contact)"); the version comes from package.json in lib/foods/off.ts.
+export const OFF = {
+  productUrl: "https://world.openfoodfacts.org/api/v2/product/",
+  productPageUrl: "https://world.openfoodfacts.org/product/",
+  fields: [
+    "code",
+    "product_name",
+    "product_name_ru",
+    "generic_name",
+    "generic_name_ru",
+    "brands",
+    "serving_quantity",
+    "nutriments",
+  ],
+  appName: "Bitewise",
+  contactUrl: "https://github.com/aspandyar/bitewise",
+  // A scan waits on this before the user sees anything; their API answers in well under a second.
+  timeoutMs: 4000,
+  kjPerKcal: 4.184,
+} as const;
+
 export const FOOD_SEARCH = {
   limit: 20,
   maxQueryLength: 50,
