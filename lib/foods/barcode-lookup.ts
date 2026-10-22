@@ -1,7 +1,8 @@
 import type { RateLimiter } from "@/lib/auth/rate-limit";
 import { loggableError } from "@/lib/log";
 import { normalizeBarcode } from "./barcode";
-import type { FoodHints, OffProduct } from "./off";
+import type { FoodHints } from "./hints";
+import type { OffProduct } from "./off";
 import type { FoodValues } from "./types";
 
 export type BarcodeLookupBody =

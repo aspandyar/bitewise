@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { FOOD_LIMITS, PORTION_LIMITS } from "@/lib/config";
 import { firstFieldErrors } from "@/lib/forms";
 import { ru } from "@/lib/i18n/ru";
-import { foodSchema, parseDraftName, parseFoodId, portionSchema } from "./schema";
+import { foodSchema, ownFoodSchema, parseDraftName, parseFoodId, portionSchema } from "./schema";
 
 const valid = {
   name: " Гречка ",
@@ -13,6 +13,27 @@ const valid = {
   carbs100: "57,1",
   fiber100: "",
 };
+
+describe("ownFoodSchema", () => {
+  it("treats an empty barcode as none", () => {
+    expect(ownFoodSchema.parse({ ...valid, barcode: " " }).barcode).toBeNull();
+    expect(ownFoodSchema.parse(valid).barcode).toBeNull();
+  });
+
+  it("stores a typed UPC-A as its EAN-13 form", () => {
+    expect(ownFoodSchema.parse({ ...valid, barcode: " 036000291452 " }).barcode).toBe("0036000291452");
+  });
+
+  it("rejects a barcode with a wrong check digit at the field", () => {
+    const parsed = ownFoodSchema.safeParse({ ...valid, barcode: "4607001771457" });
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) expect(firstFieldErrors(parsed.error).barcode).toBe(ru.errors.barcode);
+  });
+
+  it("checks the nutrients like a shared food", () => {
+    expect(ownFoodSchema.safeParse({ ...valid, carbs100: "90" }).success).toBe(false);
+  });
+});
 
 describe("foodSchema", () => {
   it("parses a valid form with decimal commas and an empty fiber", () => {

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { FOOD_LIMITS, NUTRIENT_STORAGE_SCALE, PORTION_LIMITS } from "@/lib/config";
 import { decimalField, optionalDecimalField } from "@/lib/forms";
 import { ru } from "@/lib/i18n/ru";
+import { normalizeBarcode } from "./barcode";
 
 const { nameLength, kcal100, nutrient100G, maxTotalGramsPer100G } = FOOD_LIMITS;
 const gramsMessage = ru.errors.gramsRange(nutrient100G.min, nutrient100G.max);
@@ -19,8 +20,7 @@ export const foodNameSchema = z
   .min(nameLength.min, { error: nameMessage })
   .max(nameLength.max, { error: nameMessage });
 
-export const foodSchema = z
-  .object({
+const foodFields = {
     name: foodNameSchema,
     kcal100: decimalField(
       kcal100,
@@ -31,16 +31,35 @@ export const foodSchema = z
     fat100: grams(),
     carbs100: grams(),
     fiber100: optionalDecimalField(nutrient100G, gramsMessage),
-  })
-  .refine(
-    (food) =>
-      toHundredths(food.protein100) +
-        toHundredths(food.fat100) +
-        toHundredths(food.carbs100) +
-        toHundredths(food.fiber100 ?? 0) <=
-      toHundredths(maxTotalGramsPer100G),
-    { error: ru.errors.macroSum(maxTotalGramsPer100G), path: ["carbs100"] },
+};
+
+function macrosFit(food: { protein100: number; fat100: number; carbs100: number; fiber100: number | null }) {
+  return (
+    toHundredths(food.protein100) +
+      toHundredths(food.fat100) +
+      toHundredths(food.carbs100) +
+      toHundredths(food.fiber100 ?? 0) <=
+    toHundredths(maxTotalGramsPer100G)
   );
+}
+const macroSumError = { error: ru.errors.macroSum(maxTotalGramsPer100G), path: ["carbs100"] };
+
+export const foodSchema = z.object(foodFields).refine(macrosFit, macroSumError);
+
+// Empty means none; a typed UPC-A is stored as EAN-13 like a scanned one, so both find the food.
+const barcodeField = z
+  .string()
+  .optional()
+  .transform((value, ctx) => {
+    const trimmed = value?.trim() ?? "";
+    if (trimmed === "") return null;
+    const code = normalizeBarcode(trimmed);
+    if (!code) ctx.addIssue({ code: "custom", message: ru.errors.barcode });
+    return code;
+  });
+
+// The own-food form: the same numbers as any food, plus the pack's barcode.
+export const ownFoodSchema = z.object({ ...foodFields, barcode: barcodeField }).refine(macrosFit, macroSumError);
 
 const { labelLength, grams: portionGrams } = PORTION_LIMITS;
 const labelMessage = ru.errors.portionLabelLength(labelLength.min, labelLength.max);

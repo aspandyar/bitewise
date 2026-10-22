@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, isNull, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, isNull, ne, or, sql } from "drizzle-orm";
 import { lockUserWrites } from "@/db/locks";
 import { foodPortions, foods } from "@/db/schema";
 import type { Db } from "@/db/types";
@@ -6,7 +6,13 @@ import { purgeDeletedFoods } from "./purge";
 import { FOOD_LIMITS, FOOD_SEARCH, PORTION_LIMITS, type FoodSource } from "@/lib/config";
 import { recomputeRecipesUsingFoods } from "@/lib/recipes/recompute";
 import { escapeLike } from "./search";
-import type { FoodDetails, FoodListItem, FoodValues, PortionItem, PortionValues } from "./types";
+import type {
+  FoodDetails,
+  FoodListItem,
+  OwnFoodValues,
+  PortionItem,
+  PortionValues,
+} from "./types";
 
 // Every read goes through this filter: shared or own, and never soft-deleted.
 export function visibleTo(userId: string) {
@@ -52,6 +58,7 @@ export async function getVisibleFood(
       fiber100: foods.fiber100,
       sourceUrl: foods.sourceUrl,
       copiedFrom: foods.copiedFrom,
+      barcode: foods.barcode,
     })
     .from(foods)
     .where(and(eq(foods.id, foodId), visibleTo(userId)))
@@ -79,14 +86,37 @@ export async function listOwnFoods(
     .limit(limit);
 }
 
+// One code, one own food (foods_own_barcode_unique): checked under the user's write lock, so the
+// form gets an error at the field instead of a unique violation.
+async function ownBarcodeTaken(
+  tx: Db,
+  userId: string,
+  barcode: string,
+  exceptFoodId?: string,
+): Promise<boolean> {
+  const [row] = await tx
+    .select({ id: foods.id })
+    .from(foods)
+    .where(
+      and(
+        eq(foods.ownerId, userId),
+        eq(foods.barcode, barcode),
+        isNull(foods.deletedAt),
+        exceptFoodId ? ne(foods.id, exceptFoodId) : undefined,
+      ),
+    )
+    .limit(1);
+  return row !== undefined;
+}
+
 // Copies and recipes create through here too, inside their own transaction (a savepoint then).
 // `replayed`: the same request key already made this food (#95), so nothing new was written.
 export async function createFood(
   db: Db,
   userId: string,
-  values: FoodValues,
+  values: OwnFoodValues,
   options: { copiedFrom?: FoodSource | null; requestId?: string | null } = {},
-): Promise<{ id: string; replayed: boolean } | "limit"> {
+): Promise<{ id: string; replayed: boolean } | "limit" | "barcode_taken"> {
   const { copiedFrom = null, requestId = null } = options;
   return db.transaction(async (tx) => {
     await lockUserWrites(tx, userId);
@@ -103,6 +133,7 @@ export async function createFood(
       .from(foods)
       .where(and(eq(foods.ownerId, userId), isNull(foods.deletedAt)));
     if ((owned?.total ?? 0) >= FOOD_LIMITS.maxOwnFoods) return "limit";
+    if (values.barcode && (await ownBarcodeTaken(tx, userId, values.barcode))) return "barcode_taken";
     const [row] = await tx
       .insert(foods)
       .values({
@@ -122,9 +153,13 @@ export async function updateOwnFood(
   db: Db,
   userId: string,
   foodId: string,
-  values: FoodValues,
-): Promise<boolean> {
+  values: OwnFoodValues,
+): Promise<boolean | "barcode_taken"> {
   return db.transaction(async (tx) => {
+    await lockUserWrites(tx, userId);
+    if (values.barcode && (await ownBarcodeTaken(tx, userId, values.barcode, foodId))) {
+      return "barcode_taken";
+    }
     const rows = await tx
       .update(foods)
       .set({ ...values, updatedAt: sql`now()` })
@@ -238,16 +273,26 @@ export async function copyFood(
         fiber100: foods.fiber100,
         source: foods.source,
         copiedFrom: foods.copiedFrom,
+        barcode: foods.barcode,
       })
       .from(foods)
       .where(and(eq(foods.id, foodId), visibleTo(userId), notRecipe))
       .limit(1);
     if (!source) return null;
-    const { source: origin, copiedFrom, ...values } = source;
+    const { source: origin, copiedFrom, barcode, ...values } = source;
     // A copy of a copy still credits the original data; a copy of a plain own food has none.
     const credit = copiedFrom ?? (origin === "user" ? null : origin);
-    const copy = await createFood(tx, userId, values, { copiedFrom: credit, requestId });
+    // The fixed copy of a pack takes its code, so the scanner finds it before the original; a
+    // second copy goes without, since the code already points at the first one.
+    const copyBarcode = barcode && !(await ownBarcodeTaken(tx, userId, barcode)) ? barcode : null;
+    const copy = await createFood(
+      tx,
+      userId,
+      { ...values, barcode: copyBarcode },
+      { copiedFrom: credit, requestId },
+    );
     if (copy === "limit") return copy;
+    if (copy === "barcode_taken") throw new Error("copy got a taken barcode under the write lock");
     // A replay: the first request already copied the portions.
     if (copy.replayed) return { id: copy.id };
     // Every copied portion becomes the user's own and so counts against the cap. Shared ones come

@@ -3,19 +3,12 @@ import { z } from "zod";
 import { FOOD_LIMITS, NUTRIENT_BASE_GRAMS, OFF, PORTION_LIMITS } from "@/lib/config";
 import { version } from "@/package.json";
 import { foodSchema } from "./schema";
+import type { FoodHints } from "./hints";
 import type { FoodValues } from "./types";
 
 export const OFF_USER_AGENT = `${OFF.appName}/${version} (${OFF.contactUrl})`;
 
-// What a scan can still offer the own-food form when the product is not usable as it is.
-export type FoodHints = {
-  name?: string;
-  kcal100?: number;
-  protein100?: number;
-  fat100?: number;
-  carbs100?: number;
-  fiber100?: number;
-};
+export type { FoodHints };
 
 export type OffProduct =
   | { kind: "found"; values: FoodValues; portionGrams: number | null; sourceUrl: string }

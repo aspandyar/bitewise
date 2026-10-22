@@ -47,6 +47,6 @@ export async function insertSharedPortion(
 // For tests that need an own food and are not about the per-user cap.
 export async function createOwnFood(userId: string, values: FoodValues): Promise<{ id: string }> {
   const created = await createFood(testDb, userId, values);
-  if (created === "limit") throw new Error("own food cap reached in a test");
+  if (typeof created === "string") throw new Error(`own food not created in a test: ${created}`);
   return created;
 }

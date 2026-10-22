@@ -185,6 +185,9 @@ export const ru = {
     portionLabelPlaceholder: "Например, 1 шт",
     // The portion a pack from Open Food Facts gets when its serving weight is known.
     piecePortion: "1 шт",
+    barcode: "Штрихкод",
+    barcodeHint: "Необязательно: цифры под полосками на упаковке",
+    barcodeTaken: "Этот штрихкод уже есть у другого вашего продукта",
     portionGrams: "Граммы",
     addPortion: "Добавить порцию",
     deletePortion: "Удалить",
@@ -192,6 +195,7 @@ export const ru = {
     foodLimit: (max: number) => `Не больше ${n(max)} своих продуктов. Удалите ненужные`,
   },
   errors: {
+    barcode: "Проверьте цифры штрихкода: 8, 12, 13 или 14 цифр",
     email: "Введите корректный email",
     passwordLength: (min: number, max: number) => `Пароль — от ${n(min)} до ${n(max)} символов`,
     choose: "Выберите вариант",

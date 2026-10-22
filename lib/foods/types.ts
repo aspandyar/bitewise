@@ -10,6 +10,9 @@ export type FoodValues = {
   fiber100: number | null;
 };
 
+// An own food can carry a pack's barcode; shared seed foods and recipes never do.
+export type OwnFoodValues = FoodValues & { barcode?: string | null };
+
 export type FoodListItem = {
   id: string;
   name: string;
@@ -29,6 +32,7 @@ export type FoodDetails = FoodListItem & {
   sourceUrl: string | null;
   // Where an own food's numbers were copied from; null for anything else.
   copiedFrom: FoodSource | null;
+  barcode: string | null;
 };
 
 export type PortionValues = { label: string; grams: number };
