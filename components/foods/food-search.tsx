@@ -6,7 +6,9 @@ import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 
 import { FOOD_SEARCH } from "@/lib/config";
 import type { FoodListItem } from "@/lib/foods/types";
 import { ru } from "@/lib/i18n/ru";
+import type { ScanTarget } from "@/lib/foods/scan";
 import { foodCardHref, FoodList } from "./food-list";
+import { ScanButton } from "./scan-button";
 
 type SearchState =
   | { kind: "loading"; query: string }
@@ -29,6 +31,7 @@ export function FoodSearch({
   idle,
   newFoodSearch,
   initialQuery = "",
+  scan,
 }: {
   ownFoods: FoodListItem[];
   link?: FoodLink;
@@ -39,6 +42,8 @@ export function FoodSearch({
   newFoodSearch?: string;
   // From ?q=: the screen reopens on the search a new food was started from (#92).
   initialQuery?: string;
+  // Where a scanned code leads; without it there is no scanner (picking a dish's ingredients).
+  scan?: ScanTarget;
 }) {
   const router = useRouter();
   const [input, setInput] = useState(initialQuery);
@@ -134,36 +139,39 @@ export function FoodSearch({
   return (
     <div className="flex flex-col gap-4">
       {/* The clear button sits outside the label, so it does not become part of the field's name. */}
-      <div className="relative">
-        <label className="flex flex-col gap-1">
-          <span className="sr-only">{ru.foods.searchLabel}</span>
-          <input
-            ref={inputRef}
-            type="search"
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            onKeyDown={onKeyDown}
-            placeholder={ru.foods.searchPlaceholder}
-            maxLength={FOOD_SEARCH.maxQueryLength}
-            autoComplete="off"
-            enterKeyHint="search"
-            // Search is the only job of this screen; desktop browsers focus it at once (iOS will
-            // not raise the keyboard without a tap, which is fine).
-            autoFocus
-            // The native clear cross is a few pixels wide; our own button below is 44 px.
-            className="min-h-11 rounded-lg border border-foreground/40 bg-background py-0 pr-11 pl-3 text-base [&::-webkit-search-cancel-button]:appearance-none"
-          />
-        </label>
-        {input ? (
-          <button
-            type="button"
-            onClick={clear}
-            aria-label={ru.foods.clearSearch}
-            className="absolute top-0 right-0 flex size-11 items-center justify-center text-xl text-foreground/60"
-          >
-            {ru.foods.clearSymbol}
-          </button>
-        ) : null}
+      <div className="flex gap-2">
+        <div className="relative min-w-0 flex-1">
+          <label className="flex flex-col gap-1">
+            <span className="sr-only">{ru.foods.searchLabel}</span>
+            <input
+              ref={inputRef}
+              type="search"
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              onKeyDown={onKeyDown}
+              placeholder={ru.foods.searchPlaceholder}
+              maxLength={FOOD_SEARCH.maxQueryLength}
+              autoComplete="off"
+              enterKeyHint="search"
+              // Search is the only job of this screen; desktop browsers focus it at once (iOS will
+              // not raise the keyboard without a tap, which is fine).
+              autoFocus
+              // The native clear cross is a few pixels wide; our own button below is 44 px.
+              className="min-h-11 rounded-lg border border-foreground/40 bg-background py-0 pr-11 pl-3 text-base [&::-webkit-search-cancel-button]:appearance-none"
+            />
+          </label>
+          {input ? (
+            <button
+              type="button"
+              onClick={clear}
+              aria-label={ru.foods.clearSearch}
+              className="absolute top-0 right-0 flex size-11 items-center justify-center text-xl text-foreground/60"
+            >
+              {ru.foods.clearSymbol}
+            </button>
+          ) : null}
+        </div>
+        {scan ? <ScanButton target={scan} /> : null}
       </div>
       {!query && idle ? (
         idle
@@ -207,7 +215,10 @@ export function FoodSearch({
       ) : current.items.length === 0 ? (
         <div className="flex flex-col gap-2">
           <p>{ru.foods.nothingFound}</p>
-          <Link href={newFoodHref} className="flex min-h-11 w-fit items-center underline text-accent-text">
+          <Link
+            href={newFoodHref}
+            className="flex min-h-11 w-fit items-center underline text-accent-text"
+          >
             {ru.foods.addOwnInstead}
           </Link>
         </div>

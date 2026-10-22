@@ -27,7 +27,7 @@ async function FoodsContent({ searchParams }: Pick<PageProps<"/foods">, "searchP
         </Link>
       </div>
       {/* Keyed by the query: a screen kept alive from another search starts from this one. */}
-      <FoodSearch key={query} ownFoods={ownFoods} initialQuery={query} />
+      <FoodSearch key={query} ownFoods={ownFoods} initialQuery={query} scan={{ kind: "foods" }} />
       {/* Flex, not inline text: the 44 px tap areas would otherwise leave a tall gap on wrap. */}
       <p className="mt-auto flex flex-wrap items-center gap-x-1 pt-4 text-xs text-foreground/60">
         <span>{ru.foods.attribution}</span>

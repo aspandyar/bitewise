@@ -17,6 +17,9 @@ next-env.d.ts
 # testing
 coverage/
 
+# barcode decoder copied from node_modules by `pnpm wasm:copy`
+/public/zxing/
+
 # misc
 # downloaded source datasets (USDA CSV), rebuilt locally
 .cache/

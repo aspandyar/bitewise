@@ -131,7 +131,8 @@ export const LOG_SCRUB = { maxDepth: 5 } as const;
 export const SECURITY_HEADERS = {
   csp: {
     "default-src": ["'self'"],
-    "script-src": ["'self'", "'unsafe-inline'"],
+    // The barcode scanner decodes with WebAssembly (stage 7); this compiles it, not eval() for JS.
+    "script-src": ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'"],
     "style-src": ["'self'", "'unsafe-inline'"],
     "img-src": ["'self'", "data:", "blob:"],
     "connect-src": ["'self'"],
@@ -291,6 +292,18 @@ export const PORTION_LIMITS = {
 
 // GTIN lengths a pack can carry: EAN-8, UPC-A, EAN-13, GTIN-14.
 export const BARCODE = { lengths: [8, 12, 13, 14] } as const;
+
+// The camera scanner (stage 7). The decoder's .wasm is copied from node_modules into public/ by
+// scripts/copy-zxing-wasm.ts and served from this site: the library's default is a CDN, which
+// the CSP blocks.
+export const SCANNER = {
+  wasmPath: "/zxing/",
+  formats: ["ean_13", "ean_8", "upc_a", "upc_e"],
+  // ~5 tries a second is plenty for a pack held still and leaves the phone cool.
+  frameIntervalMs: 200,
+  // A code still in view keeps being read; it is sent again only after this pause.
+  sameCodeMs: 3000,
+} as const;
 
 // Open Food Facts product API v2. They ask every app for its own User-Agent ("AppName/Version
 // (contact)"); the version comes from package.json in lib/foods/off.ts.
