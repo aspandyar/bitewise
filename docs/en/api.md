@@ -30,7 +30,7 @@ The app has two kinds of server entry points:
   - sign-in: 10 attempts per 15 minutes per IP and per account; trusted devices (a mark set after sign-in) count in a separate account bucket (#30);
   - sign-up: 5 per hour per IP (and only with `REGISTRATION=open`);
   - food search: 120 requests per minute per user;
-  - barcode lookup: 30 per minute per user; calls to Open Food Facts: 10 per minute for the whole process (theirs is 15 per IP), beyond that the answer is "unavailable";
+  - barcode lookup: 30 per minute per user; calls to Open Food Facts: 7 per minute for the whole process (theirs is 15 per IP; a fixed window can let twice that through at its edge) and 3 per minute per user, beyond that the answer is "unavailable";
   - any action that writes: 60 per minute per user (#31);
   - password change: 5 attempts per 15 minutes per account.
 
@@ -80,9 +80,10 @@ Responses (always `Cache-Control: no-store`):
 | --- | --- |
 | 200 | `{ status: "found", foodId }` |
 | 200 | `{ status: "not_found", code, hints }`: found nowhere, or Open Food Facts data is incomplete (no kcal or any of protein/fat/carbs, numbers outside the limits); `hints` is what is known, for the own-food form |
-| 200 | `{ status: "unavailable", code }`: Open Food Facts did not answer or the shared budget is spent; our database was checked |
+| 200 | `{ status: "unavailable", code }`: Open Food Facts did not answer or a budget is spent (the shared one or the user's share); our database was checked |
 | 400 | `{ error: "bad_code" }`: before the database and before any outside call |
 | 401 | `{ error: "unauthorized" }` |
+| 403 | `{ error: "forbidden" }`: `Sec-Fetch-Site` is not `same-origin`; the GET writes the shared cache, so another site must not trigger it for the user (browsers without the header pass) |
 | 429 | `{ error: "rate_limited" }` |
 | 500 | `{ error: "server_error" }`: the log holds neither the code nor the Open Food Facts response |
 

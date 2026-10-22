@@ -106,8 +106,24 @@ Carbs        = (target − protein×4 − fat×9) / 4
 | --- | --- | --- |
 | Own foods | everything the user typed | the main source |
 | Seed set | 222 base foods in Russian: 209 from USDA SR Legacy (translated names, portions from `food_portion.csv`) + 13 from product labels (VkusVill pages) | `db/seed/sources/*.json` → `pnpm seed:build` → `db/seed/foods.json` → `pnpm db:seed` |
-| **Open Food Facts** | barcodes, packaged products, covers CIS countries | ODbL license, attribution required; data can be incomplete → cache + a mark |
+| **Open Food Facts** (stage 7) | barcodes, packaged products, covers CIS countries | by scanned code only; what is found is saved as a shared food with `source = 'off'`; incomplete data is not saved; ODbL attribution at the bottom of "Продукты" and on the card |
 | **USDA FoodData Central** | raw ingredients, precise data | English names; free API key |
+
+### Barcode lookup
+```text
+camera (barcode-detector, zxing-wasm served by our site) or typed digits
+   │  normalizeBarcode: digits, length, check digit; UPC-A and GTIN-14 → EAN-13
+   ▼
+GET /api/foods/barcode?code=  (session, 30/min per user)
+   │
+   ├─ the user's own food with this code ───────┐
+   ├─ a shared one (incl. one found in OFF) ────┤→ found → amount screen / food card
+   └─ Open Food Facts (7/min per process, 3/min per user, 4 s timeout)
+        ├─ all numbers present → shared `off` food (+ a "1 шт" portion) → found
+        ├─ incomplete / unknown → not_found + hints → own-food form with the barcode
+        └─ no answer → unavailable → "create it yourself" or "scan again"
+```
+Kcal are never derived from the macros; kJ → kcal by dividing by 4.184; per-serving values become per-100 g only with a known serving weight; 100 ml = 100 g. Parsing is `lib/foods/off.ts`, orchestration `lib/foods/barcode-lookup.ts`, saving `lib/foods/barcode-repo.ts` (an advisory lock per code against two racing scans).
 
 ## AI pipeline (v0.3)
 ```text

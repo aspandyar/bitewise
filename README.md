@@ -21,6 +21,7 @@ Most calorie counters are either slow (five screens per entry) or "smart" and im
 - **Diary.** Breakfast, lunch, dinner, snack; a food in grams or portions ("1 piece = 60 g"); day totals and progress to the target; day navigation in the phone's time zone.
 - **Fast input.** Favorites and recent foods in one tap, with Undo; "Repeat" your last breakfast; "just 450 kcal" without a food.
 - **Foods.** 222 base foods (USDA, translated, plus product labels), search from the first letter and with typos, your own foods and portions, copying a shared food to your own.
+- **Barcode scanner.** Point the phone camera at a pack (or type the digits): your own food, a shared one or [Open Food Facts](https://world.openfoodfacts.org/) → straight to the amount screen; an unknown code opens your own food with the barcode filled in.
 - **Your dishes.** A borscht of eight ingredients with the cooked weight → kcal per 100 g and per serving; it goes into the diary like any food.
 - **A phone app.** Installs to the home screen (PWA), dark theme and your own accent color, a clear screen offline, and actions retry by themselves once the network is back.
 - **Security.** Everyone sees only their own data; password change and "sign out everywhere"; rate limits on sign-in and writes; logs without personal data.
@@ -29,9 +30,9 @@ The interface is in Russian.
 
 ## Status
 
-Stages 0–5 and 6a are done, plus several polish and security batches; stage 6b (production) is built without a server. The production setup (Docker Compose, nginx, TLS, backups, release with rollback) is built and tested locally; a server and a domain are not chosen yet, so there is no public address, and sign-up is closed by default.
+Stages 0–5, 6a and 7 (barcode scanner) are done, plus several polish and security batches; stage 6b (production) is built without a server. The production setup (Docker Compose, nginx, TLS, backups, release with rollback) is built and tested locally; a server and a domain are not chosen yet, so there is no public address, and sign-up is closed by default.
 
-Next: a barcode scanner (Open Food Facts), weight and water, then AI input by text and by photo. Details: [project plan](docs/en/PROJECT_PLAN.md).
+Next: weight and water, then AI input by text and by photo. Details: [project plan](docs/en/PROJECT_PLAN.md).
 
 ## Stack
 

@@ -40,6 +40,7 @@ Production variables (`APP_DB_*`, `DOMAIN`, TLS, backups) are in the "Production
 ## Server and scripts
 - `db/client.ts` and `lib/env.ts` are marked `server-only`: importing the database or secrets into a client component fails the build (#32).
 - Scripts (seed, `admin:bootstrap`, the image's migrations, `drizzle.config.ts`) run outside Next, where `server-only` throws, and use `db/connect.ts` and `lib/env-read.ts`. ESLint forbids these entries in app code.
+- `pnpm dev` and `pnpm build` run `pnpm wasm:copy` first: the barcode decoder (`zxing_reader.wasm` from `node_modules`) is copied to `public/zxing/` (not in git) and served by our own site, since the CSP keeps it off a CDN.
 - At server start `instrumentation.ts` scrubs SQL parameters from error logs (#76) and checks `REGISTRATION`.
 
 ## Database
@@ -80,6 +81,15 @@ Vitest with two projects (`vitest.config.ts`):
 
 ## CI
 `.github/workflows/ci.yml` on every push and PR: Postgres 17 as a service → `pnpm install --frozen-lockfile` → `pnpm lint` → `pnpm test`. A full run takes about a minute. Merging into `master` only on green CI.
+
+## Camera on a phone (tunnel)
+The camera works only over https (or on `localhost`), so on the laptop's home-network address the scanner offers typed digits only. To test on a phone, use a named Cloudflare tunnel to the laptop's production build:
+
+1. Once: `cloudflared tunnel login` (zone `aspandyar.org`), `cloudflared tunnel create bitewise-dev`, `cloudflared tunnel route dns bitewise-dev bitewise-dev.aspandyar.org`. The config is a separate file, `~/.cloudflared/bitewise-dev.yml` (`ingress`: `bitewise-dev.aspandyar.org` → `http://localhost:3000`); the tunnel key is the JSON next to it and never goes into git.
+2. While testing: `NEXTAUTH_URL=https://bitewise-dev.aspandyar.org` in `.env`, `pnpm build && pnpm start`, then `cloudflared tunnel --config ~/.cloudflared/bitewise-dev.yml run`.
+3. Afterwards stop the tunnel and restore `NEXTAUTH_URL`: while it points at the tunnel, signing in on `localhost` does not work.
+
+The subdomain is one level deep: Cloudflare's free certificate does not cover `*.*.aspandyar.org`.
 
 ## Common issues
 - **A form or search shows old values after returning to a screen.** `cacheComponents` keeps hidden screens alive with their state. A client form on such a screen needs a `key` from its input data or the `ResetOnHide` wrapper (`components/ui/reset-on-hide.tsx`). See `.claude/rules/ui.md`.
