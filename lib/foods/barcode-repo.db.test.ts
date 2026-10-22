@@ -84,6 +84,15 @@ describe("saveOffFood", () => {
     expect(await testDb.select().from(foodPortions)).toHaveLength(1);
   });
 
+  it("revives a cached food that was soft-deleted instead of failing on its key", async () => {
+    const first = await saveOffFood(testDb, CODE, offBar);
+    await testDb.update(foods).set({ deletedAt: new Date() }).where(eq(foods.id, first.id));
+    const again = await saveOffFood(testDb, CODE, offBar);
+    expect(again.id).toBe(first.id);
+    expect((await testDb.select().from(foods))[0]?.deletedAt).toBeNull();
+    expect(await testDb.select().from(foodPortions)).toHaveLength(1);
+  });
+
   it("keeps one row and one portion when two scans of a new code race", async () => {
     const parallelCount = 5;
     const pool = createTestPool(parallelCount);
