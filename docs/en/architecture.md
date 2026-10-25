@@ -40,12 +40,12 @@ Built: the tables up to and including `favorites`; below the line is the plan.
 | `recipes` | id, user_id (→ users, cascade, index), food_id (→ foods, cascade, unique: the dish itself is a `foods` row with its name, per-100 g numbers and soft delete), cooked_weight_g numeric(8,2)? > 0 (null = by raw weight), servings integer? > 0 (1–100 in the form), created_at, updated_at. `calcRecipe` computes the per-100 g numbers and `lib/recipes/recompute.ts` writes them to the `foods` row whenever the dish, an own ingredient food or the seed changes; "1 serving" is the dish row's only `food_portion` (0.1–5000 g, else none). No dishes inside dishes |
 | `recipe_items` | id, recipe_id (→ recipes, cascade, index), user_id (→ users, cascade, index), food_id (→ foods, no cascade, index: finds dishes to recompute), grams numeric(8,2) > 0, portion snapshot portion_label, portion_grams, portion_count (all null or all set), created_at. Deleting a dish deletes its ingredients |
 | `diary_entries` | id, user_id (→ users, cascade), date (the user's local date), meal (`breakfast/lunch/dinner/snack`), food_id? (→ foods, no cascade: foods are soft-deleted; null = a "just N kcal" entry stored as 100 g × the typed per-100 g numbers, without a portion, by CHECK), snapshot: food_name, kcal_100, protein_100, fat_100, carbs_100 numeric(8,2); grams > 0; portion snapshot portion_label, portion_grams, portion_count (all null or all set); created_at, updated_at. Indexes `(user_id, date)`, `(user_id, created_at DESC, id DESC)` for recent foods (#93), and `food_id`. Totals come from `lib/nutrition.ts`; a dish is logged like a food (the dish row's `food_id`) |
-| shared by `diary_entries`, `foods`, `food_portions`, `recipes`, `recipe_items` | client_request_id uuid?: the request key the client created the row with; unique per owner (`(user_id or owner_id, client_request_id)`, a partial index `WHERE client_request_id IS NOT NULL`). A replay of the same request finds the row already made (#95) |
+| `water_entries` | id, user_id (→ users, cascade), date (local date), ml integer > 0, client_request_id?, created_at. One row per tap of "+250 / +500" (only `WATER.quickMl`); "Remove last" deletes a row by id, so a replay removes nothing more. Index `(user_id, date)`, capped by `WATER.maxEntriesPerDay` a day |
+| `weight_entries` | id, user_id (→ users, cascade), date, weight_kg numeric(5,1) > 0, created_at, updated_at. One weigh-in a day: unique `(user_id, date)`, also the upsert target. The newest weigh-in is copied into `profiles.weight_kg` and recalculates an auto target (`saveProfile`; a manual one is left alone); deleting it falls back to the next newest |
+| shared by `diary_entries`, `foods`, `food_portions`, `recipes`, `recipe_items`, `water_entries` | client_request_id uuid?: the request key the client created the row with; unique per owner (`(user_id or owner_id, client_request_id)`, a partial index `WHERE client_request_id IS NOT NULL`). A replay of the same request finds the row already made (#95) |
 | `favorites` | user_id (→ users, cascade), food_id (→ foods, cascade, index), created_at; primary key `(user_id, food_id)`. A star on a food or dish; on the "+ Add" screen above recent foods; capped by `QUICK.maxFavorites` |
 | — planned — | |
 | `day_settings` | user_id, date, target_id |
-| `water_entries` | id, user_id, ts, ml |
-| `weight_entries` | id, user_id, date, kg |
 | `ai_requests` | id, user_id, kind (`text/photo/chat`), provider, model, tokens_in, tokens_out, cost_usd, status, created_at |
 
 ## Layers and the request flow
@@ -150,13 +150,14 @@ lib/nutrition.ts → diary_entries    ← numbers come from code, not the model
 bitewise/
 ├── app/
 │   ├── (auth)/          # login, register (+ actions)
-│   ├── (app)/           # home diary, onboarding, profile, targets, foods/**, diary/**, recipes/** + actions.ts
+│   ├── (app)/           # home diary, onboarding, profile, targets, foods/**, diary/**, recipes/**, body/** (weight), stats + actions.ts
 │   ├── api/             # foods/search, health, auth/[...nextauth]
 │   └── manifest.ts, icon.tsx, apple-icon.tsx, pwa-icons/, sw.js/, offline/   # PWA
-├── components/          # ui/ (forms, two-tap delete, ResetOnHide, offline banner), auth/, diary/, foods/, recipes/, profile/, targets/, pwa/, brand/
+├── components/          # ui/ (forms, two-tap delete, ResetOnHide, offline banner), auth/, diary/, foods/, recipes/, profile/, targets/, water/, body/, stats/, pwa/, brand/
 ├── lib/
 │   ├── config.ts        # all constants and caps
-│   ├── nutrition.ts     # all calculations (+ tests)
+│   ├── nutrition.ts     # all calculations (+ tests), day and period totals included
+│   ├── body.ts, chart.ts  # 7-day weight average; SVG chart scales
 │   ├── amount.ts        # amounts: grams or portion × N (diary and dish ingredients)
 │   ├── date.ts, format.ts, forms.ts, ids.ts, i18n/ru.ts
 │   ├── env.ts, env-read.ts  # environment variables: for the app (server-only) and for scripts
@@ -164,7 +165,7 @@ bitewise/
 │   ├── appearance.ts    # theme and accent: palette → CSS, the <head> script, contrast
 │   ├── pwa/             # icons, service worker, offline page, install hint
 │   ├── auth/            # Auth.js, passwords, rate limits, sign-up, roles, token version, device mark
-│   ├── foods/ diary/ recipes/ profile/ targets/ users/   # repo.ts · schema.ts · types.ts (+ tests)
+│   ├── foods/ diary/ recipes/ profile/ targets/ users/ water/ weight/ stats/   # repo.ts · schema.ts · types.ts (+ tests)
 │   └── ai/              # stages 9–12
 ├── db/                  # schema.ts, migrations/, seed/ (foods.json + sources/), client.ts (server-only), connect.ts (scripts), ops/ (the image's migrator)
 ├── scripts/             # build-food-seed.ts, bootstrap-admin.ts

@@ -49,12 +49,12 @@ tags:
 | `recipes` | id, user_id (→ users, cascade, индекс), food_id (→ foods, cascade, unique — блюдо само строка `foods`: название, цифры на 100 г, мягкое удаление), cooked_weight_g numeric(8,2)? > 0 (null — по сырому весу), servings integer? > 0 (1–100 в форме), created_at, updated_at. Цифры на 100 г считает `calcRecipe` и пишет `lib/recipes/recompute.ts` в строку `foods` — при каждом изменении блюда, правке своего продукта-ингредиента и сиде; порция «1 порция» — единственная `food_portion` строки-блюда (0,1–5000 г, иначе нет). Блюдо в блюде нельзя |
 | `recipe_items` | id, recipe_id (→ recipes, cascade, индекс), user_id (→ users, cascade, индекс), food_id (→ foods, без каскада, индекс — поиск блюд для пересчёта), grams numeric(8,2) > 0, снимок порции portion_label, portion_grams, portion_count (все null или все заданы), created_at. Удаление блюда удаляет состав |
 | `diary_entries` | id, user_id (→ users, cascade), date (локальная дата пользователя), meal (`breakfast/lunch/dinner/snack`), food_id? (→ foods, без каскада: продукты удаляются мягко; null — быстрая запись «просто N ккал», хранится как 100 г × введённые числа на 100 г, без порции — CHECK), снимок: food_name, kcal_100, protein_100, fat_100, carbs_100 — numeric(8,2); grams > 0; снимок порции portion_label, portion_grams, portion_count (все null или все заданы); created_at, updated_at. Индексы `(user_id, date)`, `(user_id, created_at DESC, id DESC)` — для недавних (#93) — и `food_id`. Итоги считает `lib/nutrition.ts`; блюдо попадает сюда как обычный продукт (`food_id` строки-блюда); `source` — на своём этапе |
-| общее для `diary_entries`, `foods`, `food_portions`, `recipes`, `recipe_items` | client_request_id uuid? — ключ запроса, которым клиент создал строку; уникален по владельцу (`(user_id или owner_id, client_request_id)`, частичный индекс `WHERE client_request_id IS NOT NULL`). Повтор того же запроса находит уже созданную строку (#95) |
+| `water_entries` | id, user_id (→ users, cascade), date (локальная дата), ml integer > 0, client_request_id?, created_at. Строка на каждое нажатие «+250 / +500» (только `WATER.quickMl`); «Убрать последнее» удаляет строку по id — повтор ничего не удалит. Индекс `(user_id, date)`, лимит `WATER.maxEntriesPerDay` на день |
+| `weight_entries` | id, user_id (→ users, cascade), date, weight_kg numeric(5,1) > 0, created_at, updated_at. Одно взвешивание в день: уникальный `(user_id, date)` — он же цель upsert. Самое свежее взвешивание копируется в `profiles.weight_kg` и пересчитывает авто-норму (`saveProfile`; ручная не меняется); при удалении — следующее по свежести |
+| общее для `diary_entries`, `foods`, `food_portions`, `recipes`, `recipe_items`, `water_entries` | client_request_id uuid? — ключ запроса, которым клиент создал строку; уникален по владельцу (`(user_id или owner_id, client_request_id)`, частичный индекс `WHERE client_request_id IS NOT NULL`). Повтор того же запроса находит уже созданную строку (#95) |
 | `favorites` | user_id (→ users, cascade), food_id (→ foods, cascade, индекс), created_at; первичный ключ `(user_id, food_id)`. Звёздочка у продукта или блюда; на экране «+ Добавить» — над недавними; лимит `QUICK.maxFavorites` |
 | — план — | |
 | `day_settings` | user_id, date, target_id |
-| `water_entries` | id, user_id, ts, ml |
-| `weight_entries` | id, user_id, date, kg |
 | `ai_requests` | id, user_id, kind (`text/photo/chat`), provider, model, tokens_in, tokens_out, cost_usd, status, created_at |
 
 ## Слои и поток запроса
@@ -159,13 +159,14 @@ lib/nutrition.ts → diary_entries    ← числа считает код, не
 bitewise/
 ├── app/
 │   ├── (auth)/          # login, register (+ registerAction)
-│   ├── (app)/           # главная-дневник, onboarding, profile, targets, foods/**, diary/**, recipes/** + actions.ts
+│   ├── (app)/           # главная-дневник, onboarding, profile, targets, foods/**, diary/**, recipes/**, body/** (вес), stats + actions.ts
 │   ├── api/             # foods/search, health, auth/[...nextauth]
 │   └── manifest.ts, icon.tsx, apple-icon.tsx, pwa-icons/, sw.js/, offline/   # PWA
-├── components/          # ui/ (формы, удаление в два тапа, ResetOnHide, плашка «Нет сети»), auth/, diary/, foods/, recipes/, profile/, targets/, pwa/, brand/
+├── components/          # ui/ (формы, удаление в два тапа, ResetOnHide, плашка «Нет сети»), auth/, diary/, foods/, recipes/, profile/, targets/, water/, body/, stats/, pwa/, brand/
 ├── lib/
 │   ├── config.ts        # все константы и лимиты
-│   ├── nutrition.ts     # все расчёты (+ тесты)
+│   ├── nutrition.ts     # все расчёты (+ тесты), в том числе итоги дней и периода
+│   ├── body.ts, chart.ts  # среднее веса за 7 дней; масштабы SVG-графиков
 │   ├── amount.ts        # количество: граммы или порция × N (дневник и состав блюда)
 │   ├── date.ts, format.ts, forms.ts, ids.ts, i18n/ru.ts
 │   ├── env.ts, env-read.ts  # переменные окружения: для приложения (server-only) и для скриптов
@@ -173,7 +174,7 @@ bitewise/
 │   ├── appearance.ts    # тема и акцент: палитра → CSS, скрипт в <head>, контраст
 │   ├── pwa/             # иконки, service worker, офлайн-страница, подсказка установки
 │   ├── auth/            # Auth.js, пароли, лимиты, регистрация, роли, версия токена, метка устройства
-│   ├── foods/ diary/ recipes/ profile/ targets/ users/   # repo.ts · schema.ts · types.ts (+ тесты)
+│   ├── foods/ diary/ recipes/ profile/ targets/ users/ water/ weight/ stats/   # repo.ts · schema.ts · types.ts (+ тесты)
 │   └── ai/              # этапы 9–12
 ├── db/                  # schema.ts, migrations/, seed/ (foods.json + sources/), client.ts (server-only), connect.ts (скрипты), ops/ (мигратор образа)
 ├── scripts/             # build-food-seed.ts, bootstrap-admin.ts
