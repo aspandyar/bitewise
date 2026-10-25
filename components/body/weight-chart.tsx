@@ -64,14 +64,17 @@ export function WeightChart({
             </text>
           </g>
         ))}
-        <text
-          x={padding.left}
-          y={height - labelGap}
-          className="fill-foreground/60"
-          style={labelStyle}
-        >
-          {formatShortDate(from)}
-        </text>
+        {/* A single day (one weigh-in today) needs one date, not the same one twice. */}
+        {from !== to && (
+          <text
+            x={padding.left}
+            y={height - labelGap}
+            className="fill-foreground/60"
+            style={labelStyle}
+          >
+            {formatShortDate(from)}
+          </text>
+        )}
         <text
           x={width - padding.right}
           y={height - labelGap}

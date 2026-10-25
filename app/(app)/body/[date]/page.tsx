@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { db } from "@/db/client";
-import { deleteWeightAction, saveWeightAction } from "@/app/(app)/body/actions";
+import { deleteWeightAction, updateWeightAction } from "@/app/(app)/body/actions";
 import { WeightForm } from "@/components/body/weight-form";
 import { BackLink } from "@/components/ui/back-link";
 import { ConfirmDeleteButton } from "@/components/ui/confirm-delete-button";
@@ -32,7 +32,7 @@ async function WeightContent({ params }: Pick<PageProps<"/body/[date]">, "params
       <ResetOnHide>
         <WeightForm
           key={`${date}:${weight.weightKg}`}
-          action={saveWeightAction.bind(null, date)}
+          action={updateWeightAction.bind(null, weight.id)}
           label={ru.body.weightLabel}
           initialKg={weight.weightKg}
         />

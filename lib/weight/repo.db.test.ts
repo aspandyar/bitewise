@@ -4,7 +4,7 @@ import { getProfile, saveProfile } from "@/lib/profile/repo";
 import { getDefaultTarget, setManualTarget } from "@/lib/targets/repo";
 import { closeTestDb, resetDb, testDb } from "@/tests/db";
 import { newUserId } from "@/tests/foods";
-import { deleteWeight, getWeight, listWeights, saveWeight } from "./repo";
+import { deleteWeight, getWeight, listWeights, saveWeight, updateWeight } from "./repo";
 
 const TODAY = "2026-10-25";
 const profile: ProfileData = {
@@ -98,6 +98,26 @@ describe("weight entries", () => {
     await saveWeight(testDb, alice, { date: TODAY, weightKg: 77 }, TODAY);
     await deleteWeight(testDb, alice, await idOf(alice, TODAY), TODAY);
     expect((await getProfile(testDb, alice))?.weightKg).toBe(77);
+  });
+
+  it("updates a weigh-in by id and does not re-create a deleted one", async () => {
+    const alice = await userWithProfile();
+    await saveWeight(testDb, alice, { date: TODAY, weightKg: 77 }, TODAY);
+    const id = await idOf(alice, TODAY);
+    expect(await updateWeight(testDb, alice, id, 76.5, TODAY)).toBe(true);
+    expect((await getWeight(testDb, alice, TODAY))?.weightKg).toBe(76.5);
+    expect((await getProfile(testDb, alice))?.weightKg).toBe(76.5);
+    await deleteWeight(testDb, alice, id, TODAY);
+    expect(await updateWeight(testDb, alice, id, 76, TODAY)).toBe(false);
+    expect(await getWeight(testDb, alice, TODAY)).toBeNull();
+  });
+
+  it("never updates another user's weigh-in", async () => {
+    const alice = await userWithProfile();
+    const bob = await userWithProfile("bob@mail.com");
+    await saveWeight(testDb, alice, { date: TODAY, weightKg: 77 }, TODAY);
+    expect(await updateWeight(testDb, bob, await idOf(alice, TODAY), 60, TODAY)).toBe(false);
+    expect((await getWeight(testDb, alice, TODAY))?.weightKg).toBe(77);
   });
 
   it("deletes nothing on a replay, even after the day is entered again", async () => {

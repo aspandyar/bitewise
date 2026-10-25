@@ -420,7 +420,8 @@ export const CHART = {
   padding: { top: 8, right: 8, bottom: 24, left: 40 },
   dotRadius: 3,
   lineWidth: 2,
-  labelFontSize: 10,
+  // 12 units ≈ 12 px at 375 px: the smallest size that stays readable in light grey.
+  labelFontSize: 12,
   barRadius: 1,
   // A day with a few kcal still shows a sliver instead of vanishing.
   minBarWidth: 1,

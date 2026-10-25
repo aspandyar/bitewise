@@ -63,6 +63,31 @@ export async function saveWeight(
   });
 }
 
+// The edit screen saves by id: going Back to it after a delete must not bring the weigh-in back,
+// so a missing row is reported instead of re-created.
+export async function updateWeight(
+  db: Db,
+  userId: string,
+  entryId: string,
+  weightKg: number,
+  today: IsoDate,
+): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    await lockUserWrites(tx, userId);
+    const [updated] = await tx
+      .update(weightEntries)
+      .set({ weightKg, updatedAt: sql`now()` })
+      .where(and(eq(weightEntries.userId, userId), eq(weightEntries.id, entryId)))
+      .returning({ date: weightEntries.date });
+    if (!updated) return false;
+    const latest = await getLatestWeight(tx, userId);
+    if (latest?.date === updated.date) {
+      await updateProfileWeight(tx, userId, latest.weightKg, today);
+    }
+    return true;
+  });
+}
+
 // By id, not by date: a replayed delete must not take a weigh-in entered again for that day,
 // nor one of another account signed in on the same device since (#107). Deleting the newest
 // weigh-in moves the profile to the one before it; with none left the profile keeps its weight.

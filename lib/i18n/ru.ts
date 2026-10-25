@@ -344,6 +344,7 @@ export const ru = {
     tooFast: "Слишком много изменений подряд — подождите минуту",
     passwordChanged: "Пароль изменён, другие устройства вышли",
     waterFull: `Не больше ${n(WATER.maxEntriesPerDay)} записей воды за день`,
+    weightGone: "Это взвешивание уже удалено",
     waterTotalFull: `Не больше ${n(WATER.maxEntriesTotal)} записей воды всего`,
   },
   water: {
@@ -358,6 +359,8 @@ export const ru = {
     weightLabel: "Вес, кг",
     kg: (kg: string) => `${kg}${NBSP}кг`,
     chartTitle: `За ${n(WEIGHT.chartDays)}${NBSP}дней`,
+    // A short history starts the chart at its first weigh-in, so the title names that day.
+    chartSince: (date: string) => `С ${date}`,
     // The chart is a picture; this sentence carries its meaning for screen readers.
     chartSummary: (first: string, last: string, average: string) =>
       `С ${first} до ${last}${NBSP}кг, среднее за ${n(WEIGHT.averageDays)}${NBSP}дней — ${average}${NBSP}кг`,

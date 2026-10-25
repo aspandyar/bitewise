@@ -13,7 +13,7 @@ import { calcWeightTrend } from "@/lib/body";
 import { WEIGHT } from "@/lib/config";
 import { addDays } from "@/lib/date";
 import { getUserToday } from "@/lib/diary/today";
-import { formatWeightKg } from "@/lib/format";
+import { formatShortDate, formatWeightKg } from "@/lib/format";
 import { ru } from "@/lib/i18n/ru";
 import { getProfile } from "@/lib/profile/repo";
 import { listWeights } from "@/lib/weight/repo";
@@ -54,7 +54,11 @@ async function BodyContent() {
       {latest ? (
         <section className="flex flex-col gap-3">
           <div className="flex items-baseline justify-between gap-3">
-            <h2 className="font-semibold">{ru.body.chartTitle}</h2>
+            <h2 className="font-semibold">
+              {chartFrom === from
+                ? ru.body.chartTitle
+                : ru.body.chartSince(formatShortDate(chartFrom))}
+            </h2>
             <p className="text-sm text-foreground/60">
               {ru.body.average(formatWeightKg(latest.averageKg))}
             </p>
