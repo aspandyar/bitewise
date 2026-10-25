@@ -23,6 +23,8 @@ A plan runs in one of two ways:
 - **Native**: Claude does the tasks itself, in a row, and the whole branch is reviewed at the end. Stages 3 and 4 went this way.
 - **Subagent-driven**: each task goes to a fresh subagent, with a separate review after each. More reliable, but more expensive.
 
+With the Savvy Progress mod installed, the stage's progress shows in a bar above the prompt: the plan after the "ok", finished steps, review, close. Without the mod `/stage` works the same, just without the bar.
+
 ## Rules (`.claude/rules/`)
 Picked up automatically by the paths an edit touches.
 
