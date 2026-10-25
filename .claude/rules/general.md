@@ -6,3 +6,5 @@
 - Keep changes inside the current stage. Out-of-scope ideas → a GitHub Issue (stage label or `polish`), linked from docs/ru/notes.md «Открытые вопросы».
 - Prefer small pure functions; side effects at the edges (route handlers, server actions).
 - Не добавляй зависимость, не объяснив зачем и почему без неё нельзя.
+- After each stage or feature change, update the docs in the same change; keeping docs current is required, not optional.
+- When adding or changing env vars (.env.example etc., even optional), list them in chat so the user can update what Claude can't access
