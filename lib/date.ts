@@ -57,6 +57,19 @@ export function addDays(date: IsoDate, days: number): IsoDate {
   return shifted.toISOString().slice(0, 10);
 }
 
+const MS_PER_DAY = 86_400_000;
+
+function utcMs(date: IsoDate): number {
+  const parsed = parseIsoDate(date);
+  if (!parsed) throw new RangeError(`invalid date: ${date}`);
+  return Date.UTC(parsed.year, parsed.month - 1, parsed.day);
+}
+
+// Whole calendar days from one date to the other; negative when `to` is earlier.
+export function daysBetween(from: IsoDate, to: IsoDate): number {
+  return Math.round((utcMs(to) - utcMs(from)) / MS_PER_DAY);
+}
+
 export function isValidTimeZone(value: string): boolean {
   if (!value) return false;
   try {

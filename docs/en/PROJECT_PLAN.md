@@ -12,7 +12,7 @@ Principle: **numbers come from the food database and a formula, never from a neu
 ---
 
 ## Current status
-Stages 0–5 and 6a are done, 6b without a server: production is built and tested on a laptop. From v0.2 the barcode scanner is done (stage 7). **Next step**: the first `/deploy` once there is a server (the domain is `aspandyar.org`, #8); then weight and water (`ft/body`).
+Stages 0–5 and 6a are done, 6b without a server: production is built and tested on a laptop. v0.2 is done: the barcode scanner (stage 7), water, weight and statistics (stage 8). **Next step**: the `v0.2.0` release and the first `/deploy` once there is a server (the domain is `aspandyar.org`, #8); then AI input (`ft/ai-core`).
 
 - **Skeleton** (`ft/karkas`): Next.js, TypeScript strict, Tailwind, Postgres in Docker, Drizzle, Vitest, CI.
 - **Sign-in, profile, target** (`ft/auth-profile`): Auth.js v4 (email + password, JWT), roles user/manager/admin (the admin comes from `pnpm admin:bootstrap`), onboarding, kcal/macro target automatic or manual.
@@ -28,6 +28,7 @@ Stages 0–5 and 6a are done, 6b without a server: production is built and teste
 - **Polish 6** (`ft/polish-6`): logs without SQL parameters, replays under another account, forms, appearance, PWA (#76, #81–#83, #86–#93, #96–#99, #107).
 - **Security** (`ft/security`): closed sign-up, session revocation and password change, device mark, write cap, `server-only`, removing unused deleted foods for good (#28–#32, #108; #27 needs email confirmation or a captcha before sign-up opens).
 - **Barcode scanner** (`ft/barcode`, stage 7): the iPhone or Android camera, or typed digits → an own food, a shared one or Open Food Facts (what is found is saved as a shared food) → the amount screen; not found → an own food with the barcode.
+- **Water, weight, statistics** (`ft/body`, stage 8): water +250 / +500 on the home screen, weight with a chart and a 7-day average (a fresh weigh-in updates the profile and the auto target), statistics for a week and a month: averages, "days on target", kcal by day.
 - **Documentation** (`ft/docs`): a README for GitHub, docs in Russian (`docs/ru/`) and English (`docs/en/`).
 
 ---
