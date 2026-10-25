@@ -37,6 +37,9 @@ const eslintConfig = defineConfig([
     // Bundles built by `pnpm ops:build`, not source.
     "ops/**",
     ".local-prod/**",
+    // Claude Code settings and its session worktrees (full checkouts with their own
+    // node_modules and .next), as in .prettierignore: no source of this checkout lives there.
+    ".claude/**",
   ]),
 ]);
 

@@ -15,14 +15,15 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    exclude: ["node_modules/**", ".next/**"],
+    // .claude/ holds Claude Code session worktrees: other checkouts with their own tests and deps.
+    exclude: ["node_modules/**", ".next/**", ".claude/**"],
     projects: [
       {
         extends: true,
         test: {
           name: "unit",
           include: ["**/*.test.{ts,tsx}"],
-          exclude: ["**/*.db.test.ts", "node_modules/**", ".next/**"],
+          exclude: ["**/*.db.test.ts", "node_modules/**", ".next/**", ".claude/**"],
         },
       },
       {
