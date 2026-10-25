@@ -7,6 +7,7 @@ import { DayNav } from "@/components/diary/day-nav";
 import { DaySummary } from "@/components/diary/day-summary";
 import { MealSection, type EntryRow } from "@/components/diary/meal-section";
 import { PageLoading } from "@/components/ui/page-loading";
+import { WaterBlock } from "@/components/water/water-block";
 import { requireUserId } from "@/lib/auth/session";
 import { MEALS } from "@/lib/config";
 import { repeatSummary } from "@/lib/diary/quick";
@@ -17,12 +18,17 @@ import { getUserToday } from "@/lib/diary/today";
 import { formatKcal } from "@/lib/format";
 import { ru } from "@/lib/i18n/ru";
 import { RECIPES_HREF } from "@/lib/recipes/paths";
+import { STATS_HREF } from "@/lib/stats/paths";
 import { calcDayProgress, calcEntryNutrients, sumNutrients } from "@/lib/nutrition";
 import { getDefaultTarget } from "@/lib/targets/repo";
+import { getDayWater } from "@/lib/water/repo";
+import { BODY_HREF } from "@/lib/weight/paths";
 
 const navLinks = [
   { href: "/foods", label: ru.foods.title },
   { href: RECIPES_HREF, label: ru.recipes.title },
+  { href: BODY_HREF, label: ru.body.title },
+  { href: STATS_HREF, label: ru.stats.title },
   { href: "/targets", label: ru.targets.editTargets },
   { href: "/profile", label: ru.targets.editProfile },
 ] as const;
@@ -33,9 +39,10 @@ async function DayContent({ searchParams }: Pick<PageProps<"/">, "searchParams">
   const rawDate = (await searchParams).date;
   const date = rawDate === undefined ? today : parseDiaryDate(rawDate, today);
   if (!date) notFound();
-  const [target, entries] = await Promise.all([
+  const [target, entries, water] = await Promise.all([
     getDefaultTarget(db, userId),
     getDayEntries(db, userId, date),
+    getDayWater(db, userId, date),
   ]);
   if (!target) redirect("/onboarding");
 
@@ -63,6 +70,7 @@ async function DayContent({ searchParams }: Pick<PageProps<"/">, "searchParams">
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-6">
       <DayNav date={date} today={today} />
       <DaySummary progress={progress} />
+      <WaterBlock date={date} water={water} />
       {MEALS.map((meal) => {
         const mealRows = rows.filter((row) => row.meal === meal);
         return (

@@ -1,4 +1,4 @@
-import { DIARY_LIMITS } from "@/lib/config";
+import { DIARY_LIMITS, STATS, WATER, WEIGHT } from "@/lib/config";
 import { formatNumber as n, LOCALE } from "./number";
 
 // Phrases reused across entries; the object below cannot refer to itself while it is built.
@@ -343,6 +343,48 @@ export const ru = {
     otherAccount: "Форма была из другого аккаунта — ничего не сохранено",
     tooFast: "Слишком много изменений подряд — подождите минуту",
     passwordChanged: "Пароль изменён, другие устройства вышли",
+    waterFull: `Не больше ${n(WATER.maxEntriesPerDay)} записей воды за день`,
+  },
+  water: {
+    title: "Вода",
+    ofTarget: (ml: string, target: string) => `${ml} / ${target}${NBSP}мл`,
+    add: (ml: string) => `+${ml}${NBSP}мл`,
+    removeLast: "Убрать последнее",
+  },
+  body: {
+    title: "Вес",
+    todayLabel: "Вес сегодня, кг",
+    weightLabel: "Вес, кг",
+    save: "Сохранить",
+    kg: (kg: string) => `${kg}${NBSP}кг`,
+    chartTitle: `За ${n(WEIGHT.chartDays)} дней`,
+    // The chart is a picture; this sentence carries its meaning for screen readers.
+    chartSummary: (first: string, last: string, average: string) =>
+      `С ${first} до ${last} кг, среднее за ${n(WEIGHT.averageDays)} дней — ${average} кг`,
+    legendWeight: "взвешивание",
+    legendAverage: `среднее за ${n(WEIGHT.averageDays)} дней`,
+    average: (kg: string) => `среднее за ${n(WEIGHT.averageDays)} дней: ${kg}${NBSP}кг`,
+    history: "История",
+    empty: "Запишите первое взвешивание — здесь появится график",
+    editTitle: (day: string) => `Вес за ${day}`,
+    profileHint: "Последнее взвешивание обновляет вес в профиле и авто-норму",
+  },
+  stats: {
+    title: "Статистика",
+    periods: { week: "Неделя", month: "Месяц" },
+    averageTitle: "В среднем за день",
+    daysInTarget: (inTarget: number, logged: number) =>
+      `Дней в норме: ${n(inTarget)} из ${n(logged)}`,
+    inTargetHint: `В норме — ккал в пределах ±${n(STATS.inTargetShare * 100)}${NBSP}% от нормы`,
+    // Bars are a picture; this sentence carries their meaning for screen readers.
+    chartSummary: (days: number, average: string, target: string) =>
+      `Дней с записями: ${n(days)}, в среднем ${average} ккал при норме ${target}`,
+    legendInTarget: "в норме",
+    legendOffTarget: "вне нормы",
+    legendTarget: "норма",
+    kcal: (kcal: string) => `${kcal}${NBSP}ккал`,
+    daysTitle: "По дням",
+    empty: "За этот период записей нет",
   },
   recipes: {
     title: "Блюда",
