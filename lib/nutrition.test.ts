@@ -6,6 +6,9 @@ import {
   calcKcalFromMacros,
   isKcalConsistentWithMacros,
   calcDayProgress,
+  calcDayTotals,
+  calcPeriodSummary,
+  isDayInTarget,
   calcEntryNutrients,
   calcPortionCount,
   calcPortionGrams,
@@ -553,5 +556,79 @@ describe("calcPer100gFromServing", () => {
     // 173 kcal in a 60 g bar → 288.33 per 100 g
     expect(calcPer100gFromServing(173, 60)).toBeCloseTo(288.33, 2);
     expect(calcPer100gFromServing(0, 60)).toBe(0);
+  });
+});
+
+describe("calcDayTotals", () => {
+  const oats = { kcal100: 350, protein100: 12, fat100: 6, carbs100: 60 };
+  const milk = { kcal100: 60, protein100: 3, fat100: 3.2, carbs100: 4.7 };
+
+  it("returns no days for no entries", () => {
+    expect(calcDayTotals([])).toEqual([]);
+  });
+
+  it("sums each day's entries and orders days by date", () => {
+    // 10-15: oats 50 g = 175 kcal, P 6, F 3, C 30
+    // 10-14: oats 100 g = 350 kcal + milk 200 g = 120 kcal → 470; P 12 + 6 = 18; F 6 + 6.4 = 12.4;
+    // C 60 + 9.4 = 69.4
+    const days = calcDayTotals([
+      { date: "2026-10-15", grams: 50, ...oats },
+      { date: "2026-10-14", grams: 100, ...oats },
+      { date: "2026-10-14", grams: 200, ...milk },
+    ]);
+    expect(days.map((day) => day.date)).toEqual(["2026-10-14", "2026-10-15"]);
+    expect(days[0]!.nutrients.kcal).toBe(470);
+    expect(days[0]!.nutrients.proteinG).toBe(18);
+    expect(days[0]!.nutrients.fatG).toBeCloseTo(12.4, 10);
+    expect(days[0]!.nutrients.carbsG).toBeCloseTo(69.4, 10);
+    expect(days[1]!.nutrients).toEqual({ kcal: 175, proteinG: 6, fatG: 3, carbsG: 30 });
+  });
+});
+
+describe("isDayInTarget", () => {
+  it("counts a day within 10 % of the kcal target, edges included", () => {
+    // 2000 ± 10 % = 1800…2200
+    expect(isDayInTarget(2000, 2000)).toBe(true);
+    expect(isDayInTarget(1800, 2000)).toBe(true);
+    expect(isDayInTarget(2200, 2000)).toBe(true);
+    expect(isDayInTarget(1799, 2000)).toBe(false);
+    expect(isDayInTarget(2201, 2000)).toBe(false);
+  });
+
+  it("does not count a day against a zero target", () => {
+    expect(isDayInTarget(0, 0)).toBe(false);
+    expect(isDayInTarget(100, 0)).toBe(false);
+  });
+});
+
+describe("calcPeriodSummary", () => {
+  const target = { kcal: 2000, proteinG: 150, fatG: 60, carbsG: 200 };
+
+  it("returns zeros for a period without entries", () => {
+    expect(calcPeriodSummary([], target)).toEqual({
+      average: { kcal: 0, proteinG: 0, fatG: 0, carbsG: 0 },
+      daysLogged: 0,
+      daysInTarget: 0,
+    });
+  });
+
+  it("averages over logged days only and counts days in target", () => {
+    // kcal (1900 + 2500 + 1600) / 3 = 2000; protein (140 + 160 + 90) / 3 = 130;
+    // fat (60 + 90 + 30) / 3 = 60; carbs (200 + 250 + 160) / 3 = 203.33…
+    // In target: 1900 (within 1800…2200) only.
+    const summary = calcPeriodSummary(
+      [
+        { date: "2026-10-19", nutrients: { kcal: 1900, proteinG: 140, fatG: 60, carbsG: 200 } },
+        { date: "2026-10-20", nutrients: { kcal: 2500, proteinG: 160, fatG: 90, carbsG: 250 } },
+        { date: "2026-10-22", nutrients: { kcal: 1600, proteinG: 90, fatG: 30, carbsG: 160 } },
+      ],
+      target,
+    );
+    expect(summary.average.kcal).toBe(2000);
+    expect(summary.average.proteinG).toBe(130);
+    expect(summary.average.fatG).toBe(60);
+    expect(summary.average.carbsG).toBeCloseTo(203.333, 3);
+    expect(summary.daysLogged).toBe(3);
+    expect(summary.daysInTarget).toBe(1);
   });
 });

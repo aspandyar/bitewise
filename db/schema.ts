@@ -358,3 +358,49 @@ export const recipeItems = pgTable(
     ),
   ],
 );
+
+// One row per tap of "+250" / "+500": "Убрать последнее" deletes the latest row of the day, and a
+// replayed tap finds its row by the request key instead of adding a second glass.
+export const waterEntries = pgTable(
+  "water_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // The user's local calendar date, as in diary_entries.
+    date: date("date").notNull(),
+    ml: integer("ml").notNull(),
+    clientRequestId: uuid("client_request_id"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("water_entries_user_request_unique")
+      .on(t.userId, t.clientRequestId)
+      .where(sql`${t.clientRequestId} IS NOT NULL`),
+    index("water_entries_user_id_date_idx").on(t.userId, t.date),
+    check("water_entries_ml_positive", sql`${t.ml} > 0`),
+  ],
+);
+
+// One weigh-in per day: entering it again replaces the value, so a replayed save is harmless
+// without a request key.
+export const weightEntries = pgTable(
+  "weight_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    date: date("date").notNull(),
+    // Same precision as profiles.weight_kg, which the latest weigh-in is copied into.
+    weightKg: numeric("weight_kg", { precision: 5, scale: 1, mode: "number" }).notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    // Also the user_id index and the ON CONFLICT target of the upsert.
+    uniqueIndex("weight_entries_user_date_unique").on(t.userId, t.date),
+    check("weight_entries_weight_positive", sql`${t.weightKg} > 0`),
+  ],
+);

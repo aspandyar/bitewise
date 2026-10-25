@@ -4,6 +4,8 @@ import {
   formatDayLabel,
   formatEntryAmount,
   formatGrams,
+  formatShortDate,
+  formatWeightKg,
   formatGramsAtLeast,
   formatInputNumber,
   formatKcal,
@@ -133,5 +135,20 @@ describe("formatEntryAmount", () => {
     expect(
       formatEntryAmount({ grams: 75, portionLabel: "1 шт (крупное)", portionCount: 1.5 }),
     ).toBe("1,5 × 1 шт (крупное) · 75\u00a0г");
+  });
+});
+
+describe("formatWeightKg", () => {
+  it("shows one decimal with a comma", () => {
+    expect(formatWeightKg(78)).toBe("78,0");
+    expect(formatWeightKg(78.44)).toBe("78,4");
+    expect(formatWeightKg(79.133)).toBe("79,1");
+  });
+});
+
+describe("formatShortDate", () => {
+  it("shows the day and the short month in the genitive", () => {
+    expect(formatShortDate("2026-10-25")).toBe("25\u00a0окт");
+    expect(formatShortDate("2026-05-09")).toBe("9\u00a0мая");
   });
 });

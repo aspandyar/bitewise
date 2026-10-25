@@ -389,6 +389,54 @@ export const QUICK = {
   kcal: { min: 1, max: 5000 },
 } as const;
 
+export const WATER = {
+  // A glass and a bottle: the two amounts people actually pour, one tap each.
+  quickMl: [250, 500],
+  // The common "2 litres a day" guideline; one value for everyone until a personal one is needed.
+  dailyTargetMl: 2000,
+  // 50 bottles is 25 l: far above any real day, bounds what a script can write into one day.
+  maxEntriesPerDay: 50,
+} as const;
+
+export const WEIGHT = {
+  // Matches profiles.weight_kg and weight_entries.weight_kg (numeric(5,1)): a home scale's step.
+  decimals: 1,
+  // A week smooths out water and salt swings, which move the scale by a kilo from day to day.
+  averageDays: 7,
+  // A season of weigh-ins: long enough to see a trend, short enough to read at 375 px.
+  chartDays: 90,
+  // The chart's Y axis spans at least this many kilos, so a flat week is not drawn as a cliff.
+  chartMinSpanKg: 2,
+} as const;
+
+// SVG charts are drawn in these units and scale to the screen width; 343 = 375 px minus the
+// page's 16 px side padding, so at the base width one unit is one pixel.
+export const CHART = {
+  width: 343,
+  height: 180,
+  // Room for the Y labels on the left and the date labels below.
+  padding: { top: 8, right: 8, bottom: 24, left: 40 },
+  dotRadius: 3,
+  // Space between an axis label and the chart edge it belongs to.
+  labelGap: 6,
+  // Bars keep a gap between them so 30 days still read as separate days.
+  barGap: 2,
+  // Headroom above the tallest bar or the target line, so neither touches the top edge.
+  headroom: 1.1,
+} as const;
+
+export const STATS_PERIODS = ["week", "month"] as const;
+export type StatsPeriod = (typeof STATS_PERIODS)[number];
+
+export const STATS = {
+  // Both periods end today; a month is 30 days so every bar keeps a readable width at 375 px.
+  days: { week: 7, month: 30 } satisfies Record<StatsPeriod, number>,
+  defaultPeriod: "week" satisfies StatsPeriod,
+  // A day "on target" is within ±10 % of the kcal target: tighter is noise from portion guesses,
+  // looser would call a 400 kcal surplus a good day.
+  inTargetShare: 0.1,
+} as const;
+
 // "В дневник" from a dish picks the meal by the hour in the user's zone.
 export const MEAL_BY_HOUR = [
   { untilHour: 11, meal: "breakfast" },

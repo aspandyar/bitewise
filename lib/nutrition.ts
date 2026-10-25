@@ -10,6 +10,7 @@ import {
   NUTRIENT_STORAGE_SCALE,
   OFF,
   PORTION_LIMITS,
+  STATS,
   TARGET_LIMITS,
   type ActivityLevel,
   type Goal,
@@ -197,6 +198,50 @@ export function calcDayProgress(target: Nutrients, eaten: Nutrients): DayProgres
     proteinG: calcNutrientProgress(target.proteinG, eaten.proteinG),
     fatG: calcNutrientProgress(target.fatG, eaten.fatG),
     carbsG: calcNutrientProgress(target.carbsG, eaten.carbsG),
+  };
+}
+
+export type DayEntryValues = Per100g & { date: IsoDate; grams: number };
+
+export type DayTotals = { date: IsoDate; nutrients: Nutrients };
+
+// Days come out in date order and only where something was logged: an empty day is "not
+// tracked", not "ate nothing", and must not pull averages down.
+export function calcDayTotals(entries: readonly DayEntryValues[]): DayTotals[] {
+  const byDate = new Map<IsoDate, Nutrients[]>();
+  for (const entry of entries) {
+    const list = byDate.get(entry.date) ?? [];
+    list.push(calcEntryNutrients(entry, entry.grams));
+    byDate.set(entry.date, list);
+  }
+  return [...byDate.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([date, list]) => ({ date, nutrients: sumNutrients(list) }));
+}
+
+export function isDayInTarget(kcal: number, targetKcal: number): boolean {
+  assertNonNegative("kcal", kcal);
+  assertNonNegative("targetKcal", targetKcal);
+  // A zero target (manual) has no band around it; no day is "on target" against it.
+  if (targetKcal === 0) return false;
+  return Math.abs(kcal - targetKcal) <= targetKcal * STATS.inTargetShare;
+}
+
+export type PeriodSummary = { average: Nutrients; daysLogged: number; daysInTarget: number };
+
+export function calcPeriodSummary(days: readonly DayTotals[], target: Nutrients): PeriodSummary {
+  const daysLogged = days.length;
+  if (daysLogged === 0) return { average: ZERO_NUTRIENTS, daysLogged, daysInTarget: 0 };
+  const total = sumNutrients(days.map((day) => day.nutrients));
+  return {
+    average: {
+      kcal: total.kcal / daysLogged,
+      proteinG: total.proteinG / daysLogged,
+      fatG: total.fatG / daysLogged,
+      carbsG: total.carbsG / daysLogged,
+    },
+    daysLogged,
+    daysInTarget: days.filter((day) => isDayInTarget(day.nutrients.kcal, target.kcal)).length,
   };
 }
 

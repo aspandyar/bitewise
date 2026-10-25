@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  daysBetween,
   addDays,
   hourInTimeZone,
   isValidTimeZone,
@@ -86,5 +87,18 @@ describe("hourInTimeZone", () => {
 
   it("counts midnight as 0, not 24", () => {
     expect(hourInTimeZone(new Date("2026-10-15T00:10:00Z"), "UTC")).toBe(0);
+  });
+});
+
+describe("daysBetween", () => {
+  it("counts calendar days from one date to another", () => {
+    expect(daysBetween("2026-10-20", "2026-10-20")).toBe(0);
+    expect(daysBetween("2026-10-20", "2026-10-27")).toBe(7);
+    expect(daysBetween("2026-10-27", "2026-10-20")).toBe(-7);
+  });
+
+  it("crosses month and year ends", () => {
+    expect(daysBetween("2026-02-27", "2026-03-01")).toBe(2);
+    expect(daysBetween("2025-12-31", "2026-01-01")).toBe(1);
   });
 });

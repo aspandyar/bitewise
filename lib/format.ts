@@ -1,4 +1,4 @@
-import { NUTRIENT_STORAGE_DECIMALS } from "@/lib/config";
+import { NUTRIENT_STORAGE_DECIMALS, WEIGHT } from "@/lib/config";
 import { addDays, parseIsoDate, type IsoDate } from "@/lib/date";
 import { formatNumber } from "@/lib/i18n/number";
 import { ru } from "@/lib/i18n/ru";
@@ -34,9 +34,28 @@ export function formatInputNumber(value: number | null | undefined): string {
   return value === null || value === undefined ? "" : String(value).replace(".", ",");
 }
 
+const weightFormat = new Intl.NumberFormat(ru.locale, {
+  minimumFractionDigits: WEIGHT.decimals,
+  maximumFractionDigits: WEIGHT.decimals,
+  useGrouping: false,
+});
+
+// Always one decimal, so a column of weights lines up and 78 reads as a weigh-in, "78,0".
+export function formatWeightKg(kg: number): string {
+  return weightFormat.format(kg);
+}
+
 // Portion counts are stored to hundredths, so that is all the precision worth showing.
 export function formatAmount(count: number): string {
   return amountFormat.format(count);
+}
+
+// Chart axis labels: "25 окт", no weekday, to fit under a narrow chart.
+export function formatShortDate(date: IsoDate): string {
+  const parsed = parseIsoDate(date);
+  const month = parsed ? ru.diary.monthsShort[parsed.month - 1] : undefined;
+  if (!parsed || month === undefined) throw new RangeError(`invalid date: ${date}`);
+  return `${parsed.day}\u00a0${month}`;
 }
 
 export function formatDayLabel(date: IsoDate, today: IsoDate): string {
