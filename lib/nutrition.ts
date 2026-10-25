@@ -229,10 +229,18 @@ export function isDayInTarget(kcal: number, targetKcal: number): boolean {
 
 export type PeriodSummary = { average: Nutrients; daysLogged: number; daysInTarget: number };
 
-export function calcPeriodSummary(days: readonly DayTotals[], target: Nutrients): PeriodSummary {
-  const daysLogged = days.length;
+// Today is left out: by morning a 400 kcal breakfast would read as a day off target and drag
+// the average down, although the day is still going on.
+export function calcPeriodSummary(
+  days: readonly DayTotals[],
+  target: Nutrients,
+  today: IsoDate,
+): PeriodSummary {
+  // ISO dates compare correctly as plain strings.
+  const complete = days.filter((day) => day.date < today);
+  const daysLogged = complete.length;
   if (daysLogged === 0) return { average: ZERO_NUTRIENTS, daysLogged, daysInTarget: 0 };
-  const total = sumNutrients(days.map((day) => day.nutrients));
+  const total = sumNutrients(complete.map((day) => day.nutrients));
   return {
     average: {
       kcal: total.kcal / daysLogged,
@@ -241,7 +249,7 @@ export function calcPeriodSummary(days: readonly DayTotals[], target: Nutrients)
       carbsG: total.carbsG / daysLogged,
     },
     daysLogged,
-    daysInTarget: days.filter((day) => isDayInTarget(day.nutrients.kcal, target.kcal)).length,
+    daysInTarget: complete.filter((day) => isDayInTarget(day.nutrients.kcal, target.kcal)).length,
   };
 }
 

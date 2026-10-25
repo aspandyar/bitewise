@@ -614,9 +614,10 @@ describe("isDayInTarget", () => {
 
 describe("calcPeriodSummary", () => {
   const target = { kcal: 2000, proteinG: 150, fatG: 60, carbsG: 200 };
+  const TODAY = "2026-10-25";
 
   it("returns zeros for a period without entries", () => {
-    expect(calcPeriodSummary([], target)).toEqual({
+    expect(calcPeriodSummary([], target, TODAY)).toEqual({
       average: { kcal: 0, proteinG: 0, fatG: 0, carbsG: 0 },
       daysLogged: 0,
       daysInTarget: 0,
@@ -634,6 +635,7 @@ describe("calcPeriodSummary", () => {
         { date: "2026-10-22", nutrients: { kcal: 1600, proteinG: 90, fatG: 30, carbsG: 160 } },
       ],
       target,
+      TODAY,
     );
     expect(summary.average.kcal).toBe(2000);
     expect(summary.average.proteinG).toBe(130);
@@ -641,5 +643,28 @@ describe("calcPeriodSummary", () => {
     expect(summary.average.carbsG).toBeCloseTo(203.333, 3);
     expect(summary.daysLogged).toBe(3);
     expect(summary.daysInTarget).toBe(1);
+  });
+
+  it("leaves out today, which is still going on", () => {
+    // Only 10-24 counts: 2000 kcal, in target; today's 400 kcal breakfast is not "off target".
+    const summary = calcPeriodSummary(
+      [
+        { date: "2026-10-24", nutrients: { kcal: 2000, proteinG: 150, fatG: 60, carbsG: 200 } },
+        { date: TODAY, nutrients: { kcal: 400, proteinG: 20, fatG: 10, carbsG: 60 } },
+      ],
+      target,
+      TODAY,
+    );
+    expect(summary).toEqual({ average: target, daysLogged: 1, daysInTarget: 1 });
+  });
+
+  it("returns zeros when only today has entries", () => {
+    const summary = calcPeriodSummary(
+      [{ date: TODAY, nutrients: { kcal: 400, proteinG: 20, fatG: 10, carbsG: 60 } }],
+      target,
+      TODAY,
+    );
+    expect(summary.daysLogged).toBe(0);
+    expect(summary.average.kcal).toBe(0);
   });
 });

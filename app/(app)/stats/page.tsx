@@ -35,55 +35,66 @@ async function StatsContent({ searchParams }: Pick<PageProps<"/stats">, "searchP
   ]);
   if (!target) redirect("/onboarding");
   const days = calcDayTotals(entries);
-  const summary = calcPeriodSummary(days, target);
+  const summary = calcPeriodSummary(days, target, today);
+  const todayLogged = days.at(-1)?.date === today;
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-6">
       <BackLink />
       <h1 className="text-2xl font-semibold">{ru.stats.title}</h1>
       <PeriodSwitch current={period} />
-      {summary.daysLogged === 0 ? (
+      {days.length === 0 ? (
         <p className="text-foreground/60">{ru.stats.empty}</p>
       ) : (
         <>
-          <section
-            aria-label={ru.stats.averageTitle}
-            className="flex flex-col gap-4 rounded-2xl border border-foreground/10 p-5"
-          >
-            <div className="flex flex-col gap-1">
-              <h2 className="text-sm text-foreground/60">{ru.stats.averageTitle}</h2>
-              <p className="text-3xl font-semibold">
-                {ru.diary.eatenOfTarget(formatKcal(summary.average.kcal), formatKcal(target.kcal))}{" "}
-                <span className="text-base font-normal">{ru.targets.kcalUnit}</span>
-              </p>
-            </div>
-            <dl className="grid grid-cols-3 gap-3">
-              {macroRows.map((row) => (
-                <div key={row.key} className="flex flex-col gap-1">
-                  <dt className="text-xs text-foreground/60">{row.label}</dt>
-                  <dd className="text-sm font-medium">
-                    {ru.diary.eatenOfTarget(
-                      formatGrams(summary.average[row.key]),
-                      formatGrams(target[row.key]),
-                    )}{" "}
-                    {ru.targets.gramsUnit}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-            <div className="flex flex-col gap-1">
-              <p className="font-medium">
-                {ru.stats.daysInTarget(summary.daysInTarget, summary.daysLogged)}
-              </p>
-              <p className="text-sm text-foreground/60">{ru.stats.inTargetHint}</p>
-            </div>
-          </section>
+          {summary.daysLogged === 0 ? (
+            <p className="text-foreground/60">{ru.stats.noCompleteDays}</p>
+          ) : (
+            <section
+              aria-label={ru.stats.averageTitle}
+              className="flex flex-col gap-4 rounded-2xl border border-foreground/10 p-5"
+            >
+              <div className="flex flex-col gap-1">
+                <h2 className="text-sm text-foreground/60">{ru.stats.averageTitle}</h2>
+                <p className="text-3xl font-semibold">
+                  {ru.diary.eatenOfTarget(
+                    formatKcal(summary.average.kcal),
+                    formatKcal(target.kcal),
+                  )}{" "}
+                  <span className="text-base font-normal">{ru.targets.kcalUnit}</span>
+                </p>
+              </div>
+              <dl className="grid grid-cols-3 gap-3">
+                {macroRows.map((row) => (
+                  <div key={row.key} className="flex flex-col gap-1">
+                    <dt className="text-xs text-foreground/60">{row.label}</dt>
+                    <dd className="text-sm font-medium">
+                      {ru.diary.eatenOfTarget(
+                        formatGrams(summary.average[row.key]),
+                        formatGrams(target[row.key]),
+                      )}{" "}
+                      {ru.targets.gramsUnit}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              <div className="flex flex-col gap-1">
+                <p className="font-medium">
+                  {ru.stats.daysInTarget(summary.daysInTarget, summary.daysLogged)}
+                </p>
+                <p className="text-sm text-foreground/60">
+                  {ru.stats.inTargetHint}
+                  {todayLogged ? ` ${ru.stats.todayExcluded}` : ""}
+                </p>
+              </div>
+            </section>
+          )}
           <KcalChart
             days={days}
             from={from}
             to={today}
             targetKcal={target.kcal}
-            averageKcal={summary.average.kcal}
+            summary={summary}
           />
           <section className="flex flex-col gap-2">
             <h2 className="font-semibold">{ru.stats.daysTitle}</h2>
@@ -94,7 +105,15 @@ async function StatsContent({ searchParams }: Pick<PageProps<"/stats">, "searchP
                     href={dayHref(day.date, today)}
                     className="flex min-h-11 items-center justify-between gap-3 py-2"
                   >
-                    <span>{formatDayLabel(day.date, today)}</span>
+                    <span>
+                      {formatDayLabel(day.date, today)}
+                      {day.date === today && (
+                        <span className="text-sm text-foreground/60">
+                          {" "}
+                          · {ru.stats.dayInProgress}
+                        </span>
+                      )}
+                    </span>
                     <span className="font-medium">
                       {ru.stats.kcal(formatKcal(day.nutrients.kcal))}
                     </span>

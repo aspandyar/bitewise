@@ -3,7 +3,7 @@ import { linearScale } from "@/lib/chart";
 import { daysBetween, type IsoDate } from "@/lib/date";
 import { formatKcal, formatShortDate } from "@/lib/format";
 import { ru } from "@/lib/i18n/ru";
-import { isDayInTarget, type DayTotals } from "@/lib/nutrition";
+import { isDayInTarget, type DayTotals, type PeriodSummary } from "@/lib/nutrition";
 
 const {
   width,
@@ -26,14 +26,16 @@ export function KcalChart({
   from,
   to,
   targetKcal,
-  averageKcal,
+  summary,
 }: {
   days: readonly DayTotals[];
   from: IsoDate;
+  // The last day is today: still going on, so its bar is neither "on" nor "off" target.
   to: IsoDate;
   targetKcal: number;
-  averageKcal: number;
+  summary: PeriodSummary;
 }) {
+  const todayLogged = days.at(-1)?.date === to;
   const slots = daysBetween(from, to) + 1;
   const band = (width - padding.left - padding.right) / slots;
   const top = Math.max(targetKcal, ...days.map((day) => day.nutrients.kcal)) * headroom;
@@ -47,8 +49,8 @@ export function KcalChart({
         viewBox={`0 0 ${width} ${height}`}
         role="img"
         aria-label={ru.stats.chartSummary(
-          days.length,
-          formatKcal(averageKcal),
+          summary.daysLogged,
+          formatKcal(summary.average.kcal),
           formatKcal(targetKcal),
         )}
         className="w-full"
@@ -71,7 +73,11 @@ export function KcalChart({
               height={baseline - barTop}
               rx={barRadius}
               className={
-                isDayInTarget(day.nutrients.kcal, targetKcal) ? "fill-accent" : "fill-foreground/30"
+                day.date === to
+                  ? "fill-foreground/10 stroke-foreground/40"
+                  : isDayInTarget(day.nutrients.kcal, targetKcal)
+                    ? "fill-accent"
+                    : "fill-foreground/30"
               }
             />
           );
@@ -121,6 +127,15 @@ export function KcalChart({
           <span aria-hidden className="size-2 rounded-sm bg-foreground/30" />
           {ru.stats.legendOffTarget}
         </span>
+        {todayLogged && (
+          <span className="flex items-center gap-1">
+            <span
+              aria-hidden
+              className="size-2 rounded-sm border border-foreground/40 bg-foreground/10"
+            />
+            {ru.stats.inProgress}
+          </span>
+        )}
         <span className="flex items-center gap-1">
           <span aria-hidden className="w-3 border-t border-dashed border-foreground/60" />
           {ru.stats.legendTarget}

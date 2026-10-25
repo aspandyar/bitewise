@@ -386,6 +386,11 @@ export const ru = {
     legendOffTarget: "вне нормы",
     legendTarget: "норма",
     kcal: (kcal: string) => `${kcal}${NBSP}ккал`,
+    inProgress: "сегодня, день идёт",
+    // Next to "Сегодня" in the day list, so it does not repeat the word.
+    dayInProgress: "день идёт",
+    todayExcluded: "Сегодня не учитывается, пока день не закончился.",
+    noCompleteDays: "Средние появятся завтра — когда закончится первый день с записями",
     daysTitle: "По дням",
     empty: "За этот период записей нет",
   },

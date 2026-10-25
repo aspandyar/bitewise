@@ -45,7 +45,7 @@ Marks: ✅ works, 🟨 partly (what is missing is in brackets), no mark — not 
 ## 🟡 Tier 2 — SHOULD HAVE (v0.2)
 - ✅ Water: quick +250 / +500 ml buttons on the home screen, "Remove last", a 2000 ml target (the same for everyone).
 - ✅ Body weight: entries + a 90-day chart + a 7-day moving average; the latest weigh-in updates the profile weight and the auto target.
-- ✅ Statistics: weekly/monthly kcal and macro averages (over logged days), "days on target" (±10 % kcal), kcal by day, a list of days.
+- ✅ Statistics: weekly/monthly kcal and macro averages (over finished logged days, today left out), "days on target" (±10 % kcal), kcal by day, a list of days.
 - CSV export.
 
 ## 🔵 Tier 3 — AI (v0.3)
