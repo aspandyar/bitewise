@@ -24,6 +24,7 @@ export async function addWaterAction(
   if (!date || ml === null) notFound();
   const result = await addWater(db, userId, { date, ml, requestId: readRequestId(formData) });
   if (result === "limit") redirect(withToast(dayHref(date, today), "waterFull"));
+  if (result === "total_limit") redirect(withToast(dayHref(date, today), "waterTotalFull"));
   // A key spent on another amount or day is a tampered request: back to the day, nothing written.
   redirect(dayHref(date, today));
 }

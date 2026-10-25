@@ -3,7 +3,7 @@
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/db/client";
 import { requireActionUser, requireWriteUser } from "@/lib/auth/session";
-import { parseDiaryDate } from "@/lib/diary/schema";
+import { parseDiaryDate, parseId } from "@/lib/diary/schema";
 import { getUserToday } from "@/lib/diary/today";
 import { firstFieldErrors, type FormState } from "@/lib/forms";
 import { withToast } from "@/lib/toast";
@@ -27,11 +27,11 @@ export async function saveWeightAction(
   redirect(withToast(BODY_HREF, "saved"));
 }
 
-// A replayed, foreign or missing day deletes nothing and lands where a real delete does.
-export async function deleteWeightAction(rawDate: string): Promise<void> {
+// A replayed, foreign or missing id deletes nothing and lands where a real delete does.
+export async function deleteWeightAction(entryId: string): Promise<void> {
   const userId = await requireWriteUser();
   const today = await getUserToday(new Date());
-  const date = parseDiaryDate(rawDate, today);
-  if (date) await deleteWeight(db, userId, date, today);
+  const id = parseId(entryId);
+  if (id) await deleteWeight(db, userId, id, today);
   redirect(withToast(BODY_HREF, "deleted"));
 }

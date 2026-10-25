@@ -19,6 +19,12 @@ const profile: ProfileData = {
 beforeEach(resetDb);
 afterAll(closeTestDb);
 
+async function idOf(userId: string, date: string): Promise<string> {
+  const row = await getWeight(testDb, userId, date);
+  if (!row) throw new Error(`no weigh-in on ${date}`);
+  return row.id;
+}
+
 async function userWithProfile(email = "alice@mail.com"): Promise<string> {
   const userId = await newUserId(email);
   await saveProfile(testDb, userId, profile, TODAY);
@@ -65,11 +71,24 @@ describe("weight entries", () => {
     expect((await getProfile(testDb, alice))?.weightKg).toBe(78);
   });
 
+  it("leaves the profile alone when an older weigh-in is fixed or deleted", async () => {
+    const alice = await userWithProfile();
+    await saveWeight(testDb, alice, { date: "2026-10-18", weightKg: 79 }, TODAY);
+    await saveWeight(testDb, alice, { date: TODAY, weightKg: 78 }, TODAY);
+    // A weight typed in the profile after the last weigh-in.
+    const profileNow = await getProfile(testDb, alice);
+    await saveProfile(testDb, alice, { ...profileNow!, weightKg: 76 }, TODAY);
+    await saveWeight(testDb, alice, { date: "2026-10-18", weightKg: 79.5 }, TODAY);
+    expect((await getProfile(testDb, alice))?.weightKg).toBe(76);
+    expect(await deleteWeight(testDb, alice, await idOf(alice, "2026-10-18"), TODAY)).toBe(true);
+    expect((await getProfile(testDb, alice))?.weightKg).toBe(76);
+  });
+
   it("falls back to the previous weigh-in when the newest is deleted", async () => {
     const alice = await userWithProfile();
     await saveWeight(testDb, alice, { date: "2026-10-20", weightKg: 79 }, TODAY);
     await saveWeight(testDb, alice, { date: TODAY, weightKg: 77 }, TODAY);
-    await deleteWeight(testDb, alice, TODAY, TODAY);
+    expect(await deleteWeight(testDb, alice, await idOf(alice, TODAY), TODAY)).toBe(true);
     expect(await getWeight(testDb, alice, TODAY)).toBeNull();
     expect((await getProfile(testDb, alice))?.weightKg).toBe(79);
   });
@@ -77,16 +96,30 @@ describe("weight entries", () => {
   it("keeps the profile weight when the last weigh-in is deleted", async () => {
     const alice = await userWithProfile();
     await saveWeight(testDb, alice, { date: TODAY, weightKg: 77 }, TODAY);
-    await deleteWeight(testDb, alice, TODAY, TODAY);
+    await deleteWeight(testDb, alice, await idOf(alice, TODAY), TODAY);
     expect((await getProfile(testDb, alice))?.weightKg).toBe(77);
+  });
+
+  it("deletes nothing on a replay, even after the day is entered again", async () => {
+    const alice = await userWithProfile();
+    await saveWeight(testDb, alice, { date: TODAY, weightKg: 77 }, TODAY);
+    const oldId = await idOf(alice, TODAY);
+    await deleteWeight(testDb, alice, oldId, TODAY);
+    await saveWeight(testDb, alice, { date: TODAY, weightKg: 77.5 }, TODAY);
+    expect(await deleteWeight(testDb, alice, oldId, TODAY)).toBe(false);
+    expect((await getWeight(testDb, alice, TODAY))?.weightKg).toBe(77.5);
   });
 
   it("leaves a manual target alone", async () => {
     const alice = await userWithProfile();
     const manual = { kcal: 2000, proteinG: 150, fatG: 60, carbsG: 210 };
     await setManualTarget(testDb, alice, manual);
+    await saveWeight(testDb, alice, { date: "2026-10-20", weightKg: 71 }, TODAY);
     await saveWeight(testDb, alice, { date: TODAY, weightKg: 70 }, TODAY);
     expect((await getProfile(testDb, alice))?.weightKg).toBe(70);
+    expect(await getDefaultTarget(testDb, alice)).toEqual({ mode: "manual", ...manual });
+    await deleteWeight(testDb, alice, await idOf(alice, TODAY), TODAY);
+    expect((await getProfile(testDb, alice))?.weightKg).toBe(71);
     expect(await getDefaultTarget(testDb, alice)).toEqual({ mode: "manual", ...manual });
   });
 
@@ -96,7 +129,7 @@ describe("weight entries", () => {
     await saveWeight(testDb, alice, { date: TODAY, weightKg: 79 }, TODAY);
     expect(await listWeights(testDb, bob, "2026-10-01")).toEqual([]);
     expect(await getWeight(testDb, bob, TODAY)).toBeNull();
-    await deleteWeight(testDb, bob, TODAY, TODAY);
-    expect(await getWeight(testDb, alice, TODAY)).toBe(79);
+    expect(await deleteWeight(testDb, bob, await idOf(alice, TODAY), TODAY)).toBe(false);
+    expect((await getWeight(testDb, alice, TODAY))?.weightKg).toBe(79);
   });
 });

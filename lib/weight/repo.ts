@@ -4,7 +4,7 @@ import { weightEntries } from "@/db/schema";
 import type { Db } from "@/db/types";
 import type { WeightEntry } from "@/lib/body";
 import type { IsoDate } from "@/lib/date";
-import { getProfile, saveProfile } from "@/lib/profile/repo";
+import { updateProfileWeight } from "@/lib/profile/repo";
 
 // Newest first: the history reads top-down from today.
 export async function listWeights(db: Db, userId: string, from: IsoDate): Promise<WeightEntry[]> {
@@ -15,32 +15,30 @@ export async function listWeights(db: Db, userId: string, from: IsoDate): Promis
     .orderBy(desc(weightEntries.date));
 }
 
-export async function getWeight(db: Db, userId: string, date: IsoDate): Promise<number | null> {
+export type WeightRow = { id: string; weightKg: number };
+
+export async function getWeight(db: Db, userId: string, date: IsoDate): Promise<WeightRow | null> {
   const [row] = await db
-    .select({ weightKg: weightEntries.weightKg })
+    .select({ id: weightEntries.id, weightKg: weightEntries.weightKg })
     .from(weightEntries)
     .where(and(eq(weightEntries.userId, userId), eq(weightEntries.date, date)))
     .limit(1);
-  return row?.weightKg ?? null;
+  return row ?? null;
 }
 
-// The profile weight follows the newest weigh-in, so an auto target's protein (g per kg) follows
-// the scale; saveProfile leaves a manual target alone. With no weigh-ins left the profile keeps
-// what it had: it is still the best known weight.
-async function syncProfileWeight(tx: Db, userId: string, today: IsoDate): Promise<void> {
+async function getLatestWeight(tx: Db, userId: string): Promise<WeightEntry | null> {
   const [latest] = await tx
-    .select({ weightKg: weightEntries.weightKg })
+    .select({ date: weightEntries.date, weightKg: weightEntries.weightKg })
     .from(weightEntries)
     .where(eq(weightEntries.userId, userId))
     .orderBy(desc(weightEntries.date))
     .limit(1);
-  if (!latest) return;
-  const profile = await getProfile(tx, userId);
-  if (!profile || profile.weightKg === latest.weightKg) return;
-  await saveProfile(tx, userId, { ...profile, weightKg: latest.weightKg }, today);
+  return latest ?? null;
 }
 
-// One weigh-in per day: saving the same day again replaces it, so a replayed save is harmless.
+// The profile weight follows the newest weigh-in, so an auto target's protein (g per kg) follows
+// the scale; a manual target is left alone. Only a change to the newest weigh-in touches the
+// profile: fixing last week's entry must not undo a weight typed in the profile since.
 export async function saveWeight(
   db: Db,
   userId: string,
@@ -50,6 +48,7 @@ export async function saveWeight(
   await db.transaction(async (tx) => {
     // Two saves in parallel must not leave the profile on the older one's weight.
     await lockUserWrites(tx, userId);
+    // One weigh-in per day: saving the same day again replaces it.
     await tx
       .insert(weightEntries)
       .values({ userId, date: input.date, weightKg: input.weightKg })
@@ -57,21 +56,34 @@ export async function saveWeight(
         target: [weightEntries.userId, weightEntries.date],
         set: { weightKg: input.weightKg, updatedAt: sql`now()` },
       });
-    await syncProfileWeight(tx, userId, today);
+    const latest = await getLatestWeight(tx, userId);
+    if (latest?.date === input.date) {
+      await updateProfileWeight(tx, userId, latest.weightKg, today);
+    }
   });
 }
 
+// By id, not by date: a replayed delete must not take a weigh-in entered again for that day,
+// nor one of another account signed in on the same device since (#107). Deleting the newest
+// weigh-in moves the profile to the one before it; with none left the profile keeps its weight.
 export async function deleteWeight(
   db: Db,
   userId: string,
-  date: IsoDate,
+  entryId: string,
   today: IsoDate,
-): Promise<void> {
-  await db.transaction(async (tx) => {
+): Promise<boolean> {
+  return db.transaction(async (tx) => {
     await lockUserWrites(tx, userId);
-    await tx
+    const [deleted] = await tx
       .delete(weightEntries)
-      .where(and(eq(weightEntries.userId, userId), eq(weightEntries.date, date)));
-    await syncProfileWeight(tx, userId, today);
+      .where(and(eq(weightEntries.userId, userId), eq(weightEntries.id, entryId)))
+      .returning({ date: weightEntries.date });
+    if (!deleted) return false;
+    const latest = await getLatestWeight(tx, userId);
+    // ISO dates compare correctly as plain strings.
+    if (latest && deleted.date > latest.date) {
+      await updateProfileWeight(tx, userId, latest.weightKg, today);
+    }
+    return true;
   });
 }

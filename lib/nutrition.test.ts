@@ -583,6 +583,12 @@ describe("calcDayTotals", () => {
     expect(days[0]!.nutrients.carbsG).toBeCloseTo(69.4, 10);
     expect(days[1]!.nutrients).toEqual({ kcal: 175, proteinG: 6, fatG: 3, carbsG: 30 });
   });
+
+  it("counts a day whose only entry is 0 g as logged with zero totals", () => {
+    expect(calcDayTotals([{ date: "2026-10-14", grams: 0, ...oats }])).toEqual([
+      { date: "2026-10-14", nutrients: { kcal: 0, proteinG: 0, fatG: 0, carbsG: 0 } },
+    ]);
+  });
 });
 
 describe("isDayInTarget", () => {
@@ -593,6 +599,11 @@ describe("isDayInTarget", () => {
     expect(isDayInTarget(2200, 2000)).toBe(true);
     expect(isDayInTarget(1799, 2000)).toBe(false);
     expect(isDayInTarget(2201, 2000)).toBe(false);
+  });
+
+  it("rejects negative kcal", () => {
+    expect(() => isDayInTarget(-1, 2000)).toThrow(RangeError);
+    expect(() => isDayInTarget(2000, -1)).toThrow(RangeError);
   });
 
   it("does not count a day against a zero target", () => {

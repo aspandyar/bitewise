@@ -5,7 +5,19 @@ import { formatKcal, formatShortDate } from "@/lib/format";
 import { ru } from "@/lib/i18n/ru";
 import { isDayInTarget, type DayTotals } from "@/lib/nutrition";
 
-const { width, height, padding, barGap, headroom, labelGap } = CHART;
+const {
+  width,
+  height,
+  padding,
+  barGap,
+  barRadius,
+  minBarWidth,
+  headroom,
+  labelGap,
+  labelFontSize,
+  targetDash,
+} = CHART;
+const labelStyle = { fontSize: labelFontSize };
 
 // One slot per calendar day of the period; a day without entries stays an empty slot, so gaps
 // read as "not tracked" rather than as a low day.
@@ -55,9 +67,9 @@ export function KcalChart({
               key={day.date}
               x={padding.left + daysBetween(from, day.date) * band + barGap / 2}
               y={barTop}
-              width={Math.max(band - barGap, 1)}
+              width={Math.max(band - barGap, minBarWidth)}
               height={baseline - barTop}
-              rx={1}
+              rx={barRadius}
               className={
                 isDayInTarget(day.nutrients.kcal, targetKcal) ? "fill-accent" : "fill-foreground/30"
               }
@@ -69,7 +81,7 @@ export function KcalChart({
           x2={width - padding.right}
           y1={targetY}
           y2={targetY}
-          strokeDasharray="4 3"
+          strokeDasharray={targetDash}
           className="stroke-foreground/60"
         />
         <text
@@ -77,18 +89,25 @@ export function KcalChart({
           y={targetY}
           textAnchor="end"
           dominantBaseline="middle"
-          className="fill-foreground/60 text-[10px]"
+          className="fill-foreground/60"
+          style={labelStyle}
         >
           {formatKcal(targetKcal)}
         </text>
-        <text x={padding.left} y={height - labelGap} className="fill-foreground/60 text-[10px]">
+        <text
+          x={padding.left}
+          y={height - labelGap}
+          className="fill-foreground/60"
+          style={labelStyle}
+        >
           {formatShortDate(from)}
         </text>
         <text
           x={width - padding.right}
           y={height - labelGap}
           textAnchor="end"
-          className="fill-foreground/60 text-[10px]"
+          className="fill-foreground/60"
+          style={labelStyle}
         >
           {formatShortDate(to)}
         </text>

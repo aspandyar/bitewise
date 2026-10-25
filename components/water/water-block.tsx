@@ -5,10 +5,11 @@ import type { IsoDate } from "@/lib/date";
 import { formatNumber } from "@/lib/i18n/number";
 import { ru } from "@/lib/i18n/ru";
 import type { DayWater } from "@/lib/water/repo";
+import { calcWaterShare } from "@/lib/water/schema";
 import { WaterButton } from "./water-button";
 
 export function WaterBlock({ date, water }: { date: IsoDate; water: DayWater }) {
-  const share = Math.min(water.totalMl / WATER.dailyTargetMl, 1);
+  const share = calcWaterShare(water.totalMl, WATER.dailyTargetMl);
   return (
     <section
       aria-label={ru.water.title}

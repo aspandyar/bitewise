@@ -26,7 +26,7 @@ export function WeightForm({
         selectOnFocus
       />
       <FormError message={state.formError} />
-      <SubmitButton pending={pending}>{ru.body.save}</SubmitButton>
+      <SubmitButton pending={pending}>{ru.common.save}</SubmitButton>
     </form>
   );
 }

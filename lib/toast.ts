@@ -15,6 +15,7 @@ export const TOASTS = [
   "tooFast",
   "passwordChanged",
   "waterFull",
+  "waterTotalFull",
 ] as const;
 
 // Only an add can be undone: other toasts ignore an undo list someone put in the URL.

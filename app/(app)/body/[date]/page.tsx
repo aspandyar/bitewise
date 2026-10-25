@@ -20,8 +20,8 @@ async function WeightContent({ params }: Pick<PageProps<"/body/[date]">, "params
   const today = await getUserToday(new Date());
   const date = parseDiaryDate((await params).date, today);
   if (!date) notFound();
-  const weightKg = await getWeight(db, userId, date);
-  if (weightKg === null) notFound();
+  const weight = await getWeight(db, userId, date);
+  if (!weight) notFound();
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-6">
@@ -31,13 +31,13 @@ async function WeightContent({ params }: Pick<PageProps<"/body/[date]">, "params
       </h1>
       <ResetOnHide>
         <WeightForm
-          key={`${date}:${weightKg}`}
+          key={`${date}:${weight.weightKg}`}
           action={saveWeightAction.bind(null, date)}
           label={ru.body.weightLabel}
-          initialKg={weightKg}
+          initialKg={weight.weightKg}
         />
       </ResetOnHide>
-      <ConfirmDeleteButton action={deleteWeightAction.bind(null, date)} />
+      <ConfirmDeleteButton action={deleteWeightAction.bind(null, weight.id)} />
     </main>
   );
 }

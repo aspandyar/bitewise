@@ -5,7 +5,8 @@ import { daysBetween, type IsoDate } from "@/lib/date";
 import { formatShortDate, formatWeightKg } from "@/lib/format";
 import { ru } from "@/lib/i18n/ru";
 
-const { width, height, padding, dotRadius, labelGap } = CHART;
+const { width, height, padding, dotRadius, labelGap, lineWidth, labelFontSize } = CHART;
+const labelStyle = { fontSize: labelFontSize };
 
 // Drawn on the server: two lines of SVG need no chart library on the phone.
 export function WeightChart({
@@ -56,20 +57,27 @@ export function WeightChart({
               y={y(tick)}
               textAnchor="end"
               dominantBaseline="middle"
-              className="fill-foreground/60 text-[10px]"
+              className="fill-foreground/60"
+              style={labelStyle}
             >
               {formatWeightKg(tick)}
             </text>
           </g>
         ))}
-        <text x={padding.left} y={height - labelGap} className="fill-foreground/60 text-[10px]">
+        <text
+          x={padding.left}
+          y={height - labelGap}
+          className="fill-foreground/60"
+          style={labelStyle}
+        >
           {formatShortDate(from)}
         </text>
         <text
           x={width - padding.right}
           y={height - labelGap}
           textAnchor="end"
-          className="fill-foreground/60 text-[10px]"
+          className="fill-foreground/60"
+          style={labelStyle}
         >
           {formatShortDate(to)}
         </text>
@@ -77,7 +85,7 @@ export function WeightChart({
           <polyline
             points={averageLine}
             fill="none"
-            strokeWidth={2}
+            strokeWidth={lineWidth}
             strokeLinejoin="round"
             className="stroke-accent"
           />

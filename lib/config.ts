@@ -396,6 +396,8 @@ export const WATER = {
   dailyTargetMl: 2000,
   // 50 bottles is 25 l: far above any real day, bounds what a script can write into one day.
   maxEntriesPerDay: 50,
+  // ~27 years at 10 glasses a day, as for the diary; stops a script sweeping every allowed date.
+  maxEntriesTotal: 100_000,
 } as const;
 
 export const WEIGHT = {
@@ -417,6 +419,12 @@ export const CHART = {
   // Room for the Y labels on the left and the date labels below.
   padding: { top: 8, right: 8, bottom: 24, left: 40 },
   dotRadius: 3,
+  lineWidth: 2,
+  labelFontSize: 10,
+  barRadius: 1,
+  // A day with a few kcal still shows a sliver instead of vanishing.
+  minBarWidth: 1,
+  targetDash: "4 3",
   // Space between an axis label and the chart edge it belongs to.
   labelGap: 6,
   // Bars keep a gap between them so 30 days still read as separate days.

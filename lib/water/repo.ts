@@ -30,9 +30,9 @@ export async function addWater(
   db: Db,
   userId: string,
   input: AddWaterInput,
-  // Injectable so tests can reach the cap without fifty inserts.
-  limits: { maxEntriesPerDay: number } = WATER,
-): Promise<"ok" | "limit" | "conflict"> {
+  // Injectable so tests can reach the caps without thousands of inserts.
+  limits: { maxEntriesPerDay: number; maxEntriesTotal: number } = WATER,
+): Promise<"ok" | "limit" | "total_limit" | "conflict"> {
   return db.transaction(async (tx) => {
     // Held for the whole check-then-insert: a replayed twin waits and then sees this row.
     await lockUserWrites(tx, userId);
@@ -48,11 +48,17 @@ export async function addWater(
         return replayed.date === input.date && replayed.ml === input.ml ? "ok" : "conflict";
       }
     }
-    const [day] = await tx
-      .select({ n: count() })
+    const [counts] = await tx
+      .select({
+        total: count(),
+        day: sql<number>`count(*) FILTER (WHERE ${waterEntries.date} = ${input.date})`.mapWith(
+          Number,
+        ),
+      })
       .from(waterEntries)
-      .where(and(eq(waterEntries.userId, userId), eq(waterEntries.date, input.date)));
-    if ((day?.n ?? 0) >= limits.maxEntriesPerDay) return "limit";
+      .where(eq(waterEntries.userId, userId));
+    if ((counts?.day ?? 0) >= limits.maxEntriesPerDay) return "limit";
+    if ((counts?.total ?? 0) >= limits.maxEntriesTotal) return "total_limit";
     await tx.insert(waterEntries).values({
       userId,
       date: input.date,

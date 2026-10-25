@@ -44,17 +44,20 @@ describe("water", () => {
 
   it("stops at the daily cap", async () => {
     const alice = await newUserId("alice@mail.com");
-    expect(await addWater(testDb, alice, { date: DAY, ml: 250 }, { maxEntriesPerDay: 2 })).toBe(
-      "ok",
-    );
-    expect(await addWater(testDb, alice, { date: DAY, ml: 250 }, { maxEntriesPerDay: 2 })).toBe(
-      "ok",
-    );
-    expect(await addWater(testDb, alice, { date: DAY, ml: 250 }, { maxEntriesPerDay: 2 })).toBe(
-      "limit",
-    );
-    expect(await addWater(testDb, alice, { date: NEXT, ml: 250 }, { maxEntriesPerDay: 2 })).toBe(
-      "ok",
+    const caps = { maxEntriesPerDay: 2, maxEntriesTotal: 10 };
+    expect(await addWater(testDb, alice, { date: DAY, ml: 250 }, caps)).toBe("ok");
+    expect(await addWater(testDb, alice, { date: DAY, ml: 250 }, caps)).toBe("ok");
+    expect(await addWater(testDb, alice, { date: DAY, ml: 250 }, caps)).toBe("limit");
+    expect(await addWater(testDb, alice, { date: NEXT, ml: 250 }, caps)).toBe("ok");
+  });
+
+  it("stops at the total cap across days", async () => {
+    const alice = await newUserId("alice@mail.com");
+    const caps = { maxEntriesPerDay: 5, maxEntriesTotal: 2 };
+    expect(await addWater(testDb, alice, { date: DAY, ml: 250 }, caps)).toBe("ok");
+    expect(await addWater(testDb, alice, { date: NEXT, ml: 250 }, caps)).toBe("ok");
+    expect(await addWater(testDb, alice, { date: "2026-10-01", ml: 250 }, caps)).toBe(
+      "total_limit",
     );
   });
 

@@ -9,9 +9,13 @@ const waterMlSchema = z.coerce
   .int()
   .refine((ml) => quickMl.includes(ml));
 
+// z.coerce turns "" and null into 0 and undefined into NaN; the refine rejects all of them.
 export function parseWaterMl(value: unknown): number | null {
-  // z.coerce turns "" and null into 0, which the refine then rejects.
-  if (value === undefined) return null;
   const parsed = waterMlSchema.safeParse(value);
   return parsed.success ? parsed.data : null;
+}
+
+export function calcWaterShare(totalMl: number, targetMl: number): number {
+  // The bar stops at full: more water than the target is not "over" like kcal are.
+  return targetMl > 0 ? Math.min(totalMl / targetMl, 1) : 0;
 }
