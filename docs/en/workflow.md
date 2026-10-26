@@ -61,8 +61,8 @@ Agents don't edit code. Their findings are handled by the implementer:
 - **minor** ones become a GitHub issue with the stage's label or `polish`, linked from "Open questions" in `notes.md`.
 
 ## Guard rails (`.claude/settings.json`)
-- **Without asking:** `pnpm dev/build/test/lint/db:generate/db:seed`, reading git, `git add/commit/switch`, `docker compose up/ps/logs`.
-- **With confirmation:** `git push/merge/rebase/reset`, `pnpm add/remove`, `pnpm db:migrate`, `ssh/scp/rsync`.
+- **Without asking:** `pnpm dev/build/test/lint/db:generate/db:seed`, reading git, `git add/commit/switch/merge`, `docker compose up/ps/logs`.
+- **With confirmation:** `git push/rebase/reset`, `pnpm add/remove`, `pnpm db:migrate`, `ssh/scp/rsync`.
 - **Forbidden:**
   - reading and writing `.env*` (except `.env.example`);
   - editing `db/migrations/**`;
@@ -70,6 +70,7 @@ Agents don't edit code. Their findings are handled by the implementer:
   - `docker compose down -v`, `docker volume rm`;
   - `rm -rf`;
   - force-push.
+- **`master` is the owner's** (`.claude/hooks/protect-master.mjs`, a PreToolUse hook): it blocks `git merge`, `commit`, `rebase`, `cherry-pick`, `revert`, `am` and `pull` (except `--ff-only`) while on `master`, `git push` to `master` (including `--all`/`--mirror` and a plain push from `master`), and `gh pr merge` of a PR based on `master`. Merges and pushes between other branches (say `test` → `dev`) go through. Permission patterns can't do this: they match only the command's start, so `git -C dir merge` slips past, and they can't see the branch.
 - **A hook after every edit:** Prettier + `eslint --fix` for ts/tsx, Prettier for css/json/md.
 
 ## Branches, commits, PRs

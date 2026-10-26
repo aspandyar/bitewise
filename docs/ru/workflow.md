@@ -69,8 +69,8 @@ tags:
 - **мелкие** заводятся GitHub Issue с меткой этапа или `polish`, ссылка — в «Открытые вопросы» `notes.md`.
 
 ## Защита от ошибок (`.claude/settings.json`)
-- **Без спроса:** `pnpm dev/build/test/lint/db:generate/db:seed`, чтение git, `git add/commit/switch`, `docker compose up/ps/logs`.
-- **С подтверждением:** `git push/merge/rebase/reset`, `pnpm add/remove`, `pnpm db:migrate`, `ssh/scp/rsync`.
+- **Без спроса:** `pnpm dev/build/test/lint/db:generate/db:seed`, чтение git, `git add/commit/switch/merge`, `docker compose up/ps/logs`.
+- **С подтверждением:** `git push/rebase/reset`, `pnpm add/remove`, `pnpm db:migrate`, `ssh/scp/rsync`.
 - **Запрещено:**
   - читать и писать `.env*` (кроме `.env.example`);
   - править `db/migrations/**`;
@@ -78,6 +78,7 @@ tags:
   - `docker compose down -v`, `docker volume rm`;
   - `rm -rf`;
   - force-push.
+- **`master` — только владельца** (`.claude/hooks/protect-master.mjs`, хук PreToolUse): на `master` блокирует `git merge`, `commit`, `rebase`, `cherry-pick`, `revert`, `am` и `pull` (кроме `--ff-only`), `git push` в `master` (включая `--all`/`--mirror` и обычный push с `master`) и `gh pr merge` для PR в `master`. Merge и push между другими ветками (например `test` → `dev`) проходят. Правилами прав этого не сделать: они смотрят только на начало команды, поэтому `git -C dir merge` их обходит, и не видят ветку.
 - **Хук после каждой правки:** Prettier + `eslint --fix` для ts/tsx, Prettier для css/json/md.
 
 ## Ветки, коммиты, PR
