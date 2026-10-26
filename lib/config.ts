@@ -433,6 +433,7 @@ export const CHART = {
   // Headroom above the tallest bar or the target line, so neither touches the top edge.
   headroom: 1.1,
   // Round labels on the weight axis: at most this many, so 180 units of height stay uncrowded.
+  // Keep it at 4 or more: with 2–3 a 1-2-5 step can be wider than the domain and leave no label.
   maxValueTicks: 4,
   // Up to a week each bar gets its weekday; a month's 30 labels would not fit in 343 units.
   dailyLabelsMaxSlots: 7,
