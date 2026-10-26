@@ -31,6 +31,8 @@ tags:
 - **Native** — Claude делает задачи сам, подряд, а в конце идут ревью всей ветки. Так прошли этапы 3 и 4.
 - **Subagent-driven** — каждая задача достаётся свежему субагенту, после каждой идёт отдельное ревью. Надёжнее, но дороже.
 
+Если установлен мод Savvy Progress, ход этапа виден в полосе прогресса над полем ввода: план после «ок», законченные шаги, ревью, закрытие. Без мода `/stage` работает так же, просто без полосы.
+
 ## Правила (`.claude/rules/`)
 Подключаются автоматически по путям файлов, которые трогает правка.
 
@@ -67,15 +69,16 @@ tags:
 - **мелкие** заводятся GitHub Issue с меткой этапа или `polish`, ссылка — в «Открытые вопросы» `notes.md`.
 
 ## Защита от ошибок (`.claude/settings.json`)
-- **Без спроса:** `pnpm dev/build/test/lint/db:generate/db:seed`, чтение git, `git add/commit/switch`, `docker compose up/ps/logs`.
-- **С подтверждением:** `git push/merge/rebase/reset`, `pnpm add/remove`, `pnpm db:migrate`, `ssh/scp/rsync`.
+- **Без спроса:** `pnpm dev/build/test/lint/db:generate/db:seed`, чтение git, `git add/commit/switch/merge`, `docker compose up/ps/logs`.
+- **С подтверждением:** `git push/rebase/reset`, `pnpm add/remove`, `pnpm db:migrate`, `ssh/scp/rsync`.
 - **Запрещено:**
   - читать и писать `.env*` (кроме `.env.example`);
   - править `db/migrations/**`;
   - `drizzle-kit push`;
   - `docker compose down -v`, `docker volume rm`;
   - `rm -rf`;
-  - force-push.
+  - force-push;
+  - `gh pr merge`: PR мёржит только владелец. Merge между другими локальными ветками (например `test` → `dev`) разрешён.
 - **Хук после каждой правки:** Prettier + `eslint --fix` для ts/tsx, Prettier для css/json/md.
 
 ## Ветки, коммиты, PR

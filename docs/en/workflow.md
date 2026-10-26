@@ -23,6 +23,8 @@ A plan runs in one of two ways:
 - **Native**: Claude does the tasks itself, in a row, and the whole branch is reviewed at the end. Stages 3 and 4 went this way.
 - **Subagent-driven**: each task goes to a fresh subagent, with a separate review after each. More reliable, but more expensive.
 
+With the Savvy Progress mod installed, the stage's progress shows in a bar above the prompt: the plan after the "ok", finished steps, review, close. Without the mod `/stage` works the same, just without the bar.
+
 ## Rules (`.claude/rules/`)
 Picked up automatically by the paths an edit touches.
 
@@ -59,15 +61,16 @@ Agents don't edit code. Their findings are handled by the implementer:
 - **minor** ones become a GitHub issue with the stage's label or `polish`, linked from "Open questions" in `notes.md`.
 
 ## Guard rails (`.claude/settings.json`)
-- **Without asking:** `pnpm dev/build/test/lint/db:generate/db:seed`, reading git, `git add/commit/switch`, `docker compose up/ps/logs`.
-- **With confirmation:** `git push/merge/rebase/reset`, `pnpm add/remove`, `pnpm db:migrate`, `ssh/scp/rsync`.
+- **Without asking:** `pnpm dev/build/test/lint/db:generate/db:seed`, reading git, `git add/commit/switch/merge`, `docker compose up/ps/logs`.
+- **With confirmation:** `git push/rebase/reset`, `pnpm add/remove`, `pnpm db:migrate`, `ssh/scp/rsync`.
 - **Forbidden:**
   - reading and writing `.env*` (except `.env.example`);
   - editing `db/migrations/**`;
   - `drizzle-kit push`;
   - `docker compose down -v`, `docker volume rm`;
   - `rm -rf`;
-  - force-push.
+  - force-push;
+  - `gh pr merge`: only the owner merges PRs. Merges between other local branches (say `test` → `dev`) are allowed.
 - **A hook after every edit:** Prettier + `eslint --fix` for ts/tsx, Prettier for css/json/md.
 
 ## Branches, commits, PRs
