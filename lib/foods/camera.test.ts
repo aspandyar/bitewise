@@ -106,6 +106,20 @@ describe("lookupBarcode", () => {
     ).toEqual({ kind: "failed", reason: "other" });
   });
 
+  it("calls fetch unbound, as a browser requires of window.fetch", async () => {
+    // A browser throws "Illegal invocation" when fetch runs with any `this` but window.
+    function browserFetch(this: unknown): Promise<Response> {
+      if (this !== undefined && this !== globalThis) throw new TypeError("Illegal invocation");
+      return Promise.resolve(new Response(JSON.stringify({ status: "found", foodId: "f1" })));
+    }
+    expect(
+      await lookupBarcode(CODE, diary, {
+        fetch: browserFetch as typeof fetch,
+        signal: new AbortController().signal,
+      }),
+    ).toEqual({ kind: "navigate", href: "/diary/add/f1?date=2026-10-22&meal=breakfast" });
+  });
+
   it("sends the code in the query", async () => {
     const fetchMock = json({ status: "found", foodId: "f1" });
     await lookupBarcode(CODE, diary, { fetch: fetchMock, signal: new AbortController().signal });

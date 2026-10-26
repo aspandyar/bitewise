@@ -28,12 +28,14 @@ export async function lookupBarcode(
   target: ScanTarget,
   deps: { fetch: typeof fetch; signal: AbortSignal },
 ): Promise<LookupOutcome> {
+  // Called unbound: as deps.fetch(...) a browser's window.fetch throws "Illegal invocation".
+  const { fetch: send, signal } = deps;
   try {
-    const response = await deps.fetch(`/api/foods/barcode?code=${encodeURIComponent(code)}`, {
-      signal: deps.signal,
+    const response = await send(`/api/foods/barcode?code=${encodeURIComponent(code)}`, {
+      signal,
     });
     const body = (await response.json()) as BarcodeLookupBody;
-    if (deps.signal.aborted) return { kind: "aborted" };
+    if (signal.aborted) return { kind: "aborted" };
     const href = scanTargetHref(body, target);
     if (href) return { kind: "navigate", href };
     if ("status" in body && body.status === "unavailable")
@@ -43,6 +45,6 @@ export async function lookupBarcode(
     }
     return { kind: "failed", reason: "other" };
   } catch {
-    return deps.signal.aborted ? { kind: "aborted" } : { kind: "failed", reason: "other" };
+    return signal.aborted ? { kind: "aborted" } : { kind: "failed", reason: "other" };
   }
 }
