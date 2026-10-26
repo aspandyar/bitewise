@@ -74,8 +74,8 @@ A GitHub tag marks a plan milestone; the version in `package.json` matches the t
 | Version | What's in it | When |
 | --- | --- | --- |
 | `v0.1.0` | MVP: stages 0–6, security, docs | released 2026-10-22 |
-| `v0.2.0` | stages 7–8: barcode scanner, water, weight, statistics | after stage 8 |
-| `v0.2.x` | fixes and updates that need to reach the server between milestones (#121, #122, #123, security updates) | as needed |
+| `v0.2.0` | stages 7–8: barcode scanner, water, weight, statistics; fixes #121–#123 | after stage 8 and #133 |
+| `v0.2.x` | fixes and updates that need to reach the server between milestones (#131, #132, security updates) | as needed |
 | `v0.3.0` | stages 9–10: AI core and text input | after `ft/ai-text` |
 | `v0.4.0` | stages 11–12: photo and the correction chat | after `ft/ai-chat` |
 | `v1.0.0` | no new features: the app runs on its own domain, AI input is stable, a backup restore is checked, 2+ weeks of daily use without blocking bugs | after `v0.4.0` and the deploy |

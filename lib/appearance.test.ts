@@ -6,11 +6,13 @@ import {
   appearanceScript,
   applyAppearance,
   contrastRatio,
+  earlyThemeColor,
   keepThemeColor,
   parseAppearance,
   readAppearanceCookie,
   syncThemeColor,
   themeColorFor,
+  themeColorViewport,
 } from "./appearance";
 
 type FakeMeta = { attrs: Record<string, string> };
@@ -78,6 +80,13 @@ describe("readAppearanceCookie", () => {
   });
 });
 
+describe("earlyThemeColor", () => {
+  it("spells a hex color as rgb()", () => {
+    expect(earlyThemeColor("#0a0a0a")).toBe("rgb(10,10,10)");
+    expect(earlyThemeColor("#ffffff")).toBe("rgb(255,255,255)");
+  });
+});
+
 describe("contrastRatio", () => {
   it("matches the WCAG reference pairs", () => {
     expect(contrastRatio("#000000", "#ffffff")).toBeCloseTo(21, 5);
@@ -126,10 +135,19 @@ describe("appearanceScript theme color", () => {
     expect(prepended.map((meta) => meta.attrs)).toEqual([
       {
         name: "theme-color",
-        content: APPEARANCE.base.dark.background,
+        content: earlyThemeColor(APPEARANCE.base.dark.background),
         [APPEARANCE.earlyThemeColorAttr]: "",
       },
     ]);
+  });
+
+  // React would claim an early meta with a server meta's content and crash once it is removed (#121).
+  it("never spells its color like a server meta", () => {
+    const serverColors = themeColorViewport().map(({ color }) => color);
+    for (const theme of ["light", "dark"] as const) {
+      const [early] = runScript(`bw-theme=${theme}`).prepended;
+      expect(serverColors).not.toContain(early?.attrs.content);
+    }
   });
 
   it("adds nothing without a forced theme", () => {

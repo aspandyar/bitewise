@@ -1,5 +1,4 @@
 import { addWaterAction, removeWaterAction } from "@/app/(app)/diary/water-actions";
-import { KeyedForm } from "@/components/ui/keyed-form";
 import { WATER } from "@/lib/config";
 import type { IsoDate } from "@/lib/date";
 import { formatNumber } from "@/lib/i18n/number";
@@ -28,18 +27,22 @@ export function WaterBlock({ date, water }: { date: IsoDate; water: DayWater }) 
           style={{ transform: `scaleX(${share})` }}
         />
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        {WATER.quickMl.map((ml) => (
-          <KeyedForm key={ml} action={addWaterAction.bind(null, date, ml)}>
-            <WaterButton primary>{ru.water.add(formatNumber(ml))}</WaterButton>
-          </KeyedForm>
-        ))}
-      </div>
-      {water.lastId && (
-        <form action={removeWaterAction.bind(null, water.lastId, date)}>
-          <WaterButton>{ru.water.removeLast}</WaterButton>
-        </form>
-      )}
+      {/* One form, so a pending "+500" also holds "Убрать последнее": tapped before the answer,
+          it would remove the glass before, whose id this render still carries (#123). */}
+      <form className="flex flex-col gap-3">
+        <div className="grid grid-cols-2 gap-2">
+          {WATER.quickMl.map((ml) => (
+            <WaterButton key={ml} action={addWaterAction.bind(null, date, ml)} keyed primary>
+              {ru.water.add(formatNumber(ml))}
+            </WaterButton>
+          ))}
+        </div>
+        {water.lastId && (
+          <WaterButton action={removeWaterAction.bind(null, water.lastId, date)}>
+            {ru.water.removeLast}
+          </WaterButton>
+        )}
+      </form>
     </section>
   );
 }

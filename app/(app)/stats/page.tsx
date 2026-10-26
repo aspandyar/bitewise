@@ -44,7 +44,15 @@ async function StatsContent({ searchParams }: Pick<PageProps<"/stats">, "searchP
       <h1 className="text-2xl font-semibold">{ru.stats.title}</h1>
       <PeriodSwitch current={period} />
       {days.length === 0 ? (
-        <p className="text-foreground/60">{ru.stats.empty}</p>
+        <div className="flex flex-col gap-2">
+          <p className="text-foreground/60">{ru.stats.empty}</p>
+          <Link
+            href={dayHref(today, today)}
+            className="inline-flex min-h-11 items-center self-start underline text-accent-text"
+          >
+            {ru.stats.openDiary}
+          </Link>
+        </div>
       ) : (
         <>
           {summary.daysLogged === 0 ? (
@@ -98,12 +106,12 @@ async function StatsContent({ searchParams }: Pick<PageProps<"/stats">, "searchP
           />
           <section className="flex flex-col gap-2">
             <h2 className="font-semibold">{ru.stats.daysTitle}</h2>
-            <ul className="flex flex-col divide-y divide-foreground/10">
+            <ul className="-mx-2 flex flex-col divide-y divide-foreground/10">
               {days.toReversed().map((day) => (
                 <li key={day.date}>
                   <Link
                     href={dayHref(day.date, today)}
-                    className="flex min-h-11 items-center justify-between gap-3 py-2"
+                    className="flex min-h-11 items-center justify-between gap-3 rounded-lg px-2 py-2"
                   >
                     <span>
                       {formatDayLabel(day.date, today)}

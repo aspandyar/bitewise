@@ -1,7 +1,7 @@
 import { CHART } from "@/lib/config";
 import { linearScale } from "@/lib/chart";
-import { daysBetween, type IsoDate } from "@/lib/date";
-import { formatKcal, formatShortDate } from "@/lib/format";
+import { addDays, daysBetween, type IsoDate } from "@/lib/date";
+import { formatKcal, formatShortDate, formatWeekday } from "@/lib/format";
 import { ru } from "@/lib/i18n/ru";
 import { isDayInTarget, type DayTotals, type PeriodSummary } from "@/lib/nutrition";
 
@@ -16,6 +16,7 @@ const {
   labelGap,
   labelFontSize,
   targetDash,
+  dailyLabelsMaxSlots,
 } = CHART;
 const labelStyle = { fontSize: labelFontSize };
 
@@ -100,23 +101,40 @@ export function KcalChart({
         >
           {formatKcal(targetKcal)}
         </text>
-        <text
-          x={padding.left}
-          y={height - labelGap}
-          className="fill-foreground/60"
-          style={labelStyle}
-        >
-          {formatShortDate(from)}
-        </text>
-        <text
-          x={width - padding.right}
-          y={height - labelGap}
-          textAnchor="end"
-          className="fill-foreground/60"
-          style={labelStyle}
-        >
-          {formatShortDate(to)}
-        </text>
+        {slots <= dailyLabelsMaxSlots ? (
+          Array.from({ length: slots }, (_, index) => (
+            <text
+              key={index}
+              x={padding.left + index * band + band / 2}
+              y={height - labelGap}
+              textAnchor="middle"
+              className="fill-foreground/60"
+              style={labelStyle}
+            >
+              {formatWeekday(addDays(from, index))}
+            </text>
+          ))
+        ) : (
+          <>
+            <text
+              x={padding.left}
+              y={height - labelGap}
+              className="fill-foreground/60"
+              style={labelStyle}
+            >
+              {formatShortDate(from)}
+            </text>
+            <text
+              x={width - padding.right}
+              y={height - labelGap}
+              textAnchor="end"
+              className="fill-foreground/60"
+              style={labelStyle}
+            >
+              {formatShortDate(to)}
+            </text>
+          </>
+        )}
       </svg>
       <figcaption className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground/60">
         <span className="flex items-center gap-1">

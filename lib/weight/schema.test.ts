@@ -18,9 +18,14 @@ describe("weightFormSchema", () => {
   });
 
   it("refuses a weight outside the profile range", () => {
-    for (const value of [String(min - 0.1), String(max + 0.1), "abc"]) {
+    for (const value of [String(min - 0.1), String(max + 0.1)]) {
       const parsed = weightFormSchema.safeParse({ weightKg: value });
       expect(parsed.error?.issues[0]?.message).toBe(ru.errors.weightRange(min, max));
     }
+  });
+
+  it("asks for a number when letters are typed", () => {
+    const parsed = weightFormSchema.safeParse({ weightKg: "abc" });
+    expect(parsed.error?.issues[0]?.message).toBe(ru.common.notANumber);
   });
 });

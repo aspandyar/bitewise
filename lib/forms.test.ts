@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
+import { ru } from "@/lib/i18n/ru";
 import {
   decimalField,
   firstFieldErrors,
@@ -20,6 +21,13 @@ describe("decimalField", () => {
     expect(field.parse(" 80.5 ")).toBe(80.5);
   });
 
+  it("tells letters from a number out of range", () => {
+    expect(field.safeParse("abc").error?.issues[0]?.message).toBe(ru.common.notANumber);
+    expect(field.safeParse("12,5,1").error?.issues[0]?.message).toBe(ru.common.notANumber);
+    expect(field.safeParse("300.1").error?.issues[0]?.message).toBe("bad");
+    expect(field.safeParse("").error?.issues[0]?.message).toBe("empty");
+  });
+
   it.each(["", "  ", "abc", "29.9", "300.1"])("rejects %j", (value) => {
     expect(field.safeParse(value).success).toBe(false);
   });
@@ -28,7 +36,7 @@ describe("decimalField", () => {
     expect(field.safeParse(value).error?.issues[0]?.message).toBe("empty");
   });
 
-  it.each(["abc", "29.9"])("reports the range for %j", (value) => {
+  it.each(["29.9", "300.1"])("reports the range for %j", (value) => {
     expect(field.safeParse(value).error?.issues[0]?.message).toBe("bad");
   });
 

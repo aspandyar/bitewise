@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { linearScale, paddedDomain } from "./chart";
+import { linearScale, niceTicks, paddedDomain } from "./chart";
 
 describe("paddedDomain", () => {
   it("keeps a span wider than the minimum as is", () => {
@@ -38,5 +38,37 @@ describe("linearScale", () => {
   it("puts every value in the middle of an empty domain", () => {
     const x = linearScale([3, 3], [0, 300]);
     expect(x(3)).toBe(150);
+  });
+});
+
+describe("niceTicks", () => {
+  it("picks round values inside the domain", () => {
+    expect(niceTicks([79.9, 82.4], 4)).toEqual([80, 81, 82]);
+    expect(niceTicks([79.9, 82.4], 3)).toEqual([80, 82]);
+  });
+
+  it("goes to halves and tenths for a narrow domain", () => {
+    expect(niceTicks([80.1, 81.6], 4)).toEqual([80.5, 81, 81.5]);
+    expect(niceTicks([0.1, 0.3], 3)).toEqual([0.1, 0.2, 0.3]);
+  });
+
+  it("keeps a tick that sits on an edge", () => {
+    expect(niceTicks([80, 82], 3)).toEqual([80, 81, 82]);
+  });
+
+  it("never returns more ticks than asked", () => {
+    for (const [lo, hi] of [
+      [61.3, 63.3],
+      [55, 120],
+      [79.95, 80.05],
+    ] as const) {
+      expect(niceTicks([lo, hi], 4).length).toBeLessThanOrEqual(4);
+      expect(niceTicks([lo, hi], 4).length).toBeGreaterThan(0);
+    }
+  });
+
+  it("returns nothing for an empty domain or fewer than two ticks", () => {
+    expect(niceTicks([80, 80], 4)).toEqual([]);
+    expect(niceTicks([80, 82], 1)).toEqual([]);
   });
 });

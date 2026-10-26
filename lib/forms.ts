@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ru } from "@/lib/i18n/ru";
 
 // `ok` lets a form clear itself after a successful submit that stays on the same page.
 export type FormState = { fieldErrors?: Record<string, string>; formError?: string; ok?: true };
@@ -13,7 +14,8 @@ export function firstFieldErrors(error: z.ZodError): Record<string, string> {
 }
 
 // Russian phone keyboards type "80,5"; an empty field must fail rather than coerce to 0, and
-// it gets its own message: "enter grams" says more than a range when nothing was typed.
+// it gets its own message: "enter grams" says more than a range when nothing was typed. Letters
+// get "enter a number" too: a range would suggest the value was a number, only too big (#123).
 export function decimalField(
   limits: { min: number; max: number },
   message: string,
@@ -26,7 +28,14 @@ export function decimalField(
       return trimmed === "" ? undefined : Number(trimmed.replace(",", "."));
     },
     z
-      .number({ error: (issue) => (issue.input === undefined ? emptyMessage : message) })
+      .number({
+        error: (issue) =>
+          issue.input === undefined
+            ? emptyMessage
+            : Number.isNaN(issue.input)
+              ? ru.common.notANumber
+              : message,
+      })
       .min(limits.min, { error: message })
       .max(limits.max, { error: message }),
   );

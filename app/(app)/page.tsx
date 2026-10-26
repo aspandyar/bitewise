@@ -24,6 +24,11 @@ import { getDefaultTarget } from "@/lib/targets/repo";
 import { getDayWater } from "@/lib/water/repo";
 import { BODY_HREF } from "@/lib/weight/paths";
 
+const bodyLinks = [
+  { href: BODY_HREF, label: ru.body.title },
+  { href: STATS_HREF, label: ru.stats.title },
+] as const;
+
 const navLinks = [
   { href: "/foods", label: ru.foods.title },
   { href: RECIPES_HREF, label: ru.recipes.title },
@@ -71,6 +76,17 @@ async function DayContent({ searchParams }: Pick<PageProps<"/">, "searchParams">
       <DayNav date={date} today={today} />
       <DaySummary progress={progress} />
       <WaterBlock date={date} water={water} />
+      <nav aria-label={ru.water.bodyLinks} className="grid grid-cols-2 gap-2">
+        {bodyLinks.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className="flex min-h-11 items-center justify-center rounded-lg border border-foreground/20 px-4"
+          >
+            {link.label}
+          </Link>
+        ))}
+      </nav>
       {MEALS.map((meal) => {
         const mealRows = rows.filter((row) => row.meal === meal);
         return (
