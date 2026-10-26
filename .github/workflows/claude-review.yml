@@ -1,0 +1,63 @@
+name: Claude review
+
+# One review per PR, when it opens or leaves draft: a review on every push costs tokens on each
+# commit and buries the useful comments under repeats. Not a required check: it only comments,
+# the owner decides. Re-run it from the Actions tab after big changes.
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+
+# A newer run for the same PR replaces the one still going.
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  # The action exchanges an OIDC token for its GitHub App token.
+  id-token: write
+
+jobs:
+  review:
+    # Drafts are not ready for review, and PRs from forks get no secrets.
+    if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # Actions are pinned by commit SHA: a moved tag cannot swap the code that runs here.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - uses: anthropics/claude-code-action@925afb53776cf1a2b738c6bdbed37b4d4000ef13 # v1.0.262
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Review this pull request. The PR branch is checked out in the current directory.
+            Read CLAUDE.md and the files in .claude/rules/ first: they are this project's rules,
+            and breaking them is the main thing to look for. In particular:
+            - calories and macros are computed only in lib/nutrition.ts; AI output never writes numbers;
+            - every tunable value lives in lib/config.ts, no magic numbers;
+            - every external input (forms, API bodies, query params, AI output) is validated with zod;
+            - secrets and AI keys never reach client code;
+            - the DB schema changes only through drizzle-kit migrations;
+            - auth and data access: one user must never read or change another user's data;
+            - docs updated in the same change, in both docs/ru/ and docs/en/ for reference docs;
+            - tests for new logic, mobile-first layout (375 px).
+            Also look for real bugs, security issues and missing edge cases.
+
+            Report only what matters: a bug, a broken rule, a security or data risk, a missing test
+            for new logic. Skip style nitpicks that Prettier or ESLint already enforce. For each
+            finding give the severity (blocker, major, minor), a concrete scenario and a fix.
+
+            Put each finding on its line with mcp__github_inline_comment__create_inline_comment.
+            Then post one summary with `gh pr comment`: the verdict, findings by severity, or
+            "No issues found" if there are none. Write in English. Do not approve, request
+            changes, merge, push or edit files: comment only.
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"

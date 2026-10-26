@@ -82,6 +82,8 @@ Vitest with two projects (`vitest.config.ts`):
 ## CI
 `.github/workflows/ci.yml` on every push and PR: Postgres 17 as a service → `pnpm install --frozen-lockfile` → `pnpm lint` → `pnpm test`. A full run takes about a minute. Merging into `master` only on green CI.
 
+`.github/workflows/claude-review.yml` reviews a PR once, when it opens, reopens or leaves draft: Claude reads `CLAUDE.md` and `.claude/rules/`, leaves inline comments on the lines with findings (severity, scenario, fix) and one summary comment. It only comments: it never approves, merges or pushes, and it is not a required check. It runs on the owner's Claude subscription through the `CLAUDE_CODE_OAUTH_TOKEN` repository secret (made with `claude setup-token`) and needs the [Claude GitHub App](https://github.com/apps/claude) installed on the repository. PRs from forks and drafts are skipped. To review again after big changes, re-run the job from the Actions tab.
+
 ## Camera on a phone (tunnel)
 The camera works only over https (or on `localhost`), so on the laptop's home-network address the scanner offers typed digits only. To test on a phone, use a named Cloudflare tunnel to the laptop's production build:
 
