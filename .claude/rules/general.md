@@ -8,3 +8,4 @@
 - Не добавляй зависимость, не объяснив зачем и почему без неё нельзя.
 - After each stage or feature change, update the docs in the same change; keeping docs current is required, not optional.
 - When adding or changing env vars (.env.example etc., even optional), list them in chat so the user can update what Claude can't access
+- Don't work around hooks or blocks with scripts or other commands; if something is blocked, ask the user.
