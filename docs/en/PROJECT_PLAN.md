@@ -12,7 +12,7 @@ Principle: **numbers come from the food database and a formula, never from a neu
 ---
 
 ## Current status
-Stages 0–5 and 6a are done, 6b without a server: production is built and tested on a laptop. v0.2 is done and released as `v0.2.0` (a pre-release until deployed): the barcode scanner (stage 7), water, weight and statistics (stage 8). **Next step**: the first `/deploy` once there is a server (the domain is `aspandyar.org`, #8); then AI input (`ft/ai-core`).
+Stages 0–5 and 6a are done, 6b without a server: production is built and tested on a laptop. v0.2 is done and released as `v0.2.0`, with the scanner fix as `v0.2.1` (a pre-release until deployed): the barcode scanner (stage 7), water, weight and statistics (stage 8). **Next step**: the first `/deploy` once there is a server (the domain is `aspandyar.org`, #8); then AI input (`ft/ai-core`).
 
 - **Skeleton** (`ft/karkas`): Next.js, TypeScript strict, Tailwind, Postgres in Docker, Drizzle, Vitest, CI.
 - **Sign-in, profile, target** (`ft/auth-profile`): Auth.js v4 (email + password, JWT), roles user/manager/admin (the admin comes from `pnpm admin:bootstrap`), onboarding, kcal/macro target automatic or manual.
@@ -74,7 +74,8 @@ A GitHub tag marks a plan milestone; the version in `package.json` matches the t
 | Version | What's in it | When |
 | --- | --- | --- |
 | `v0.1.0` | MVP: stages 0–6, security, docs | released 2026-10-22 |
-| `v0.2.0` | stages 7–8: barcode scanner, water, weight, statistics; fixes #121–#123 | after stage 8 and #133 |
+| `v0.2.0` | stages 7–8: barcode scanner, water, weight, statistics; fixes #121–#123 | released 2026-10-26 |
+| `v0.2.1` | scanner: barcode lookup works in the browser again (`fetch` called without `window`) | released 2026-10-26 |
 | `v0.2.x` | fixes and updates that need to reach the server between milestones (#131, #132, security updates) | as needed |
 | `v0.3.0` | stages 9–10: AI core and text input | after `ft/ai-text` |
 | `v0.4.0` | stages 11–12: photo and the correction chat | after `ft/ai-chat` |
