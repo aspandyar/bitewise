@@ -69,8 +69,8 @@ Agents don't edit code. Their findings are handled by the implementer:
   - `drizzle-kit push`;
   - `docker compose down -v`, `docker volume rm`;
   - `rm -rf`;
-  - force-push.
-- **`master` is the owner's** (`.claude/hooks/protect-master.mjs`, a PreToolUse hook): it blocks `git merge`, `commit`, `rebase`, `cherry-pick`, `revert`, `am` and `pull` (except `--ff-only`) while on `master`, `git push` to `master` (including `--all`/`--mirror` and a plain push from `master`), and `gh pr merge` of a PR based on `master`. Merges and pushes between other branches (say `test` → `dev`) go through. Permission patterns can't do this: they match only the command's start, so `git -C dir merge` slips past, and they can't see the branch.
+  - force-push;
+  - `gh pr merge`: only the owner merges PRs. Merges between other local branches (say `test` → `dev`) are allowed.
 - **A hook after every edit:** Prettier + `eslint --fix` for ts/tsx, Prettier for css/json/md.
 
 ## Branches, commits, PRs
