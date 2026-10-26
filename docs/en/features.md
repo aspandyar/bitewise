@@ -48,7 +48,7 @@ Marks: ✅ works, 🟨 partly (what is missing is in brackets), no mark — not 
 - ✅ Statistics: weekly/monthly kcal and macro averages (over finished logged days, today left out), "days on target" (±10 % kcal), kcal by day (weekday labels for a week), a list of days.
 - CSV export.
 
-## 🔵 Tier 3 — AI (v0.3)
+## 🔵 Tier 3 — AI (v0.3 — text, v0.4 — photo and chat)
 - **Text → entries:** "an omelette of 3 eggs and coffee with milk" → list of items → confirmation card.
 - **Photo → entries:** dish recognition and gram estimates with a confidence level → confirmation card (grams adjusted with a slider).
 - **A short correction chat** about the recognized result.
