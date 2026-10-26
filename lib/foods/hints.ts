@@ -64,7 +64,9 @@ export function newFoodHref(input: {
   fromOff: boolean;
   entry?: { date: IsoDate; meal: Meal };
 }): string {
-  const params = new URLSearchParams(input.entry ? diarySearch(input.entry.date, input.entry.meal) : "");
+  const params = new URLSearchParams(
+    input.entry ? diarySearch(input.entry.date, input.entry.meal) : "",
+  );
   params.set("barcode", input.barcode);
   for (const [key, value] of Object.entries(input.hints)) {
     if (value !== undefined) params.set(key, String(value));
@@ -72,4 +74,3 @@ export function newFoodHref(input: {
   if (input.fromOff) params.set("from", OFF_MARK);
   return `/foods/new?${params}`;
 }
-

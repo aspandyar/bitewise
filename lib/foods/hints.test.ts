@@ -46,7 +46,13 @@ describe("parseFoodHints", () => {
 
 describe("newFoodHref", () => {
   it("round-trips through parseFoodHints with the diary context", () => {
-    const hints = { name: "Батончик & co", kcal100: 288.33, protein100: 33.33, fat100: 0, carbs100: 5.83 };
+    const hints = {
+      name: "Батончик & co",
+      kcal100: 288.33,
+      protein100: 33.33,
+      fat100: 0,
+      carbs100: 5.83,
+    };
     const href = newFoodHref({
       barcode: CODE,
       hints,
@@ -60,6 +66,8 @@ describe("newFoodHref", () => {
   });
 
   it("carries only the code when nothing else is known", () => {
-    expect(newFoodHref({ barcode: CODE, hints: {}, fromOff: false })).toBe(`/foods/new?barcode=${CODE}`);
+    expect(newFoodHref({ barcode: CODE, hints: {}, fromOff: false })).toBe(
+      `/foods/new?barcode=${CODE}`,
+    );
   });
 });

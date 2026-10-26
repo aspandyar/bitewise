@@ -84,7 +84,7 @@ Vitest с двумя проектами (`vitest.config.ts`):
 - Внешние API (USDA, Open Food Facts, AI) — только через fixtures в `tests/fixtures/`, без сети.
 
 ## Линт и формат
-- `pnpm lint` = ESLint → `next typegen` (типы роутов, без них `tsc` падает) → `tsc --noEmit`. TypeScript: `strict` + `noUncheckedIndexedAccess`.
+- `pnpm lint` = ESLint → `prettier --check` (неотформатированный файл роняет CI; чинится `pnpm format`) → `next typegen` (типы роутов, без них `tsc` падает) → `tsc --noEmit`. TypeScript: `strict` + `noUncheckedIndexedAccess`.
 - Хук Claude Code после каждой правки: Prettier + `eslint --fix` для ts/tsx, Prettier для css/json/md. Вручную — `pnpm format`. Каталоги `docs/` и `.claude/` и файл `CLAUDE.md` Prettier не трогает: `docs/ru/` — заметки Obsidian.
 
 ## CI

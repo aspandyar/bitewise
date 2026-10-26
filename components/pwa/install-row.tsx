@@ -3,11 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { ru } from "@/lib/i18n/ru";
 import { installHint } from "@/lib/pwa/install";
-import {
-  getInstallPrompt,
-  promptInstall,
-  subscribeInstallPrompt,
-} from "@/lib/pwa/install-prompt";
+import { getInstallPrompt, promptInstall, subscribeInstallPrompt } from "@/lib/pwa/install-prompt";
 
 type Device = { standalone: boolean; userAgent: string; maxTouchPoints: number };
 

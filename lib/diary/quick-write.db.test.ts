@@ -2,12 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { diaryEntries } from "@/db/schema";
 import { QUICK } from "@/lib/config";
-import {
-  addPortion,
-  deleteOwnPortion,
-  listVisiblePortions,
-  deleteOwnFood,
-} from "@/lib/foods/repo";
+import { addPortion, deleteOwnPortion, listVisiblePortions, deleteOwnFood } from "@/lib/foods/repo";
 import { calcEntryNutrients } from "@/lib/nutrition";
 import { closeTestDb, resetDb, testDb } from "@/tests/db";
 import { createOwnFood, insertSharedFood, newUserId } from "@/tests/foods";

@@ -220,7 +220,13 @@ function batchRequestIds(requestId: string, size: number): string[] {
   return Array.from({ length: size }, (_, index) => {
     if (index === 0) return requestId;
     const hex = createHash("sha256").update(`${requestId}:${index}`).digest("hex");
-    return [hex.slice(0, 8), hex.slice(8, 12), hex.slice(12, 16), hex.slice(16, 20), hex.slice(20, 32)].join("-");
+    return [
+      hex.slice(0, 8),
+      hex.slice(8, 12),
+      hex.slice(12, 16),
+      hex.slice(16, 20),
+      hex.slice(20, 32),
+    ].join("-");
   });
 }
 
@@ -241,7 +247,9 @@ export async function repeatMeal(
         : await tx
             .select({ id: diaryEntries.id, date: diaryEntries.date, meal: diaryEntries.meal })
             .from(diaryEntries)
-            .where(and(eq(diaryEntries.userId, userId), inArray(diaryEntries.clientRequestId, keys)))
+            .where(
+              and(eq(diaryEntries.userId, userId), inArray(diaryEntries.clientRequestId, keys)),
+            )
             .orderBy(asc(diaryEntries.createdAt), asc(diaryEntries.id));
     if (replayed.length > 0) {
       const same = replayed.every((row) => row.date === input.date && row.meal === input.meal);

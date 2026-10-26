@@ -29,7 +29,9 @@ export function quickKcalMismatchEstimate(values: QuickEntryNumbers): number | n
   const kcal = readDecimalInput(values.kcal);
   const typed = [values.proteinG, values.fatG, values.carbsG].map((value) => value.trim());
   if (kcal === null || typed.every((value) => value === "")) return null;
-  const [proteinG, fatG, carbsG] = typed.map((value) => (value === "" ? 0 : readDecimalInput(value)));
+  const [proteinG, fatG, carbsG] = typed.map((value) =>
+    value === "" ? 0 : readDecimalInput(value),
+  );
   if (proteinG == null || fatG == null || carbsG == null) return null;
   const macros = { proteinG, fatG, carbsG, fiberG: null };
   return isKcalConsistentWithMacros(kcal, macros) ? null : calcKcalFromMacros(macros);

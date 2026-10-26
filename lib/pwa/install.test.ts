@@ -54,7 +54,8 @@ type FakeWindow = Record<string, unknown> & {
 function fakeWindow(): FakeWindow {
   const listeners = new Map<string, ((event: Event) => void)[]>();
   return {
-    addEventListener: (type, listener) => listeners.set(type, [...(listeners.get(type) ?? []), listener]),
+    addEventListener: (type, listener) =>
+      listeners.set(type, [...(listeners.get(type) ?? []), listener]),
     removeEventListener: () => undefined,
     fire: (type, event) => listeners.get(type)?.forEach((listener) => listener(event)),
   };
@@ -72,7 +73,9 @@ describe("install prompt before hydration", () => {
 
   it("the store picks up an event caught before it started listening", () => {
     const win = fakeWindow();
-    const early = Object.assign(new Event("beforeinstallprompt"), { prompt: async () => undefined });
+    const early = Object.assign(new Event("beforeinstallprompt"), {
+      prompt: async () => undefined,
+    });
     win[PWA.installPromptGlobal] = early;
     const stop = listenForInstallPrompt(win as unknown as Window);
     expect(getInstallPrompt()).toBe(early);

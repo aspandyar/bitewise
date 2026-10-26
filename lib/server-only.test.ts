@@ -10,10 +10,12 @@ describe("server-only boundary", () => {
     expect(read(path)).toMatch(/^import "server-only";/m);
   });
 
-  it.each(["db/seed/index.ts", "db/ops/migrate.ts", "scripts/bootstrap-admin.ts", "drizzle.config.ts"])(
-    "%s uses the script entries, not the server-only ones",
-    (path) => {
-      expect(read(path)).not.toMatch(/from "(@\/db\/client|@\/lib\/env|\.\/lib\/env)"/);
-    },
-  );
+  it.each([
+    "db/seed/index.ts",
+    "db/ops/migrate.ts",
+    "scripts/bootstrap-admin.ts",
+    "drizzle.config.ts",
+  ])("%s uses the script entries, not the server-only ones", (path) => {
+    expect(read(path)).not.toMatch(/from "(@\/db\/client|@\/lib\/env|\.\/lib\/env)"/);
+  });
 });
