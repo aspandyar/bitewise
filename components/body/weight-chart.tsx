@@ -1,11 +1,13 @@
 import { CHART, WEIGHT } from "@/lib/config";
 import type { WeightPoint } from "@/lib/body";
-import { linearScale, paddedDomain } from "@/lib/chart";
+import { linearScale, niceTicks, paddedDomain } from "@/lib/chart";
 import { daysBetween, type IsoDate } from "@/lib/date";
 import { formatShortDate, formatWeightKg } from "@/lib/format";
+import { formatNumber } from "@/lib/i18n/number";
 import { ru } from "@/lib/i18n/ru";
 
-const { width, height, padding, dotRadius, labelGap, lineWidth, labelFontSize } = CHART;
+const { width, height, padding, dotRadius, labelGap, lineWidth, labelFontSize, maxValueTicks } =
+  CHART;
 const labelStyle = { fontSize: labelFontSize };
 
 // Drawn on the server: two lines of SVG need no chart library on the phone.
@@ -28,7 +30,7 @@ export function WeightChart({
   const x = linearScale([0, daysBetween(from, to)], [padding.left, width - padding.right]);
   const y = linearScale(domain, [height - padding.bottom, padding.top]);
   const xOf = (date: IsoDate) => x(daysBetween(from, date));
-  const ticks = [domain[0], (domain[0] + domain[1]) / 2, domain[1]];
+  const ticks = niceTicks(domain, maxValueTicks);
   const averageLine = points.map((point) => `${xOf(point.date)},${y(point.averageKg)}`).join(" ");
 
   return (
@@ -60,7 +62,7 @@ export function WeightChart({
               className="fill-foreground/60"
               style={labelStyle}
             >
-              {formatWeightKg(tick)}
+              {formatNumber(tick)}
             </text>
           </g>
         ))}

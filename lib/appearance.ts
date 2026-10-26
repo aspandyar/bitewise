@@ -37,16 +37,26 @@ function channel(value: number): number {
   return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
 }
 
-function luminance(hex: string): number {
+function rgbOf(hex: string): [number, number, number] {
   const n = Number.parseInt(hex.slice(1), 16);
-  return (
-    0.2126 * channel((n >> 16) & 255) + 0.7152 * channel((n >> 8) & 255) + 0.0722 * channel(n & 255)
-  );
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+function luminance(hex: string): number {
+  const [r, g, b] = rgbOf(hex);
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
 }
 
 export function contrastRatio(a: string, b: string): number {
   const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number];
   return (hi + 0.05) / (lo + 0.05);
+}
+
+// The same color as the server's hex, spelled differently on purpose: React claims a head meta by
+// its content and name only, not media, so an early meta with the server's exact content would be
+// taken for a server one, and removing it later would crash React (#121).
+export function earlyThemeColor(hex: string): string {
+  return `rgb(${rgbOf(hex).join(",")})`;
 }
 
 const NOT_LIGHT = ':root:not([data-theme="light"])';
@@ -85,14 +95,15 @@ export function appearanceScript(): string {
   const themes = JSON.stringify(THEMES.filter((theme) => theme !== APPEARANCE.defaults.theme));
   const accents = JSON.stringify(otherAccents);
   const colors = JSON.stringify({
-    light: APPEARANCE.base.light.background,
-    dark: APPEARANCE.base.dark.background,
+    light: earlyThemeColor(APPEARANCE.base.light.background),
+    dark: earlyThemeColor(APPEARANCE.base.dark.background),
   });
   const { theme, accent } = APPEARANCE.cookies;
   // A forced theme also adds its own theme-color meta first in <head>, which wins over the
   // system-media ones: until keepThemeColor takes over after hydration, Android would paint the
   // system color in the status bar. The server metas are not rewritten here, since React matches
-  // them by content when it hydrates and would add a rewritten one again.
+  // them by content when it hydrates and would add a rewritten one again; for the same reason the
+  // early meta's content never equals a server one (earlyThemeColor).
   return `(function(){try{var d=document.documentElement,c="; "+document.cookie;function g(n){var p=c.split("; "+n+"=");return p.length>1?p[1].split(";")[0]:null}var t=g(${JSON.stringify(theme)}),a=g(${JSON.stringify(accent)}),k=${colors};if(${themes}.indexOf(t)>=0)d.setAttribute("data-theme",t);if(${accents}.indexOf(a)>=0)d.setAttribute("data-accent",a);if(k.hasOwnProperty(t)){var m=document.createElement("meta");m.setAttribute("name","theme-color");m.setAttribute("content",k[t]);m.setAttribute(${JSON.stringify(APPEARANCE.earlyThemeColorAttr)},"");document.head.prepend(m)}}catch(e){}})()`;
 }
 

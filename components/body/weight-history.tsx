@@ -16,12 +16,12 @@ export function WeightHistory({
   return (
     <section className="flex flex-col gap-2">
       <h2 className="font-semibold">{ru.body.history}</h2>
-      <ul className="flex flex-col divide-y divide-foreground/10">
+      <ul className="-mx-2 flex flex-col divide-y divide-foreground/10">
         {entries.map((entry) => (
           <li key={entry.date}>
             <Link
               href={weightHref(entry.date)}
-              className="flex min-h-11 items-center justify-between gap-3 py-2"
+              className="flex min-h-11 items-center justify-between gap-3 rounded-lg px-2 py-2"
             >
               <span>{formatDayLabel(entry.date, today)}</span>
               <span className="font-medium">{ru.body.kg(formatWeightKg(entry.weightKg))}</span>

@@ -58,14 +58,26 @@ export function formatShortDate(date: IsoDate): string {
   return `${parsed.day}\u00a0${month}`;
 }
 
+function weekdayOf(parsed: { year: number; month: number; day: number }): string | undefined {
+  const index = new Date(Date.UTC(parsed.year, parsed.month - 1, parsed.day)).getUTCDay();
+  return ru.diary.weekdaysShort[index];
+}
+
+// A week's chart labels each bar: "пн".
+export function formatWeekday(date: IsoDate): string {
+  const parsed = parseIsoDate(date);
+  const weekday = parsed ? weekdayOf(parsed) : undefined;
+  if (weekday === undefined) throw new RangeError(`invalid date: ${date}`);
+  return weekday;
+}
+
 export function formatDayLabel(date: IsoDate, today: IsoDate): string {
   if (date === today) return ru.diary.today;
   if (date === addDays(today, -1)) return ru.diary.yesterday;
   const parsed = parseIsoDate(date);
   if (!parsed) throw new RangeError(`invalid date: ${date}`);
-  const weekdayIndex = new Date(Date.UTC(parsed.year, parsed.month - 1, parsed.day)).getUTCDay();
   const month = ru.diary.monthsShort[parsed.month - 1];
-  const weekday = ru.diary.weekdaysShort[weekdayIndex];
+  const weekday = weekdayOf(parsed);
   if (month === undefined || weekday === undefined) {
     throw new RangeError(`invalid date: ${date}`);
   }

@@ -26,8 +26,11 @@
 /* Defaults only: in the base layer, so a utility on an element wins (the toast's Undo button sits
    on the accent and needs outline-on-accent, #97). */
 @layer base {
+  /* The offset leaves a strip of background between ring and button: on an accent fill a flush
+     ring of the same color is invisible (#122). */
   :focus-visible {
     outline-color: var(--accent-text);
+    outline-offset: 2px;
   }
 
   /* Focus moves to the first invalid field after a failed submit; an accent ring there would hide

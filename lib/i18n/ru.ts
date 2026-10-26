@@ -30,6 +30,7 @@ export const ru = {
     delete: "Удалить",
     confirmDelete: "Точно удалить",
     cancel: "Отмена",
+    notANumber: "Введите число",
   },
   auth: {
     email: "Email",
@@ -353,6 +354,8 @@ export const ru = {
     ofTarget: (ml: string, target: string) => `${ml} / ${target}${NBSP}мл`,
     add: (ml: string) => `+${ml}${NBSP}мл`,
     removeLast: "Убрать последнее",
+    // The weight and stats links right under the water block, so a daily weigh-in is one tap away.
+    bodyLinks: "Вес и статистика",
   },
   body: {
     title: "Вес",
@@ -394,6 +397,7 @@ export const ru = {
     noCompleteDays: "Средние появятся завтра — когда закончится первый день с записями",
     daysTitle: "По дням",
     empty: "За этот период записей нет",
+    openDiary: "Открыть дневник",
   },
   recipes: {
     title: "Блюда",

@@ -5,6 +5,7 @@ import {
   formatEntryAmount,
   formatGrams,
   formatShortDate,
+  formatWeekday,
   formatWeightKg,
   formatGramsAtLeast,
   formatInputNumber,
@@ -143,6 +144,17 @@ describe("formatWeightKg", () => {
     expect(formatWeightKg(78)).toBe("78,0");
     expect(formatWeightKg(78.44)).toBe("78,4");
     expect(formatWeightKg(79.133)).toBe("79,1");
+  });
+});
+
+describe("formatWeekday", () => {
+  it("shows the short weekday", () => {
+    expect(formatWeekday("2026-10-26")).toBe("пн");
+    expect(formatWeekday("2026-11-01")).toBe("вс");
+  });
+
+  it("rejects an impossible date", () => {
+    expect(() => formatWeekday("2026-02-30")).toThrow(RangeError);
   });
 });
 
