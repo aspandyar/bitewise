@@ -6,7 +6,7 @@
     "dev": "pnpm wasm:copy && next dev",
     "build": "pnpm wasm:copy && next build",
     "start": "next start",
-    "lint": "eslint . && next typegen && tsc --noEmit",
+    "lint": "eslint . && prettier --check . --log-level warn && next typegen && tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
     "test:unit": "vitest run --project unit",

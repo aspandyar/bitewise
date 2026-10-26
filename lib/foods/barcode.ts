@@ -21,7 +21,8 @@ export function normalizeBarcode(raw: string): string | null {
   if (!DIGITS.test(code)) return null;
   if (!(BARCODE.lengths as readonly number[]).includes(code.length)) return null;
   if (!hasValidCheckDigit(code)) return null;
-  if (code.length < EAN13_LENGTH && code.length !== UPC_E_LENGTH) return code.padStart(EAN13_LENGTH, "0");
+  if (code.length < EAN13_LENGTH && code.length !== UPC_E_LENGTH)
+    return code.padStart(EAN13_LENGTH, "0");
   if (code.length > EAN13_LENGTH && code.startsWith("0")) return code.slice(1);
   return code;
 }

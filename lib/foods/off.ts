@@ -42,21 +42,39 @@ const responseSchema = z.object({
 
 type OffFields = z.infer<typeof responseSchema>["product"];
 
-const ENTITIES: Record<string, string> = { amp: "&", quot: '"', apos: "'", "#39": "'", lt: "<", gt: ">" };
+const ENTITIES: Record<string, string> = {
+  amp: "&",
+  quot: '"',
+  apos: "'",
+  "#39": "'",
+  lt: "<",
+  gt: ">",
+};
 
 // Some names arrive HTML-escaped ("&quot;банан&quot;"); React would show the escapes as text.
 function decodeEntities(value: string): string {
-  return value.replace(/&(amp|quot|apos|#39|lt|gt);/g, (_, entity: string) => ENTITIES[entity] ?? "");
+  return value.replace(
+    /&(amp|quot|apos|#39|lt|gt);/g,
+    (_, entity: string) => ENTITIES[entity] ?? "",
+  );
 }
 
 function productName(product: OffFields): string | undefined {
-  const base = [product.product_name_ru, product.product_name, product.generic_name_ru, product.generic_name]
+  const base = [
+    product.product_name_ru,
+    product.product_name,
+    product.generic_name_ru,
+    product.generic_name,
+  ]
     .map((name) => decodeEntities(name ?? "").trim())
     .find((name) => name !== "");
   if (!base) return undefined;
-  const brand = decodeEntities(product.brands ?? "").split(",")[0]?.trim();
+  const brand = decodeEntities(product.brands ?? "")
+    .split(",")[0]
+    ?.trim();
   // Two bars from different brands often share a name like "Протеиновый батончик".
-  const name = brand && !base.toLowerCase().includes(brand.toLowerCase()) ? `${base} (${brand})` : base;
+  const name =
+    brand && !base.toLowerCase().includes(brand.toLowerCase()) ? `${base} (${brand})` : base;
   return name.slice(0, FOOD_LIMITS.nameLength.max).trim();
 }
 
@@ -77,7 +95,8 @@ function per100(
 function kcalPer100(nutriments: Record<string, unknown>, servingGrams: number | undefined) {
   const kcal = per100(nutriments, "energy-kcal", servingGrams);
   if (kcal !== undefined) return kcal;
-  const kj = per100(nutriments, "energy-kj", servingGrams) ?? per100(nutriments, "energy", servingGrams);
+  const kj =
+    per100(nutriments, "energy-kj", servingGrams) ?? per100(nutriments, "energy", servingGrams);
   return kj === undefined ? undefined : calcKcalFromKj(kj);
 }
 
@@ -98,9 +117,15 @@ export function parseOffProduct(json: unknown, code: string): OffProduct {
   const hints: FoodHints = {
     name: productName(product),
     kcal100: withinLimits(kcalPer100(nutriments, servingGrams), FOOD_LIMITS.kcal100),
-    protein100: withinLimits(per100(nutriments, "proteins", servingGrams), FOOD_LIMITS.nutrient100G),
+    protein100: withinLimits(
+      per100(nutriments, "proteins", servingGrams),
+      FOOD_LIMITS.nutrient100G,
+    ),
     fat100: withinLimits(per100(nutriments, "fat", servingGrams), FOOD_LIMITS.nutrient100G),
-    carbs100: withinLimits(per100(nutriments, "carbohydrates", servingGrams), FOOD_LIMITS.nutrient100G),
+    carbs100: withinLimits(
+      per100(nutriments, "carbohydrates", servingGrams),
+      FOOD_LIMITS.nutrient100G,
+    ),
     fiber100: withinLimits(per100(nutriments, "fiber", servingGrams), FOOD_LIMITS.nutrient100G),
   };
   for (const key of Object.keys(hints) as (keyof FoodHints)[]) {

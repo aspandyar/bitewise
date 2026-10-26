@@ -21,7 +21,9 @@ describe("ownFoodSchema", () => {
   });
 
   it("stores a typed UPC-A as its EAN-13 form", () => {
-    expect(ownFoodSchema.parse({ ...valid, barcode: " 036000291452 " }).barcode).toBe("0036000291452");
+    expect(ownFoodSchema.parse({ ...valid, barcode: " 036000291452 " }).barcode).toBe(
+      "0036000291452",
+    );
   });
 
   it("rejects a barcode with a wrong check digit at the field", () => {

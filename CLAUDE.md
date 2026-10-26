@@ -36,7 +36,7 @@ zod, Vitest. Деплой — Docker Compose на своём VPS за nginx. П�
 ## Команды
 - `docker compose up -d db` — поднять Postgres
 - `pnpm dev` — dev-сервер · `pnpm build` — сборка
-- `pnpm test` — Vitest · `pnpm lint` — ESLint + `tsc --noEmit`
+- `pnpm test` — Vitest · `pnpm lint` — ESLint + Prettier `--check` + `tsc --noEmit`
 - `pnpm db:generate` / `pnpm db:migrate` — миграции · `pnpm db:seed` — сид продуктов
 
 ## Как работаем

@@ -51,7 +51,9 @@ describe("the user a request was made for", () => {
     const name = https ? `__Host-${REQUEST_ID.userCookie}` : REQUEST_ID.userCookie;
     vi.stubGlobal("location", { protocol: https ? "https:" : "http:" });
     vi.stubGlobal("document", {
-      cookie: [extra, "tz=Asia/Almaty", userId ? `${name}=${userId}` : ""].filter(Boolean).join("; "),
+      cookie: [extra, "tz=Asia/Almaty", userId ? `${name}=${userId}` : ""]
+        .filter(Boolean)
+        .join("; "),
     });
   }
 

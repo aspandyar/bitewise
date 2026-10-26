@@ -21,19 +21,24 @@ export const foodNameSchema = z
   .max(nameLength.max, { error: nameMessage });
 
 const foodFields = {
-    name: foodNameSchema,
-    kcal100: decimalField(
-      kcal100,
-      ru.errors.kcalRange(kcal100.min, kcal100.max),
-      ru.errors.enter.kcal,
-    ),
-    protein100: grams(),
-    fat100: grams(),
-    carbs100: grams(),
-    fiber100: optionalDecimalField(nutrient100G, gramsMessage),
+  name: foodNameSchema,
+  kcal100: decimalField(
+    kcal100,
+    ru.errors.kcalRange(kcal100.min, kcal100.max),
+    ru.errors.enter.kcal,
+  ),
+  protein100: grams(),
+  fat100: grams(),
+  carbs100: grams(),
+  fiber100: optionalDecimalField(nutrient100G, gramsMessage),
 };
 
-function macrosFit(food: { protein100: number; fat100: number; carbs100: number; fiber100: number | null }) {
+function macrosFit(food: {
+  protein100: number;
+  fat100: number;
+  carbs100: number;
+  fiber100: number | null;
+}) {
   return (
     toHundredths(food.protein100) +
       toHundredths(food.fat100) +
@@ -59,7 +64,9 @@ const barcodeField = z
   });
 
 // The own-food form: the same numbers as any food, plus the pack's barcode.
-export const ownFoodSchema = z.object({ ...foodFields, barcode: barcodeField }).refine(macrosFit, macroSumError);
+export const ownFoodSchema = z
+  .object({ ...foodFields, barcode: barcodeField })
+  .refine(macrosFit, macroSumError);
 
 const { labelLength, grams: portionGrams } = PORTION_LIMITS;
 const labelMessage = ru.errors.portionLabelLength(labelLength.min, labelLength.max);

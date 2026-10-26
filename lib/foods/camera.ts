@@ -7,7 +7,10 @@ export async function openCamera(
   getUserMedia: (constraints: MediaStreamConstraints) => Promise<MediaStream>,
   isStopped: () => boolean,
 ): Promise<MediaStream | null> {
-  const stream = await getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
+  const stream = await getUserMedia({
+    video: { facingMode: { ideal: "environment" } },
+    audio: false,
+  });
   if (!isStopped()) return stream;
   stream.getTracks().forEach((track) => track.stop());
   return null;
@@ -33,7 +36,8 @@ export async function lookupBarcode(
     if (deps.signal.aborted) return { kind: "aborted" };
     const href = scanTargetHref(body, target);
     if (href) return { kind: "navigate", href };
-    if ("status" in body && body.status === "unavailable") return { kind: "unavailable", code: body.code };
+    if ("status" in body && body.status === "unavailable")
+      return { kind: "unavailable", code: body.code };
     if ("error" in body && (body.error === "rate_limited" || body.error === "unauthorized")) {
       return { kind: "failed", reason: body.error };
     }

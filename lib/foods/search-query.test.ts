@@ -17,7 +17,9 @@ describe("parseSearchQuery", () => {
 
 describe("withSearchQuery", () => {
   it("adds the query to a bare path and to one with parameters", () => {
-    expect(withSearchQuery("/foods", "овсянка")).toBe("/foods?q=%D0%BE%D0%B2%D1%81%D1%8F%D0%BD%D0%BA%D0%B0");
+    expect(withSearchQuery("/foods", "овсянка")).toBe(
+      "/foods?q=%D0%BE%D0%B2%D1%81%D1%8F%D0%BD%D0%BA%D0%B0",
+    );
     expect(withSearchQuery("/diary/add?date=2026-10-21&meal=breakfast", "кофе & сахар")).toBe(
       "/diary/add?date=2026-10-21&meal=breakfast&q=%D0%BA%D0%BE%D1%84%D0%B5+%26+%D1%81%D0%B0%D1%85%D0%B0%D1%80",
     );

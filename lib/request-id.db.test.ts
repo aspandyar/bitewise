@@ -373,16 +373,32 @@ describe("createUser", () => {
 
   it("a replayed sign-up finds the account it made instead of 'email taken'", async () => {
     const requestId = randomUUID();
-    const first = await createUser(testDb, { email: "new@mail.com", passwordHash: hash, requestId });
-    const replay = await createUser(testDb, { email: "new@mail.com", passwordHash: hash, requestId });
+    const first = await createUser(testDb, {
+      email: "new@mail.com",
+      passwordHash: hash,
+      requestId,
+    });
+    const replay = await createUser(testDb, {
+      email: "new@mail.com",
+      passwordHash: hash,
+      requestId,
+    });
     expect(first).not.toBeNull();
     expect(replay).toEqual(first);
   });
 
   it("a taken email with another key or no key is still refused", async () => {
-    await createUser(testDb, { email: "new@mail.com", passwordHash: hash, requestId: randomUUID() });
+    await createUser(testDb, {
+      email: "new@mail.com",
+      passwordHash: hash,
+      requestId: randomUUID(),
+    });
     expect(
-      await createUser(testDb, { email: "new@mail.com", passwordHash: hash, requestId: randomUUID() }),
+      await createUser(testDb, {
+        email: "new@mail.com",
+        passwordHash: hash,
+        requestId: randomUUID(),
+      }),
     ).toBeNull();
     expect(await createUser(testDb, { email: "new@mail.com", passwordHash: hash })).toBeNull();
   });

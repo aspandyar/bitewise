@@ -39,7 +39,8 @@ describe("loggableError", () => {
 });
 
 describe("loggableError inside other errors", () => {
-  const failed = () => new DrizzleQueryError("insert into users", ["a@b.c", "scrypt$hash"], pgError());
+  const failed = () =>
+    new DrizzleQueryError("insert into users", ["a@b.c", "scrypt$hash"], pgError());
 
   it("scrubs a failed query found in the cause chain", () => {
     const outer = new Error("action failed", { cause: failed() });
@@ -134,10 +135,9 @@ describe("errors the scrubber cannot fully walk or that drizzle did not wrap", (
 
 describe("the digest Next shows the user", () => {
   it("survives scrubbing, so a reported digest can be found in the logs", () => {
-    const error = Object.assign(
-      new DrizzleQueryError("select $1", ["user-123"], pgError()),
-      { digest: "2462667944" },
-    );
+    const error = Object.assign(new DrizzleQueryError("select $1", ["user-123"], pgError()), {
+      digest: "2462667944",
+    });
     expect(loggableError(error)).toMatchObject({ code: "42P01", digest: "2462667944" });
   });
 });

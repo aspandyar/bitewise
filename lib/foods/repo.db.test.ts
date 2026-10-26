@@ -455,7 +455,10 @@ describe("barcodes on own foods", () => {
   const CODE = "4610169567113";
 
   async function barcodeOf(foodId: string) {
-    const [row] = await testDb.select({ barcode: foods.barcode }).from(foods).where(eq(foods.id, foodId));
+    const [row] = await testDb
+      .select({ barcode: foods.barcode })
+      .from(foods)
+      .where(eq(foods.id, foodId));
     return row?.barcode;
   }
 
@@ -472,7 +475,9 @@ describe("barcodes on own foods", () => {
     expect(await createFood(testDb, alice, { ...oats, barcode: CODE })).toBe("barcode_taken");
 
     const other = await createOwnFood(alice, oats);
-    expect(await updateOwnFood(testDb, alice, other.id, { ...oats, barcode: CODE })).toBe("barcode_taken");
+    expect(await updateOwnFood(testDb, alice, other.id, { ...oats, barcode: CODE })).toBe(
+      "barcode_taken",
+    );
     expect(await barcodeOf(other.id)).toBeNull();
   });
 
@@ -481,8 +486,12 @@ describe("barcodes on own foods", () => {
     const bob = await newUserId("bob@mail.com");
     const created = await createFood(testDb, alice, { ...oats, barcode: CODE });
     if (typeof created === "string") throw new Error(created);
-    expect(await updateOwnFood(testDb, alice, created.id, { ...oats, name: "Овсянка", barcode: CODE })).toBe(true);
-    expect(await createFood(testDb, bob, { ...oats, barcode: CODE })).toMatchObject({ replayed: false });
+    expect(
+      await updateOwnFood(testDb, alice, created.id, { ...oats, name: "Овсянка", barcode: CODE }),
+    ).toBe(true);
+    expect(await createFood(testDb, bob, { ...oats, barcode: CODE })).toMatchObject({
+      replayed: false,
+    });
   });
 
   it("frees the code of a deleted own food", async () => {
@@ -490,12 +499,19 @@ describe("barcodes on own foods", () => {
     const created = await createFood(testDb, alice, { ...oats, barcode: CODE });
     if (typeof created === "string") throw new Error(created);
     await deleteOwnFood(testDb, alice, created.id);
-    expect(await createFood(testDb, alice, { ...oats, barcode: CODE })).toMatchObject({ replayed: false });
+    expect(await createFood(testDb, alice, { ...oats, barcode: CODE })).toMatchObject({
+      replayed: false,
+    });
   });
 
   it("keeps the Open Food Facts credit on a food made from scan hints", async () => {
     const alice = await newUserId("alice@mail.com");
-    const created = await createFood(testDb, alice, { ...oats, barcode: CODE }, { copiedFrom: "off" });
+    const created = await createFood(
+      testDb,
+      alice,
+      { ...oats, barcode: CODE },
+      { copiedFrom: "off" },
+    );
     if (typeof created === "string") throw new Error(created);
     expect((await getVisibleFood(testDb, alice, created.id))?.copiedFrom).toBe("off");
   });

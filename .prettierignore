@@ -10,3 +10,5 @@ AGENTS.md
 db/seed/foods.json
 ops/
 .local-prod/
+# Local brainstorming scratch, git-ignored by its own nested .gitignore that prettier does not read
+.superpowers/

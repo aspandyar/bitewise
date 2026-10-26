@@ -12,11 +12,7 @@ import { resetTargetToAuto, saveProfile } from "@/lib/profile/repo";
 import { makeProfileSchema } from "@/lib/profile/schema";
 import { setManualTarget } from "@/lib/targets/repo";
 import { targetsSchema } from "@/lib/targets/schema";
-import {
-  bumpTokenVersion,
-  findPasswordHash,
-  updatePasswordHash,
-} from "@/lib/users/repo";
+import { bumpTokenVersion, findPasswordHash, updatePasswordHash } from "@/lib/users/repo";
 
 export async function saveProfileAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const userId = await requireActionUser(formData);

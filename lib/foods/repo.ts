@@ -6,13 +6,7 @@ import { purgeDeletedFoods } from "./purge";
 import { FOOD_LIMITS, FOOD_SEARCH, PORTION_LIMITS, type FoodSource } from "@/lib/config";
 import { recomputeRecipesUsingFoods } from "@/lib/recipes/recompute";
 import { escapeLike } from "./search";
-import type {
-  FoodDetails,
-  FoodListItem,
-  OwnFoodValues,
-  PortionItem,
-  PortionValues,
-} from "./types";
+import type { FoodDetails, FoodListItem, OwnFoodValues, PortionItem, PortionValues } from "./types";
 
 // Every read goes through this filter: shared or own, and never soft-deleted.
 export function visibleTo(userId: string) {
@@ -133,7 +127,8 @@ export async function createFood(
       .from(foods)
       .where(and(eq(foods.ownerId, userId), isNull(foods.deletedAt)));
     if ((owned?.total ?? 0) >= FOOD_LIMITS.maxOwnFoods) return "limit";
-    if (values.barcode && (await ownBarcodeTaken(tx, userId, values.barcode))) return "barcode_taken";
+    if (values.barcode && (await ownBarcodeTaken(tx, userId, values.barcode)))
+      return "barcode_taken";
     const [row] = await tx
       .insert(foods)
       .values({

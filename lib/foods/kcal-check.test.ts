@@ -44,9 +44,9 @@ describe("kcalMismatchEstimate", () => {
 describe("quickKcalMismatchEstimate", () => {
   it("returns the estimate when typed macros give far more kcal", () => {
     // 100 g protein × 4 = 400 kcal, typed 50
-    expect(
-      quickKcalMismatchEstimate({ kcal: "50", proteinG: "100", fatG: "", carbsG: "" }),
-    ).toBe(400);
+    expect(quickKcalMismatchEstimate({ kcal: "50", proteinG: "100", fatG: "", carbsG: "" })).toBe(
+      400,
+    );
   });
 
   it("stays quiet when the macros agree, empty ones counting as 0", () => {
@@ -57,11 +57,15 @@ describe("quickKcalMismatchEstimate", () => {
   });
 
   it("stays quiet for just kcal, no macros typed", () => {
-    expect(quickKcalMismatchEstimate({ kcal: "50", proteinG: "", fatG: "", carbsG: "" })).toBeNull();
+    expect(
+      quickKcalMismatchEstimate({ kcal: "50", proteinG: "", fatG: "", carbsG: "" }),
+    ).toBeNull();
   });
 
   it("stays quiet while a number is unfinished or broken", () => {
-    expect(quickKcalMismatchEstimate({ kcal: "", proteinG: "100", fatG: "", carbsG: "" })).toBeNull();
+    expect(
+      quickKcalMismatchEstimate({ kcal: "", proteinG: "100", fatG: "", carbsG: "" }),
+    ).toBeNull();
     expect(
       quickKcalMismatchEstimate({ kcal: "50", proteinG: "abc", fatG: "", carbsG: "" }),
     ).toBeNull();

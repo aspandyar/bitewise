@@ -104,7 +104,10 @@ export function appearanceCookies(
   { https }: { https: boolean },
 ): string[] {
   const options = `; path=/; max-age=${APPEARANCE.maxAgeSec}; samesite=lax${https ? "; secure" : ""}`;
-  return [`${APPEARANCE.cookies.theme}=${theme}${options}`, `${APPEARANCE.cookies.accent}=${accent}${options}`];
+  return [
+    `${APPEARANCE.cookies.theme}=${theme}${options}`,
+    `${APPEARANCE.cookies.accent}=${accent}${options}`,
+  ];
 }
 
 type AttributeTarget = {

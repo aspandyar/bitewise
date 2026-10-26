@@ -21,7 +21,9 @@ describe("device mark (#30)", () => {
     const { name } = deviceCookie(user, options);
     expect(isTrustedDevice(`${name}=1000.${"A".repeat(43)}`, user, options)).toBe(false);
     expect(isTrustedDevice(`${name}=short`, user, options)).toBe(false);
-    expect(isTrustedDevice(cookieHeader(), user, { ...options, secret: "t".repeat(32) })).toBe(false);
+    expect(isTrustedDevice(cookieHeader(), user, { ...options, secret: "t".repeat(32) })).toBe(
+      false,
+    );
     expect(isTrustedDevice("", user, options)).toBe(false);
   });
 

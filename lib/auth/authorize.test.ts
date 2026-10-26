@@ -7,7 +7,9 @@ import { BusyError } from "./semaphore";
 function makeDeps(overrides: Partial<AuthorizeDeps> = {}): AuthorizeDeps {
   return {
     findUserByEmail: async (email) =>
-      email === "me@mail.com" ? { id: "u1", passwordHash: "stored", role: "manager", tokenVersion: 3 } : null,
+      email === "me@mail.com"
+        ? { id: "u1", passwordHash: "stored", role: "manager", tokenVersion: 3 }
+        : null,
     verifyPassword: async (password, stored) => stored === "stored" && password === "right-pass",
     getDummyPasswordHash: async () => "dummy",
     limiter: createRateLimiter({ max: 100, windowMs: 1000, maxKeys: 100 }),
@@ -34,8 +36,16 @@ describe("authorizeCredentials", () => {
   it("shares one bucket among trusted devices, so minting marks buys no extra guesses", async () => {
     const limiter = createRateLimiter({ max: 2, windowMs: 1000, maxKeys: 100 });
     const wrong = { email: "me@mail.com", password: "wrong-pass" };
-    await authorizeCredentials(wrong, "5.5.5.1", makeDeps({ limiter, isTrustedDevice: () => true }));
-    await authorizeCredentials(wrong, "5.5.5.2", makeDeps({ limiter, isTrustedDevice: () => true }));
+    await authorizeCredentials(
+      wrong,
+      "5.5.5.1",
+      makeDeps({ limiter, isTrustedDevice: () => true }),
+    );
+    await authorizeCredentials(
+      wrong,
+      "5.5.5.2",
+      makeDeps({ limiter, isTrustedDevice: () => true }),
+    );
     const another = makeDeps({ limiter, isTrustedDevice: () => true });
     expect(await authorizeCredentials(right, "5.5.5.3", another)).toBeNull();
   });
