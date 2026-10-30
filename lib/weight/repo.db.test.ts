@@ -1,4 +1,7 @@
+import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { weightSaveRequests } from "@/db/schema";
+import { WEIGHT } from "@/lib/config";
 import type { ProfileData } from "@/lib/nutrition";
 import { getProfile, saveProfile } from "@/lib/profile/repo";
 import { getDefaultTarget, setManualTarget } from "@/lib/targets/repo";
@@ -39,6 +42,55 @@ describe("weight entries", () => {
     expect(await listWeights(testDb, alice, "2026-10-01")).toEqual([
       { date: TODAY, weightKg: 79.1 },
     ]);
+  });
+
+  it("ignores a replay of an older save, so it cannot bring the old value back (#132)", async () => {
+    const alice = await userWithProfile();
+    const first = { date: TODAY, weightKg: 79.4, requestId: crypto.randomUUID() };
+    await saveWeight(testDb, alice, first, TODAY);
+    await saveWeight(
+      testDb,
+      alice,
+      { date: TODAY, weightKg: 79.1, requestId: crypto.randomUUID() },
+      TODAY,
+    );
+    // The browser re-sends the first request after its response was lost.
+    await saveWeight(testDb, alice, first, TODAY);
+    expect(await listWeights(testDb, alice, "2026-10-01")).toEqual([
+      { date: TODAY, weightKg: 79.1 },
+    ]);
+    expect((await getProfile(testDb, alice))?.weightKg).toBe(79.1);
+  });
+
+  it("keeps request keys per user: another account's key does not block a save", async () => {
+    const alice = await userWithProfile();
+    const bob = await userWithProfile("bob@mail.com");
+    const requestId = crypto.randomUUID();
+    await saveWeight(testDb, alice, { date: TODAY, weightKg: 79, requestId }, TODAY);
+    await saveWeight(testDb, bob, { date: TODAY, weightKg: 90, requestId }, TODAY);
+    expect(await listWeights(testDb, bob, "2026-10-01")).toEqual([{ date: TODAY, weightKg: 90 }]);
+  });
+
+  it("drops request keys older than the replay window", async () => {
+    const alice = await userWithProfile();
+    const old = crypto.randomUUID();
+    await testDb.insert(weightSaveRequests).values({
+      userId: alice,
+      clientRequestId: old,
+      createdAt: sql`now() - make_interval(days => ${WEIGHT.requestKeyDays + 1})`,
+    });
+    await saveWeight(
+      testDb,
+      alice,
+      { date: TODAY, weightKg: 79, requestId: crypto.randomUUID() },
+      TODAY,
+    );
+    const keys = await testDb
+      .select({ id: weightSaveRequests.clientRequestId })
+      .from(weightSaveRequests)
+      .where(eq(weightSaveRequests.userId, alice));
+    expect(keys.map((key) => key.id)).not.toContain(old);
+    expect(keys).toHaveLength(1);
   });
 
   it("lists weigh-ins from a date, newest first", async () => {

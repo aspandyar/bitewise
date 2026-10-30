@@ -1,8 +1,9 @@
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, lt, sql } from "drizzle-orm";
 import { lockUserWrites } from "@/db/locks";
-import { weightEntries } from "@/db/schema";
+import { weightEntries, weightSaveRequests } from "@/db/schema";
 import type { Db } from "@/db/types";
 import type { WeightEntry } from "@/lib/body";
+import { WEIGHT } from "@/lib/config";
 import type { IsoDate } from "@/lib/date";
 import { updateProfileWeight } from "@/lib/profile/repo";
 
@@ -39,15 +40,38 @@ async function getLatestWeight(tx: Db, userId: string): Promise<WeightEntry | nu
 // The profile weight follows the newest weigh-in, so an auto target's protein (g per kg) follows
 // the scale; a manual target is left alone. Only a change to the newest weigh-in touches the
 // profile: fixing last week's entry must not undo a weight typed in the profile since.
+export type SaveWeightInput = WeightEntry & { requestId?: string | null };
+
 export async function saveWeight(
   db: Db,
   userId: string,
-  input: WeightEntry,
+  input: SaveWeightInput,
   today: IsoDate,
 ): Promise<void> {
   await db.transaction(async (tx) => {
     // Two saves in parallel must not leave the profile on the older one's weight.
     await lockUserWrites(tx, userId);
+    await tx
+      .delete(weightSaveRequests)
+      .where(
+        and(
+          eq(weightSaveRequests.userId, userId),
+          lt(
+            weightSaveRequests.createdAt,
+            sql`now() - make_interval(days => ${WEIGHT.requestKeyDays})`,
+          ),
+        ),
+      );
+    if (input.requestId) {
+      // A key already applied is a replay of an older save (#132): writing it again would put
+      // its value back over whatever was saved since.
+      const [fresh] = await tx
+        .insert(weightSaveRequests)
+        .values({ userId, clientRequestId: input.requestId })
+        .onConflictDoNothing()
+        .returning({ id: weightSaveRequests.clientRequestId });
+      if (!fresh) return;
+    }
     // One weigh-in per day: saving the same day again replaces it.
     await tx
       .insert(weightEntries)

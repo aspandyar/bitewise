@@ -409,6 +409,9 @@ export const WEIGHT = {
   chartDays: 90,
   // The chart's Y axis spans at least this many kilos, so a flat week is not drawn as a cliff.
   chartMinSpanKg: 2,
+  // Keys of applied saves (#132) are kept this long: a request Next holds while offline is
+  // replayed once the network is back, which can be days later on a phone left in a bag.
+  requestKeyDays: 7,
 } as const;
 
 // SVG charts are drawn in these units and scale to the screen width; 343 = 375 px minus the
