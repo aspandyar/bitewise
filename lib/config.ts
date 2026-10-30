@@ -294,7 +294,11 @@ export const PORTION_LIMITS = {
 } as const;
 
 // GTIN lengths a pack can carry: EAN-8, UPC-A, EAN-13, GTIN-14.
-export const BARCODE = { lengths: [8, 12, 13, 14] } as const;
+export const BARCODE = {
+  lengths: [8, 12, 13, 14],
+  // Query flag of the lookup for digits a person typed: 8 of them may also be a UPC-E (#114).
+  typedParam: "typed",
+} as const;
 
 // The camera scanner (stage 7). The decoder's .wasm is copied from node_modules into public/ by
 // scripts/copy-zxing-wasm.ts and served from this site: the library's default is a CDN, which

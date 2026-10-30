@@ -1,6 +1,6 @@
 import type { RateLimiter } from "@/lib/auth/rate-limit";
 import { loggableError } from "@/lib/log";
-import { normalizeBarcode } from "./barcode";
+import { normalizeBarcode, upcEAlternative } from "./barcode";
 import type { FoodHints } from "./hints";
 import type { OffProduct } from "./off";
 import type { FoodValues } from "./types";
@@ -16,8 +16,15 @@ const OFF_LIMITER_KEY = "off";
 
 // Kept free of Next so every branch is unit-testable; route.ts only wires request and response.
 export async function handleBarcodeLookup(
-  // fetchSite: the Sec-Fetch-Site header, null when the browser does not send it.
-  input: { userId: string | null; rawCode: string | null; nowMs: number; fetchSite: string | null },
+  // fetchSite: the Sec-Fetch-Site header, null when the browser does not send it. typed: the
+  // digits came from the manual field, not the camera.
+  input: {
+    userId: string | null;
+    rawCode: string | null;
+    nowMs: number;
+    fetchSite: string | null;
+    typed: boolean;
+  },
   deps: {
     userLimiter: RateLimiter;
     offLimiter: RateLimiter;
@@ -42,30 +49,47 @@ export async function handleBarcodeLookup(
   // Checked before anything leaves the server: a typo never costs a request to their API.
   const code = input.rawCode === null ? null : normalizeBarcode(input.rawCode);
   if (!code) return { status: 400, body: { error: "bad_code" } };
+  // The camera reports a UPC-E as such; only typed digits leave the format open (#114).
+  const alternative = input.typed ? upcEAlternative(code) : null;
+  const userId = input.userId;
+  const withinBudget = () =>
+    deps.offUserLimiter.hit(userId, input.nowMs) &&
+    deps.offLimiter.hit(OFF_LIMITER_KEY, input.nowMs);
   try {
-    const known = await deps.find(input.userId, code);
-    if (known) return { status: 200, body: { status: "found", foodId: known.id } };
-
-    if (
-      !deps.offUserLimiter.hit(input.userId, input.nowMs) ||
-      !deps.offLimiter.hit(OFF_LIMITER_KEY, input.nowMs)
-    ) {
-      return { status: 200, body: { status: "unavailable", code } };
+    for (const candidate of [code, alternative]) {
+      if (!candidate) continue;
+      const known = await deps.find(userId, candidate);
+      if (known) return { status: 200, body: { status: "found", foodId: known.id } };
     }
-    const product = await deps.fetchOff(code);
+
+    if (!withinBudget()) return { status: 200, body: { status: "unavailable", code } };
+    let product = await deps.fetchOff(code);
+    let productCode = code;
+    // Only a clean miss tries the other reading: incomplete data is still this pack's.
+    if (product.kind === "not_found" && alternative && withinBudget()) {
+      product = await deps.fetchOff(alternative);
+      productCode = alternative;
+      // Neither is known: the new food takes the digits the person typed.
+      if (product.kind === "not_found") productCode = code;
+    }
     switch (product.kind) {
       case "found": {
         const { values, portionGrams, sourceUrl } = product;
-        const saved = await deps.saveOff(code, { values, portionGrams, sourceUrl });
+        const saved = await deps.saveOff(productCode, { values, portionGrams, sourceUrl });
         // Null: the cached product was deleted (bad data there); the code stays blocked and the
         // user makes their own food.
-        if (!saved) return { status: 200, body: { status: "not_found", code, hints: {} } };
+        if (!saved) {
+          return { status: 200, body: { status: "not_found", code: productCode, hints: {} } };
+        }
         return { status: 200, body: { status: "found", foodId: saved.id } };
       }
       case "incomplete":
-        return { status: 200, body: { status: "not_found", code, hints: product.hints } };
+        return {
+          status: 200,
+          body: { status: "not_found", code: productCode, hints: product.hints },
+        };
       case "not_found":
-        return { status: 200, body: { status: "not_found", code, hints: {} } };
+        return { status: 200, body: { status: "not_found", code: productCode, hints: {} } };
       case "unavailable":
         return { status: 200, body: { status: "unavailable", code } };
     }

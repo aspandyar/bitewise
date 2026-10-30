@@ -1,4 +1,4 @@
-import { DIARY_LIMITS, STATS, WATER, WEIGHT } from "@/lib/config";
+import { BARCODE, DIARY_LIMITS, STATS, WATER, WEIGHT } from "@/lib/config";
 import { formatNumber as n, LOCALE } from "./number";
 
 // Phrases reused across entries; the object below cannot refer to itself while it is built.
@@ -218,7 +218,11 @@ export const ru = {
     scanAgain: "Сканировать ещё раз",
   },
   errors: {
-    barcode: "Проверьте цифры штрихкода: 8, 12, 13 или 14 цифр",
+    // Keyed by BarcodeCheck problem; the lengths come from config, so the text follows them.
+    barcode: {
+      format: `Проверьте цифры штрихкода: ${BARCODE.lengths.slice(0, -1).join(", ")} или ${BARCODE.lengths.at(-1)} цифр`,
+      check_digit: "Проверьте цифры штрихкода: в одной из них, похоже, опечатка",
+    },
     email: "Введите корректный email",
     passwordLength: (min: number, max: number) => `Пароль — от ${n(min)} до ${n(max)} символов`,
     choose: "Выберите вариант",

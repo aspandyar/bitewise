@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { SCANNER } from "@/lib/config";
-import { expandUpcE, normalizeBarcode } from "@/lib/foods/barcode";
+import { checkBarcode, expandUpcE, normalizeBarcode } from "@/lib/foods/barcode";
 import { lookupBarcode, openCamera } from "@/lib/foods/camera";
 import { newFoodForCode, shouldSubmitCode, type ScanTarget } from "@/lib/foods/scan";
 import { ru } from "@/lib/i18n/ru";
@@ -54,13 +54,18 @@ export function BarcodeScanner({ target, onClose }: { target: ScanTarget; onClos
   const busyRef = useRef(false);
   const lastCodeRef = useRef<{ code: string; atMs: number } | null>(null);
 
-  async function submit(code: string) {
+  // typed: digits a person entered, which may be a UPC-E where the camera would know (#114).
+  async function submit(code: string, typed: boolean) {
     busyRef.current = true;
     setLookup({ kind: "looking" });
     lookupAbortRef.current?.abort();
     const controller = new AbortController();
     lookupAbortRef.current = controller;
-    const outcome = await lookupBarcode(code, target, { fetch, signal: controller.signal });
+    const outcome = await lookupBarcode(code, target, {
+      fetch,
+      signal: controller.signal,
+      typed,
+    });
     switch (outcome.kind) {
       case "aborted":
         return;
@@ -86,13 +91,13 @@ export function BarcodeScanner({ target, onClose }: { target: ScanTarget; onClos
   function onManualSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const raw = String(new FormData(event.currentTarget).get("code") ?? "");
-    const code = normalizeBarcode(raw);
-    if (!code) {
-      setManualError(ru.errors.barcode);
+    const result = checkBarcode(raw);
+    if (!("code" in result)) {
+      setManualError(ru.errors.barcode[result.problem]);
       return;
     }
     setManualError(null);
-    void submit(code);
+    void submit(result.code, true);
   }
 
   // Listeners and cleanups outlive renders; they call whatever onClose is current.
@@ -198,7 +203,7 @@ export function BarcodeScanner({ target, onClose }: { target: ScanTarget; onClos
             shouldSubmitCode(lastCodeRef.current, code, now)
           ) {
             lastCodeRef.current = { code, atMs: now };
-            void submit(code);
+            void submit(code, false);
           }
         }
         timer = setTimeout(tick, SCANNER.frameIntervalMs);

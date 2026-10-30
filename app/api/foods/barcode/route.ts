@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/db/client";
 import { getSessionUserId } from "@/lib/auth/session";
-import { OFF } from "@/lib/config";
+import { z } from "zod";
+import { BARCODE, OFF } from "@/lib/config";
 import { findFoodByBarcode, saveOffFood } from "@/lib/foods/barcode-repo";
 import { handleBarcodeLookup } from "@/lib/foods/barcode-lookup";
 import {
@@ -11,6 +12,8 @@ import {
 } from "@/lib/foods/limiters";
 import { fetchOffProduct, OFF_USER_AGENT } from "@/lib/foods/off";
 
+const typedFlag = z.literal("1");
+
 export async function GET(request: NextRequest) {
   const result = await handleBarcodeLookup(
     {
@@ -18,6 +21,8 @@ export async function GET(request: NextRequest) {
       rawCode: request.nextUrl.searchParams.get("code"),
       nowMs: Date.now(),
       fetchSite: request.headers.get("sec-fetch-site"),
+      // Anything but the exact flag means a scan: the extra reading is never forced by junk.
+      typed: typedFlag.safeParse(request.nextUrl.searchParams.get(BARCODE.typedParam)).success,
     },
     {
       userLimiter: barcodeLookupLimiter,

@@ -62,6 +62,17 @@ describe("lookupBarcode", () => {
     });
   });
 
+  it("marks typed digits, so the server may read 8 of them as a UPC-E too", async () => {
+    const fetchMock = json({ status: "found", foodId: "f1" });
+    const signal = new AbortController().signal;
+    await lookupBarcode("01234565", diary, { fetch: fetchMock, signal, typed: true });
+    await lookupBarcode("01234565", diary, { fetch: fetchMock, signal });
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+      "/api/foods/barcode?code=01234565&typed=1",
+      "/api/foods/barcode?code=01234565",
+    ]);
+  });
+
   it("does nothing once the scanner was closed, even if the answer arrives", async () => {
     const controller = new AbortController();
     const fetchMock = vi.fn<typeof fetch>().mockImplementation(async () => {

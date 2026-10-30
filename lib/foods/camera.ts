@@ -1,3 +1,4 @@
+import { BARCODE } from "@/lib/config";
 import type { BarcodeLookupBody } from "./barcode-lookup";
 import { scanTargetHref, type ScanTarget } from "./scan";
 
@@ -26,14 +27,14 @@ export type LookupOutcome =
 export async function lookupBarcode(
   code: string,
   target: ScanTarget,
-  deps: { fetch: typeof fetch; signal: AbortSignal },
+  deps: { fetch: typeof fetch; signal: AbortSignal; typed?: boolean },
 ): Promise<LookupOutcome> {
   // Called unbound: as deps.fetch(...) a browser's window.fetch throws "Illegal invocation".
   const { fetch: send, signal } = deps;
+  const params = new URLSearchParams({ code });
+  if (deps.typed) params.set(BARCODE.typedParam, "1");
   try {
-    const response = await send(`/api/foods/barcode?code=${encodeURIComponent(code)}`, {
-      signal,
-    });
+    const response = await send(`/api/foods/barcode?${params}`, { signal });
     const body = (await response.json()) as BarcodeLookupBody;
     if (signal.aborted) return { kind: "aborted" };
     const href = scanTargetHref(body, target);

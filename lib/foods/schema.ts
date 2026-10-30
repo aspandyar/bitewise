@@ -2,7 +2,7 @@ import { z } from "zod";
 import { FOOD_LIMITS, NUTRIENT_STORAGE_SCALE, PORTION_LIMITS } from "@/lib/config";
 import { decimalField, optionalDecimalField } from "@/lib/forms";
 import { ru } from "@/lib/i18n/ru";
-import { normalizeBarcode } from "./barcode";
+import { checkBarcode } from "./barcode";
 
 const { nameLength, kcal100, nutrient100G, maxTotalGramsPer100G } = FOOD_LIMITS;
 const gramsMessage = ru.errors.gramsRange(nutrient100G.min, nutrient100G.max);
@@ -58,9 +58,10 @@ const barcodeField = z
   .transform((value, ctx) => {
     const trimmed = value?.trim() ?? "";
     if (trimmed === "") return null;
-    const code = normalizeBarcode(trimmed);
-    if (!code) ctx.addIssue({ code: "custom", message: ru.errors.barcode });
-    return code;
+    const result = checkBarcode(trimmed);
+    if ("code" in result) return result.code;
+    ctx.addIssue({ code: "custom", message: ru.errors.barcode[result.problem] });
+    return null;
   });
 
 // The own-food form: the same numbers as any food, plus the pack's barcode.

@@ -26,10 +26,22 @@ describe("ownFoodSchema", () => {
     );
   });
 
-  it("rejects a barcode with a wrong check digit at the field", () => {
+  it("rejects a barcode with a wrong check digit at the field, saying it is a typo", () => {
     const parsed = ownFoodSchema.safeParse({ ...valid, barcode: "4607001771457" });
     expect(parsed.success).toBe(false);
-    if (!parsed.success) expect(firstFieldErrors(parsed.error).barcode).toBe(ru.errors.barcode);
+    if (!parsed.success) {
+      expect(firstFieldErrors(parsed.error).barcode).toBe(ru.errors.barcode.check_digit);
+    }
+  });
+
+  it("lists the allowed lengths when the barcode has the wrong shape", () => {
+    const parsed = ownFoodSchema.safeParse({ ...valid, barcode: "123456789" });
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      expect(firstFieldErrors(parsed.error).barcode).toBe(
+        "Проверьте цифры штрихкода: 8, 12, 13 или 14 цифр",
+      );
+    }
   });
 
   it("checks the nutrients like a shared food", () => {
