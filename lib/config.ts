@@ -126,7 +126,7 @@ export const HEALTH = { timeoutMs: 2000 } as const;
 // How deep the log scrubber follows error causes; a cycle or a pathological chain stops here.
 export const LOG_SCRUB = { maxDepth: 5 } as const;
 
-// `next dev` serves its HMR socket to localhost only; from any other host the socket is refused
+// `next dev` serves its HMR socket to localhost and *.localhost only; from any other host the socket is refused
 // and every <Link> falls back to a full page load (#131). Browser tools often open 127.0.0.1.
 export const DEV_SERVER = { allowedOrigins: ["127.0.0.1"] } as const;
 
