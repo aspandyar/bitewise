@@ -126,6 +126,10 @@ export const HEALTH = { timeoutMs: 2000 } as const;
 // How deep the log scrubber follows error causes; a cycle or a pathological chain stops here.
 export const LOG_SCRUB = { maxDepth: 5 } as const;
 
+// `next dev` serves its HMR socket to localhost and *.localhost only; from any other host the socket is refused
+// and every <Link> falls back to a full page load (#131). Browser tools often open 127.0.0.1.
+export const DEV_SERVER = { allowedOrigins: ["127.0.0.1"] } as const;
+
 // One policy for every environment. 'unsafe-inline' scripts: Next injects per-request inline
 // scripts that a hash cannot cover, and a nonce would make every screen request-time (#18).
 export const SECURITY_HEADERS = {

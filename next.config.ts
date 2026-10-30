@@ -1,8 +1,10 @@
 import type { NextConfig } from "next";
+import { DEV_SERVER } from "./lib/config";
 import { securityHeaders } from "./lib/security-headers";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  allowedDevOrigins: [...DEV_SERVER.allowedOrigins],
   // A self-contained server.js with only the files it needs: the production image copies just this.
   output: "standalone",
   async headers() {
