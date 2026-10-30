@@ -30,7 +30,7 @@ The app has two kinds of server entry points:
   - sign-in: 10 attempts per 15 minutes per IP and per account; trusted devices (a mark set after sign-in) count in a separate account bucket (#30);
   - sign-up: 5 per hour per IP (and only with `REGISTRATION=open`);
   - food search: 120 requests per minute per user;
-  - barcode lookup: 30 per minute per user; calls to Open Food Facts: 7 per minute for the whole process (theirs is 15 per IP; a fixed window can let twice that through at its edge) and 3 per minute per user, beyond that the answer is "unavailable";
+  - barcode lookup: 30 per minute per user; calls to Open Food Facts: 7 per minute for the whole process (theirs is 15 per IP; a fixed window can let twice that through at its edge) and 3 per minute per user, beyond that the answer is "unavailable"; 8 typed digits can spend two of the three (EAN-8 and UPC-E);
   - any action that writes: 60 per minute per user (#31);
   - password change: 5 attempts per 15 minutes per account.
 
@@ -72,7 +72,8 @@ Barcode lookup for the scanner. The logic is `handleBarcodeLookup` (`lib/foods/b
 
 | Parameter | Type | Rules |
 | --- | --- | --- |
-| `code` | string | digits only, length 8, 12, 13 or 14, GS1 check digit; UPC-A and zero-led GTIN-14 become EAN-13 (`normalizeBarcode`) |
+| `code` | string | digits (spaces, hyphens and zero-width characters are dropped), length 8, 12, 13 or 14, GS1 check digit; UPC-A and zero-led GTIN-14 become EAN-13, a zero-padded EAN-8 becomes its 8 digits (`checkBarcode`) |
+| `typed` | `"1"`? | the digits were typed (the scanner sets it when there are exactly 8). A code that neither we nor Open Food Facts know is then also looked up as a UPC-E (expanded to UPC-A). That is one more outside call from the user's share, and when the share is spent the answer is `unavailable`. Any other value means a camera scan, looked up as it is |
 
 Responses (always `Cache-Control: no-store`):
 

@@ -14,7 +14,7 @@ import { isFavorite } from "@/lib/diary/quick-repo";
 import { formatGrams, formatKcal } from "@/lib/format";
 import { getVisibleFood, listVisiblePortions } from "@/lib/foods/repo";
 import { parseFoodId } from "@/lib/foods/schema";
-import { safeSourceUrl } from "@/lib/foods/source-url";
+import { copySourceUrl, safeSourceUrl } from "@/lib/foods/source-url";
 import { ru } from "@/lib/i18n/ru";
 import { calcEntryNutrients } from "@/lib/nutrition";
 import { recipeHref } from "@/lib/recipes/paths";
@@ -44,6 +44,7 @@ async function FoodContent({ params }: { params: Promise<{ id: string }> }) {
     ...(food.fiber100 === null ? [] : [{ label: ru.foods.fiber, grams: food.fiber100 }]),
   ];
   const sourceUrl = safeSourceUrl(food.sourceUrl);
+  const copyUrl = food.copiedFrom ? copySourceUrl(food.copiedFrom, food.barcode) : null;
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8">
@@ -86,7 +87,23 @@ async function FoodContent({ params }: { params: Promise<{ id: string }> }) {
           ) : (
             ru.foods.sourceNames[food.source]
           )}
-          {food.copiedFrom ? ru.foods.copiedFrom(ru.foods.sourceNames[food.copiedFrom]) : null}
+          {food.copiedFrom ? (
+            <>
+              {ru.foods.copiedFrom}{" "}
+              {copyUrl ? (
+                <a
+                  href={copyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-11 items-center underline text-accent-text"
+                >
+                  {ru.foods.sourceNames[food.copiedFrom]}
+                </a>
+              ) : (
+                ru.foods.sourceNames[food.copiedFrom]
+              )}
+            </>
+          ) : null}
         </p>
       </section>
       {food.isOwn ? (

@@ -72,10 +72,14 @@ function productName(product: OffFields): string | undefined {
   const brand = decodeEntities(product.brands ?? "")
     .split(",")[0]
     ?.trim();
+  const max = FOOD_LIMITS.nameLength.max;
   // Two bars from different brands often share a name like "Протеиновый батончик".
-  const name =
-    brand && !base.toLowerCase().includes(brand.toLowerCase()) ? `${base} (${brand})` : base;
-  return name.slice(0, FOOD_LIMITS.nameLength.max).trim();
+  const suffix = brand && !base.toLowerCase().includes(brand.toLowerCase()) ? ` (${brand})` : "";
+  // A long name gives up its own tail, not the brand that tells it apart (#114); a brand that
+  // would leave less room than it takes is dropped instead.
+  const room = max - suffix.length;
+  if (suffix === "" || room < suffix.length) return base.slice(0, max).trim();
+  return `${base.slice(0, room).trim()}${suffix}`;
 }
 
 // Per-100 g figures first; a per-serving figure only scales to 100 g by a known serving weight.

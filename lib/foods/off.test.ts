@@ -178,10 +178,20 @@ describe("parseOffProduct", () => {
     );
   });
 
-  it("cuts a long name to the name limit", () => {
+  it("cuts a long name to the name limit from the name itself, keeping the brand", () => {
     const product = parseOffProduct(withProduct({ product_name_ru: "Б".repeat(150) }), BOMBBAR);
     if (product.kind !== "found") throw new Error(`expected found, got ${product.kind}`);
     expect(product.values.name).toHaveLength(FOOD_LIMITS.nameLength.max);
+    expect(product.values.name.endsWith("Б (Bombbar)")).toBe(true);
+  });
+
+  it("drops a brand too long to leave room for the name", () => {
+    const product = parseOffProduct(
+      withProduct({ product_name_ru: "Батончик", brands: "B".repeat(150) }),
+      BOMBBAR,
+    );
+    if (product.kind !== "found") throw new Error(`expected found, got ${product.kind}`);
+    expect(product.values.name).toBe("Батончик");
   });
 
   it("treats a product with no name as incomplete", () => {

@@ -383,8 +383,9 @@ export const waterEntries = pgTable(
   ],
 );
 
-// One weigh-in per day: entering it again replaces the value, so a replayed save is harmless
-// without a request key.
+// One weigh-in per day: entering it again replaces the value. A replayed save is not harmless,
+// though: it would put the older value back over a newer one, so applied keys go to
+// weight_save_requests.
 export const weightEntries = pgTable(
   "weight_entries",
   {
@@ -403,4 +404,20 @@ export const weightEntries = pgTable(
     uniqueIndex("weight_entries_user_date_unique").on(t.userId, t.date),
     check("weight_entries_weight_positive", sql`${t.weightKg} > 0`),
   ],
+);
+
+// Request keys (#95) of weigh-in saves already applied (#132). The weigh-in row is overwritten
+// by every save, so it cannot hold the key itself: after saves A and B, a replay of A would carry
+// a key the row no longer has. Kept for WEIGHT.requestKeyDays, the window a replay can come in.
+export const weightSaveRequests = pgTable(
+  "weight_save_requests",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    clientRequestId: uuid("client_request_id").notNull(),
+    createdAt: createdAt(),
+  },
+  // Also the user_id index: the lookup and the pruning both filter by user first.
+  (t) => [primaryKey({ columns: [t.userId, t.clientRequestId] })],
 );

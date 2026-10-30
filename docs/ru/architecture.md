@@ -51,6 +51,7 @@ tags:
 | `diary_entries` | id, user_id (→ users, cascade), date (локальная дата пользователя), meal (`breakfast/lunch/dinner/snack`), food_id? (→ foods, без каскада: продукты удаляются мягко; null — быстрая запись «просто N ккал», хранится как 100 г × введённые числа на 100 г, без порции — CHECK), снимок: food_name, kcal_100, protein_100, fat_100, carbs_100 — numeric(8,2); grams > 0; снимок порции portion_label, portion_grams, portion_count (все null или все заданы); created_at, updated_at. Индексы `(user_id, date)`, `(user_id, created_at DESC, id DESC)` — для недавних (#93) — и `food_id`. Итоги считает `lib/nutrition.ts`; блюдо попадает сюда как обычный продукт (`food_id` строки-блюда); `source` — на своём этапе |
 | `water_entries` | id, user_id (→ users, cascade), date (локальная дата), ml integer > 0, client_request_id?, created_at. Строка на каждое нажатие «+250 / +500» (только `WATER.quickMl`); «Убрать последнее» удаляет строку по id — повтор ничего не удалит. Индекс `(user_id, date)`, лимит `WATER.maxEntriesPerDay` на день |
 | `weight_entries` | id, user_id (→ users, cascade), date, weight_kg numeric(5,1) > 0, created_at, updated_at. Одно взвешивание в день: уникальный `(user_id, date)` — он же цель upsert. Самое свежее взвешивание копируется в `profiles.weight_kg` и пересчитывает авто-норму (`saveProfile`; ручная не меняется); при удалении — следующее по свежести |
+| `weight_save_requests` | user_id (→ users, cascade), client_request_id, created_at; PK `(user_id, client_request_id)`. Ключи (#95) уже применённых сохранений и правок веса (#132): повтор с таким ключом ничего не пишет, иначе старое значение легло бы поверх нового. В строке взвешивания ключ не хранится — её перезаписывает каждое сохранение. Ключи старше `WEIGHT.requestKeyDays` удаляются в транзакции сохранения |
 | общее для `diary_entries`, `foods`, `food_portions`, `recipes`, `recipe_items`, `water_entries` | client_request_id uuid? — ключ запроса, которым клиент создал строку; уникален по владельцу (`(user_id или owner_id, client_request_id)`, частичный индекс `WHERE client_request_id IS NOT NULL`). Повтор того же запроса находит уже созданную строку (#95) |
 | `favorites` | user_id (→ users, cascade), food_id (→ foods, cascade, индекс), created_at; первичный ключ `(user_id, food_id)`. Звёздочка у продукта или блюда; на экране «+ Добавить» — над недавними; лимит `QUICK.maxFavorites` |
 | — план — | |
@@ -121,9 +122,12 @@ TDEE       = BMR × активность (1.2 … 1.9)
 ### Поиск по штрихкоду
 ```text
 камера (barcode-detector, zxing-wasm с нашего сайта) или цифры руками
-   │  normalizeBarcode: цифры, длина, контрольная цифра; UPC-A и GTIN-14 → EAN-13
+   │  checkBarcode: без пробелов, дефисов и невидимых символов; цифры, длина, контрольная цифра
+   │  (своё сообщение для опечатки); UPC-A и GTIN-14 → EAN-13, EAN-8 с ведущими нулями → 8 цифр
    ▼
-GET /api/foods/barcode?code=  (сессия, 30/мин на пользователя)
+GET /api/foods/barcode?code=[&typed=1]  (сессия, 30/мин на пользователя)
+   │  typed=1 — цифры руками: 8 цифр ищутся как EAN-8, а если не нашлись ни у нас, ни в OFF —
+   │  ещё и как UPC-E (развёрнутый в UPC-A); камера сама знает формат, её код ищется как есть
    │
    ├─ свой продукт с этим кодом ─────────────┐
    ├─ общий (в т. ч. ранее найденный в OFF) ─┤→ found → экран количества / карточка

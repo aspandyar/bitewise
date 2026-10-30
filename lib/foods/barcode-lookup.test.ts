@@ -38,7 +38,8 @@ function setup(
     rawCode: string | null,
     userId: string | null = "alice",
     fetchSite: string | null = "same-origin",
-  ) => handleBarcodeLookup({ userId, rawCode, nowMs: NOW, fetchSite }, deps);
+    typed = false,
+  ) => handleBarcodeLookup({ userId, rawCode, nowMs: NOW, fetchSite, typed }, deps);
   return { deps, lookup };
 }
 
@@ -76,6 +77,67 @@ describe("handleBarcodeLookup", () => {
     deps.find.mockResolvedValue({ id: "food", isOwn: false });
     await lookup("036000291452");
     expect(deps.find).toHaveBeenCalledWith("alice", "0036000291452");
+  });
+
+  describe("8 typed digits, which may be an EAN-8 or a UPC-E", () => {
+    // Valid as EAN-8 and as the UPC-E of 012345000065.
+    const SHORT = "01234565";
+    const UPC_A = "0012345000065";
+
+    it("finds our food stored under the UPC-E's long form", async () => {
+      const { lookup, deps } = setup();
+      deps.find.mockImplementation(async (_user, code) =>
+        code === UPC_A ? { id: "upc-food", isOwn: false } : null,
+      );
+      expect((await lookup(SHORT, "alice", "same-origin", true)).body).toEqual({
+        status: "found",
+        foodId: "upc-food",
+      });
+      expect(deps.find.mock.calls.map(([, code]) => code)).toEqual([SHORT, UPC_A]);
+      expect(deps.fetchOff).not.toHaveBeenCalled();
+    });
+
+    it("asks Open Food Facts for the UPC-A when the EAN-8 is unknown there", async () => {
+      const { lookup, deps } = setup();
+      deps.fetchOff.mockImplementation(async (code) =>
+        code === UPC_A ? offFound : { kind: "not_found" },
+      );
+      expect((await lookup(SHORT, "alice", "same-origin", true)).body).toEqual({
+        status: "found",
+        foodId: "off-food",
+      });
+      expect(deps.fetchOff.mock.calls.map(([code]) => code)).toEqual([SHORT, UPC_A]);
+      expect(deps.saveOff).toHaveBeenCalledWith(UPC_A, expect.anything());
+    });
+
+    it("offers a new food under the typed code when neither form is known", async () => {
+      const { lookup, deps } = setup();
+      deps.fetchOff.mockResolvedValue({ kind: "not_found" });
+      expect((await lookup(SHORT, "alice", "same-origin", true)).body).toEqual({
+        status: "not_found",
+        code: SHORT,
+        hints: {},
+      });
+    });
+
+    it("spends the outbound budget on the second request too, and says unavailable without it", async () => {
+      const offUserLimiter = createRateLimiter({ max: 1, windowMs: 60_000, maxKeys: 100 });
+      const { lookup, deps } = setup({ offUserLimiter });
+      deps.fetchOff.mockResolvedValue({ kind: "not_found" });
+      expect((await lookup(SHORT, "alice", "same-origin", true)).body).toEqual({
+        status: "unavailable",
+        code: SHORT,
+      });
+      expect(deps.fetchOff).toHaveBeenCalledTimes(1);
+    });
+
+    it("trusts the camera: a scanned EAN-8 is looked up as itself only", async () => {
+      const { lookup, deps } = setup();
+      deps.fetchOff.mockResolvedValue({ kind: "not_found" });
+      await lookup(SHORT);
+      expect(deps.find.mock.calls.map(([, code]) => code)).toEqual([SHORT]);
+      expect(deps.fetchOff.mock.calls.map(([code]) => code)).toEqual([SHORT]);
+    });
   });
 
   it("saves a product found in Open Food Facts as shared and returns it", async () => {

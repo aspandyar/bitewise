@@ -31,15 +31,19 @@ async function FoodsContent({ searchParams }: Pick<PageProps<"/foods">, "searchP
       {/* Flex, not inline text: the 44 px tap areas would otherwise leave a tall gap on wrap. */}
       <p className="mt-auto flex flex-wrap items-center gap-x-1 pt-4 text-xs text-foreground/60">
         <span>{ru.foods.attribution}</span>
-        <a
-          href={USDA_FDC_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex min-h-11 items-center underline text-accent-text"
-        >
-          {ru.foods.sourceNames.usda}
-        </a>
-        <span aria-hidden>·</span>
+        {/* A comma glued to the link before it: on a wrap it ends the line as punctuation does,
+            where a lone "·" either hung at the end or opened the next line (#114). */}
+        <span className="inline-flex items-center">
+          <a
+            href={USDA_FDC_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-11 items-center underline text-accent-text"
+          >
+            {ru.foods.sourceNames.usda}
+          </a>
+          {ru.foods.creditSeparator}
+        </span>
         <a
           href={OFF.siteUrl}
           target="_blank"

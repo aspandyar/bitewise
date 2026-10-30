@@ -6,6 +6,7 @@ import { requireActionUser, requireWriteUser } from "@/lib/auth/session";
 import { parseDiaryDate, parseId } from "@/lib/diary/schema";
 import { getUserToday } from "@/lib/diary/today";
 import { firstFieldErrors, type FormState } from "@/lib/forms";
+import { readRequestId } from "@/lib/request-id";
 import { withToast } from "@/lib/toast";
 import { BODY_HREF } from "@/lib/weight/paths";
 import { deleteWeight, saveWeight, updateWeight } from "@/lib/weight/repo";
@@ -23,7 +24,8 @@ export async function saveWeightAction(
   if (!date) notFound();
   const parsed = weightFormSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
-  await saveWeight(db, userId, { date, weightKg: parsed.data.weightKg }, today);
+  const requestId = readRequestId(formData);
+  await saveWeight(db, userId, { date, weightKg: parsed.data.weightKg, requestId }, today);
   redirect(withToast(BODY_HREF, "saved"));
 }
 
@@ -39,7 +41,8 @@ export async function updateWeightAction(
   const parsed = weightFormSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
   const today = await getUserToday(new Date());
-  const updated = await updateWeight(db, userId, id, parsed.data.weightKg, today);
+  const requestId = readRequestId(formData);
+  const updated = await updateWeight(db, userId, id, parsed.data.weightKg, today, requestId);
   redirect(withToast(BODY_HREF, updated ? "saved" : "weightGone"));
 }
 
