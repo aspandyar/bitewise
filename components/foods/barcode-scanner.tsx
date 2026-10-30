@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { SCANNER } from "@/lib/config";
+import { BARCODE, SCANNER } from "@/lib/config";
 import { checkBarcode, expandUpcE, normalizeBarcode } from "@/lib/foods/barcode";
 import { lookupBarcode, openCamera } from "@/lib/foods/camera";
 import { newFoodForCode, shouldSubmitCode, type ScanTarget } from "@/lib/foods/scan";
@@ -97,7 +97,9 @@ export function BarcodeScanner({ target, onClose }: { target: ScanTarget; onClos
       return;
     }
     setManualError(null);
-    void submit(result.code, true);
+    // A longer code, even one stored as 8 digits, was never in doubt.
+    const digits = raw.replace(/\D/g, "");
+    void submit(result.code, digits.length === BARCODE.ambiguousLength);
   }
 
   // Listeners and cleanups outlive renders; they call whatever onClose is current.

@@ -32,7 +32,7 @@ export async function lookupBarcode(
   // Called unbound: as deps.fetch(...) a browser's window.fetch throws "Illegal invocation".
   const { fetch: send, signal } = deps;
   const params = new URLSearchParams({ code });
-  if (deps.typed) params.set(BARCODE.typedParam, "1");
+  if (deps.typed) params.set(BARCODE.typedParam, BARCODE.typedValue);
   try {
     const response = await send(`/api/foods/barcode?${params}`, { signal });
     const body = (await response.json()) as BarcodeLookupBody;

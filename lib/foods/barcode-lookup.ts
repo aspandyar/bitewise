@@ -66,7 +66,9 @@ export async function handleBarcodeLookup(
     let product = await deps.fetchOff(code);
     let productCode = code;
     // Only a clean miss tries the other reading: incomplete data is still this pack's.
-    if (product.kind === "not_found" && alternative && withinBudget()) {
+    if (product.kind === "not_found" && alternative) {
+      // Not "not found": the other reading was never asked, and the pack may well be there.
+      if (!withinBudget()) return { status: 200, body: { status: "unavailable", code } };
       product = await deps.fetchOff(alternative);
       productCode = alternative;
       // Neither is known: the new food takes the digits the person typed.

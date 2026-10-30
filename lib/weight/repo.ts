@@ -37,11 +37,35 @@ async function getLatestWeight(tx: Db, userId: string): Promise<WeightEntry | nu
   return latest ?? null;
 }
 
+// Run under the user's write lock. False: the key was already applied, so this is a replay of an
+// older save (#132), and writing it again would put its value back over whatever came since.
+// No key (a page from before #95, plain http without randomUUID) is not a replay.
+async function claimRequestKey(tx: Db, userId: string, requestId: string | null): Promise<boolean> {
+  await tx
+    .delete(weightSaveRequests)
+    .where(
+      and(
+        eq(weightSaveRequests.userId, userId),
+        lt(
+          weightSaveRequests.createdAt,
+          sql`now() - make_interval(days => ${WEIGHT.requestKeyDays})`,
+        ),
+      ),
+    );
+  if (!requestId) return true;
+  const [fresh] = await tx
+    .insert(weightSaveRequests)
+    .values({ userId, clientRequestId: requestId })
+    .onConflictDoNothing()
+    .returning({ id: weightSaveRequests.clientRequestId });
+  return fresh !== undefined;
+}
+
+export type SaveWeightInput = WeightEntry & { requestId?: string | null };
+
 // The profile weight follows the newest weigh-in, so an auto target's protein (g per kg) follows
 // the scale; a manual target is left alone. Only a change to the newest weigh-in touches the
 // profile: fixing last week's entry must not undo a weight typed in the profile since.
-export type SaveWeightInput = WeightEntry & { requestId?: string | null };
-
 export async function saveWeight(
   db: Db,
   userId: string,
@@ -51,27 +75,7 @@ export async function saveWeight(
   await db.transaction(async (tx) => {
     // Two saves in parallel must not leave the profile on the older one's weight.
     await lockUserWrites(tx, userId);
-    await tx
-      .delete(weightSaveRequests)
-      .where(
-        and(
-          eq(weightSaveRequests.userId, userId),
-          lt(
-            weightSaveRequests.createdAt,
-            sql`now() - make_interval(days => ${WEIGHT.requestKeyDays})`,
-          ),
-        ),
-      );
-    if (input.requestId) {
-      // A key already applied is a replay of an older save (#132): writing it again would put
-      // its value back over whatever was saved since.
-      const [fresh] = await tx
-        .insert(weightSaveRequests)
-        .values({ userId, clientRequestId: input.requestId })
-        .onConflictDoNothing()
-        .returning({ id: weightSaveRequests.clientRequestId });
-      if (!fresh) return;
-    }
+    if (!(await claimRequestKey(tx, userId, input.requestId ?? null))) return;
     // One weigh-in per day: saving the same day again replaces it.
     await tx
       .insert(weightEntries)
@@ -88,16 +92,18 @@ export async function saveWeight(
 }
 
 // The edit screen saves by id: going Back to it after a delete must not bring the weigh-in back,
-// so a missing row is reported instead of re-created.
+// so a missing row is reported instead of re-created. A replayed edit counts as done: it was.
 export async function updateWeight(
   db: Db,
   userId: string,
   entryId: string,
   weightKg: number,
   today: IsoDate,
+  requestId: string | null = null,
 ): Promise<boolean> {
   return db.transaction(async (tx) => {
     await lockUserWrites(tx, userId);
+    if (!(await claimRequestKey(tx, userId, requestId))) return true;
     const [updated] = await tx
       .update(weightEntries)
       .set({ weightKg, updatedAt: sql`now()` })

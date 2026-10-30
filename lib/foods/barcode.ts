@@ -3,7 +3,8 @@ import { BARCODE } from "@/lib/config";
 const DIGITS = /^[0-9]+$/;
 // What a code copied from a site or a note brings along: grouping spaces (also non-breaking),
 // hyphens, and zero-width characters that are invisible in the field.
-const SEPARATORS = /[\s\-​-‍⁠﻿]/g;
+// Escaped on purpose: written literally, these characters vanish from view in an editor or diff.
+const SEPARATORS = /[\s\-\u200b-\u200d\u2060]/g;
 const EAN13_LENGTH = 13;
 const GTIN14_LENGTH = 14;
 const UPC_E_LENGTH = 8;

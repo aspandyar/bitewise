@@ -298,6 +298,9 @@ export const BARCODE = {
   lengths: [8, 12, 13, 14],
   // Query flag of the lookup for digits a person typed: 8 of them may also be a UPC-E (#114).
   typedParam: "typed",
+  typedValue: "1",
+  // The one length where typed digits leave the format open: EAN-8 or UPC-E.
+  ambiguousLength: 8,
 } as const;
 
 // The camera scanner (stage 7). The decoder's .wasm is copied from node_modules into public/ by

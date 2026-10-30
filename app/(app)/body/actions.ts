@@ -41,7 +41,8 @@ export async function updateWeightAction(
   const parsed = weightFormSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { fieldErrors: firstFieldErrors(parsed.error) };
   const today = await getUserToday(new Date());
-  const updated = await updateWeight(db, userId, id, parsed.data.weightKg, today);
+  const requestId = readRequestId(formData);
+  const updated = await updateWeight(db, userId, id, parsed.data.weightKg, today, requestId);
   redirect(withToast(BODY_HREF, updated ? "saved" : "weightGone"));
 }
 

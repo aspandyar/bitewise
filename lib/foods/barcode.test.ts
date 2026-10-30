@@ -26,8 +26,8 @@ describe("normalizeBarcode", () => {
   it("accepts a pasted code with spaces, hyphens or invisible characters", () => {
     expect(normalizeBarcode("4 607001 771456")).toBe("4607001771456");
     expect(normalizeBarcode("4607001-771456")).toBe("4607001771456");
-    expect(normalizeBarcode("​4607001771456﻿")).toBe("4607001771456");
-    expect(normalizeBarcode("4607001 771456")).toBe("4607001771456");
+    expect(normalizeBarcode("\u200b4607001771456\ufeff")).toBe("4607001771456");
+    expect(normalizeBarcode("4607001\u00a0771456")).toBe("4607001771456");
   });
 
   it("rejects a wrong check digit, letters, odd lengths and an empty string", () => {

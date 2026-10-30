@@ -12,7 +12,7 @@ import {
 } from "@/lib/foods/limiters";
 import { fetchOffProduct, OFF_USER_AGENT } from "@/lib/foods/off";
 
-const typedFlag = z.literal("1");
+const typedFlag = z.literal(BARCODE.typedValue);
 
 export async function GET(request: NextRequest) {
   const result = await handleBarcodeLookup(

@@ -120,14 +120,13 @@ describe("handleBarcodeLookup", () => {
       });
     });
 
-    it("spends the outbound budget on the second request too", async () => {
+    it("spends the outbound budget on the second request too, and says unavailable without it", async () => {
       const offUserLimiter = createRateLimiter({ max: 1, windowMs: 60_000, maxKeys: 100 });
       const { lookup, deps } = setup({ offUserLimiter });
       deps.fetchOff.mockResolvedValue({ kind: "not_found" });
       expect((await lookup(SHORT, "alice", "same-origin", true)).body).toEqual({
-        status: "not_found",
+        status: "unavailable",
         code: SHORT,
-        hints: {},
       });
       expect(deps.fetchOff).toHaveBeenCalledTimes(1);
     });

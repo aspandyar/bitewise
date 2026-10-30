@@ -62,6 +62,18 @@ describe("weight entries", () => {
     expect((await getProfile(testDb, alice))?.weightKg).toBe(79.1);
   });
 
+  it("ignores a replay of an older edit by id, so it cannot bring the old value back", async () => {
+    const alice = await userWithProfile();
+    await saveWeight(testDb, alice, { date: TODAY, weightKg: 80 }, TODAY);
+    const id = await idOf(alice, TODAY);
+    const first = crypto.randomUUID();
+    expect(await updateWeight(testDb, alice, id, 79.4, TODAY, first)).toBe(true);
+    expect(await updateWeight(testDb, alice, id, 79.1, TODAY, crypto.randomUUID())).toBe(true);
+    // A replay reports success: the edit it repeats did go through.
+    expect(await updateWeight(testDb, alice, id, 79.4, TODAY, first)).toBe(true);
+    expect((await getWeight(testDb, alice, TODAY))?.weightKg).toBe(79.1);
+  });
+
   it("keeps request keys per user: another account's key does not block a save", async () => {
     const alice = await userWithProfile();
     const bob = await userWithProfile("bob@mail.com");
