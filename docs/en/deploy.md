@@ -59,7 +59,7 @@ Run `docker/scripts/db-role.sh` before `start app`: a dump taken before the sepa
 
 ## Logs
 - The app: `docker/scripts/compose.sh logs -f app`.
-- nginx (access, 429, 503): `… logs -f nginx`.
+- nginx (access, 429, 503): `… logs -f nginx`. The access log has paths only, with no query string in the request or the Referer (the `noquery` format): `?code=`, `?q=` and the form hints carry what someone eats (#114).
 - Backups: `backups/backup.log`, `backups/restore-check.log`.
 
 ## Run on a laptop

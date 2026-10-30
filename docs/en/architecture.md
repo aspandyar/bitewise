@@ -113,9 +113,13 @@ Carbs        = (target − protein×4 − fat×9) / 4
 ### Barcode lookup
 ```text
 camera (barcode-detector, zxing-wasm served by our site) or typed digits
-   │  normalizeBarcode: digits, length, check digit; UPC-A and GTIN-14 → EAN-13
+   │  checkBarcode: spaces, hyphens and invisible characters dropped; digits, length, check digit
+   │  (a typo gets its own message); UPC-A and GTIN-14 → EAN-13, a zero-padded EAN-8 → 8 digits
    ▼
-GET /api/foods/barcode?code=  (session, 30/min per user)
+GET /api/foods/barcode?code=[&typed=1]  (session, 30/min per user)
+   │  typed=1 means typed digits: 8 of them are looked up as an EAN-8 and, if neither we nor
+   │  OFF know it, also as a UPC-E (expanded to UPC-A); the camera knows the format, so its
+   │  code is looked up as it is
    │
    ├─ the user's own food with this code ───────┐
    ├─ a shared one (incl. one found in OFF) ────┤→ found → amount screen / food card

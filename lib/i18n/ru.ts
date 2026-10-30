@@ -171,8 +171,10 @@ export const ru = {
     portionRow: (label: string, grams: string, kcal: string) =>
       `${label} — ${grams}${NBSP}г · ${kcal}${NBSP}ккал`,
     sourceLabel: "Источник:",
-    copiedFrom: (source: string) => ` · копия: ${source}`,
+    // Followed by the source's name, a link where the source has a page.
+    copiedFrom: " · копия:",
     attribution: "Данные о продуктах:",
+    creditSeparator: ",",
     offLicense: "(лицензия ODbL)",
     favorite: "В избранное",
     favoriteOn: "★",

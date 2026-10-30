@@ -132,77 +132,20 @@ tags:
 - [#11](https://github.com/aspandyar/bitewise/issues/11) Офлайн-ввод с синхронизацией или только онлайн
 - [#113](https://github.com/aspandyar/bitewise/issues/113) Видимость общих продуктов из Open Food Facts в поиске по названию — решить до открытия регистрации
 
-### Этап 6б (`ft/deploy`) — прод
-Сделаны в `ft/deploy`, закрываются с его PR; #24 и #26 — с ответом в issue. Открытым остаётся только первый запуск на сервере (#8).
-- [#17](https://github.com/aspandyar/bitewise/issues/17) Деплой: `pnpm admin:bootstrap` до старта приложения
-- [#18](https://github.com/aspandyar/bitewise/issues/18) nginx: X-Forwarded-For, закрытый порт, limit_req, HSTS и CSP
-- [#19](https://github.com/aspandyar/bitewise/issues/19) `NEXTAUTH_*` нужны уже при сборке образа
-- [#20](https://github.com/aspandyar/bitewise/issues/20) Семафор на scrypt
-- [#21](https://github.com/aspandyar/bitewise/issues/21) Пароль админа в `.env` на сервере
-- [#22](https://github.com/aspandyar/bitewise/issues/22) Деплой: `pnpm db:seed` после миграций и `pg_trgm` на проде
-- [#23](https://github.com/aspandyar/bitewise/issues/23) Сид пересчитывает блюда внутри своей транзакции
-- [#24](https://github.com/aspandyar/bitewise/issues/24) HTTP-статус 404 у `notFound()` внутри `<Suspense>`
-- [#25](https://github.com/aspandyar/bitewise/issues/25) Проверить локаль прод-БД (`datctype`)
-- [#26](https://github.com/aspandyar/bitewise/issues/26) Отклик 2–3 с на тап по продукту
-
 ### Безопасность — отдельный этап до открытой регистрации для всех
 - [#27](https://github.com/aspandyar/bitewise/issues/27) Регистрация: боты и перебор email — выключатель `REGISTRATION` уже есть (закрыто по умолчанию); капча или подтверждение почты нужны до `REGISTRATION=open`
-
-### Полировка (`ft/polish`) — код и UX без продуктовых решений
-- [#114](https://github.com/aspandyar/bitewise/issues/114) Сканер: мелочи после ревью этапа 7
-- [#33](https://github.com/aspandyar/bitewise/issues/33) `ResetOnHide` для форм дневника и продуктов
-- [#34](https://github.com/aspandyar/bitewise/issues/34) Правка «граммами» не даёт перейти на порции
-- [#35](https://github.com/aspandyar/bitewise/issues/35) Формы: фокус на первом поле с ошибкой
-- [#36](https://github.com/aspandyar/bitewise/issues/36) Формы: ошибка поля сбрасывается при правке
-- [#37](https://github.com/aspandyar/bitewise/issues/37) Шаг степпера количества для «шт»
-- [#38](https://github.com/aspandyar/bitewise/issues/38) Пустое поле граммов у продукта без порций
-- [#39](https://github.com/aspandyar/bitewise/issues/39) Экран количества показывает, что запись идёт во «Вчера»
-- [#40](https://github.com/aspandyar/bitewise/issues/40) Тексты: «Введите название / граммы / вес» для пустых полей
-- [#41](https://github.com/aspandyar/bitewise/issues/41) Числа в сообщениях: запятая и разделитель тысяч
-- [#42](https://github.com/aspandyar/bitewise/issues/42) Запись порции без двойных скобок
-- [#43](https://github.com/aspandyar/bitewise/issues/43) Минимум веса в ошибке «вес меньше состава»
-- [#44](https://github.com/aspandyar/bitewise/issues/44) «на 100 г» у плиток БЖУ на странице блюда
-- [#45](https://github.com/aspandyar/bitewise/issues/45) Заголовок «Мои продукты и блюда»
-- [#46](https://github.com/aspandyar/bitewise/issues/46) Одинаковая подпись «Углеводы без клетчатки»
-- [#47](https://github.com/aspandyar/bitewise/issues/47) Символы `·`, `—`, `:` из JSX → в `ru.ts`
-- [#48](https://github.com/aspandyar/bitewise/issues/48) Поиск: «Гречка» выше «Греческого йогурта» по «греч»
-- [#49](https://github.com/aspandyar/bitewise/issues/49) Поиск: нечёткие совпадения на коротких запросах
-- [#50](https://github.com/aspandyar/bitewise/issues/50) Поиск: Enter открывает первый результат
-- [#51](https://github.com/aspandyar/bitewise/issues/51) Поиск: своя кнопка очистки 44 px
-- [#52](https://github.com/aspandyar/bitewise/issues/52) Поиск: «Добавить свой» с предзаполненным названием
-- [#53](https://github.com/aspandyar/bitewise/issues/53) Поиск: старая выдача на `/foods` после удаления
-- [#54](https://github.com/aspandyar/bitewise/issues/54) Поиск: «Повторить» при ошибке
-- [#55](https://github.com/aspandyar/bitewise/issues/55) Продукты: тосты «Сохранено / Удалено / Копия создана»
-- [#56](https://github.com/aspandyar/bitewise/issues/56) Источник копии продукта («Копия: USDA»)
-- [#57](https://github.com/aspandyar/bitewise/issues/57) Фокус после добавления порции
-- [#58](https://github.com/aspandyar/bitewise/issues/58) Ккал на порцию в списке порций продукта
-- [#59](https://github.com/aspandyar/bitewise/issues/59) Удалённое блюдо после «Назад» выглядит живым
-- [#60](https://github.com/aspandyar/bitewise/issues/60) `deleteOwnPortion` не сверяет `foodId` и видимость продукта
-- [#61](https://github.com/aspandyar/bitewise/issues/61) Лог ошибки поиска содержит SQL-параметры
-- [#62](https://github.com/aspandyar/bitewise/issues/62) `source_url`: CHECK в БД и проверка протокола при выводе
-- [#63](https://github.com/aspandyar/bitewise/issues/63) `isOwn` верен только вместе с `visibleTo`
-- [#64](https://github.com/aspandyar/bitewise/issues/64) Копия продукта может получить больше 20 своих порций
-- [#65](https://github.com/aspandyar/bitewise/issues/65) Лимит 20 порций при параллельных отправках
-- [#66](https://github.com/aspandyar/bitewise/issues/66) Масштаб округления нутриентов из `NUTRIENT_STORAGE_DECIMALS`
-- [#67](https://github.com/aspandyar/bitewise/issues/67) «перебор 0 ккал»
-- [#68](https://github.com/aspandyar/bitewise/issues/68) Граммы из порции выходят за 0,1–5000 г
-- [#69](https://github.com/aspandyar/bitewise/issues/69) Cookie `tz=undefined`, если `Intl` не дал пояс
-- [#70](https://github.com/aspandyar/bitewise/issues/70) `tz=Pacific/Kiritimati` позволяет записать на день вперёд
-- [#71](https://github.com/aspandyar/bitewise/issues/71) Норма: подсказки к ручным значениям
-- [#72](https://github.com/aspandyar/bitewise/issues/72) Свой продукт: предупреждение, если ккал расходятся с БЖУ
-- [#73](https://github.com/aspandyar/bitewise/issues/73) Атрибуция «Данные: USDA FoodData Central»
 
 ### Этап 8 (`ft/body`) — отложено
 - [#117](https://github.com/aspandyar/bitewise/issues/117) Экспорт дневника в CSV
 - [#118](https://github.com/aspandyar/bitewise/issues/118) Своя норма воды
 - [#119](https://github.com/aspandyar/bitewise/issues/119) История норм для «дней в норме»
 - [#120](https://github.com/aspandyar/bitewise/issues/120) Напоминания о воде и взвешивании
-- [#132](https://github.com/aspandyar/bitewise/issues/132) Вес: повтор старого сохранения за день возвращает старое значение (из #123)
 
 ### Инструменты
 - [#74](https://github.com/aspandyar/bitewise/issues/74) Playwright и Context7 → корневой `.mcp.json`
 - [#131](https://github.com/aspandyar/bitewise/issues/131) Dev: каждая ссылка — полная перезагрузка (UI с навигацией проверять на prod-сборке)
 ### Закрыто
+- [x] #132 (повтор старого сохранения веса), #114 (мелочи сканера) — `ft/polish-scan-weight`. Из оглавления убраны давно закрытые #17–#26 (этап 6б) и #33–#73 (полировка).
 - [x] Авторизация: Auth.js v4, Credentials + JWT (этап 1).
 - [x] Мультипользовательская модель, регистрация открыта всем; роли `user` / `manager` / `admin` (этап 1).
 - [x] Сид-набор продуктов: USDA + перевод + дополнения по ГОСТ/упаковкам, одна база с меткой `source` (этап 2).
@@ -214,6 +157,18 @@ tags:
 - [x] Медленный локальный `pnpm test` (15–30 мин при почти нулевом CPU) — окружение, не код: на CI полный прогон этапа 4 занял меньше минуты (разбор 2026-10-12).
 
 ## 📝 Журнал
+- 2026-10-30 — вес и сканер (`ft/polish-scan-weight`).
+  - #132: миграция 0014, таблица `weight_save_requests` — ключи (#95) уже применённых сохранений веса. Повтор с известным ключом ничего не пишет. В issue предлагалось сверять `updated_at`, но это не работает: сохранения A и B уходят с одной страницы, видят одну версию строки, и сервер не отличит повтор A от B. Ключи старше `WEIGHT.requestKeyDays` (7 дней) удаляются в транзакции сохранения.
+  - #114 (с «ок» владельца на смену теста):
+    - вставленный код с пробелами, дефисами и символами нулевой ширины принимается;
+    - EAN-8 с ведущими нулями (12–14 цифр) хранится как 8 цифр;
+    - неверная контрольная цифра — отдельное сообщение, длины в сообщении — из `BARCODE.lengths`;
+    - 8 цифр, набранных руками, ищутся как EAN-8, а если не найдены ни у нас, ни в OFF — ещё и как UPC-E (`typed=1`; код с камеры ищется как есть, его формат известен);
+    - у длинного названия из OFF обрезается основа, а не бренд;
+    - в подвале «Продуктов» запятая приклеена к ссылке USDA, «·» больше не висит на краю строки;
+    - «копия: Open Food Facts» и «копия: USDA» — ссылки (на страницу продукта по штрихкоду или на сайт);
+    - nginx пишет журнал доступа без query в запросе и в Referer (формат `noquery`).
+  - Проверено: lint, 951 тест; в браузере на 375 px — подвал, оба сообщения ручного ввода, код с пробелами уходит с `typed=1`; формат `noquery` — в контейнере nginx 1.29: `GET /api/foods/barcode?code=…` с Referer `…/foods?q=…` записан как `/api/foods/barcode` и `…/foods`.
 - 2026-10-26 — исправление сканера (`ft/fix-scan-fetch`, `v0.2.1`): в `v0.2.0` поиск по штрихкоду не работал ни в одном браузере — `lookupBarcode` вызывал `deps.fetch(…)`, а браузерный `fetch` вне `window` бросает «Illegal invocation»; запрос не уходил, на экране «Не удалось найти продукт». Сломалось в ревью-фиксах этапа 7 (`1da692c`), тесты не поймали: подменённый `fetch` не проверяет `this`. Теперь `fetch` вызывается без привязки, регрессионный тест подставляет «браузерный» `fetch`. Проверено с телефона через `bitewise-dev.aspandyar.org`: штрихкод 4607121292077 → 200. Серверный `fetchOffProduct` так же вызывает `deps.fetch`, но в Node это работает.
 - 2026-10-26 — второй релиз GitHub: [`v0.2.0` — сканер, вода, вес, статистика](https://github.com/aspandyar/bitewise/releases/tag/v0.2.0), тег на `e4eb808` (мерж PR #133 с исправлениями #121–#123), CI зелёный; pre-release — сервера ещё нет, деплой не в ближайших планах. После первого `/deploy` снять отметку: `gh release edit v0.2.0 --prerelease=false` (и у `v0.1.0`).
 - 2026-10-26 — подготовка `v0.2.0` (`ft/release-0.2`): версия в `package.json` 0.1.0 → 0.2.0, план релизов до `v1.x` в PROJECT_PLAN (ru, en). Тег `v0.2.0` — на мерж #133 (исправления вошли в версию), pre-release до первого `/deploy`.

@@ -15,10 +15,22 @@ limit_req_status 429;
 # No version in Server headers and nginx's own error pages.
 server_tokens off;
 
+# The image's "main" format logs the request line and Referer with their query strings, and
+# those carry what someone eats: a scanned ?code=, a search ?q=, the hints of a new food (#114).
+# This one logs paths only. Each server sets it itself: a second access_log at this level would
+# add to the image's log, not replace it.
+map $http_referer $referer_path {
+    "~^(?<path>[^?]*)" $path;
+    default "";
+}
+log_format noquery '$remote_addr - $remote_user [$time_local] "$request_method $uri $server_protocol" '
+                   '$status $body_bytes_sent "$referer_path" "$http_user_agent" "$http_x_forwarded_for"';
+
 # Requests for any other host name (or the bare IP) get nothing: the app only ever sees its own
 # domain in Host, which Next uses for server-action origin checks.
 server {
     listen 80 default_server;
+    access_log /var/log/nginx/access.log noquery;
     return 444;
 }
 
@@ -30,6 +42,7 @@ server {
 server {
     listen 80;
     server_name ${DOMAIN};
+    access_log /var/log/nginx/access.log noquery;
 
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
@@ -44,6 +57,7 @@ server {
     listen 443 ssl;
     http2 on;
     server_name ${DOMAIN};
+    access_log /var/log/nginx/access.log noquery;
 
     ssl_certificate     /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;

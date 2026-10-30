@@ -67,7 +67,7 @@ docker/scripts/compose.sh start app
 
 ## Логи
 - Приложение: `docker/scripts/compose.sh logs -f app`.
-- nginx (доступ, 429, 503): `… logs -f nginx`.
+- nginx (доступ, 429, 503): `… logs -f nginx`. В журнале доступа — только пути, без query и без query в Referer (формат `noquery`): в `?code=`, `?q=` и подсказках формы — то, что человек ест (#114).
 - Бэкапы: `backups/backup.log`, `backups/restore-check.log`.
 
 ## Прогон на ноутбуке
