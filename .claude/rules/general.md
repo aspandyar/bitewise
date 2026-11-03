@@ -3,9 +3,10 @@
 - No magic numbers: every tunable value lives in lib/config.ts.
 - TypeScript strict; no `any`, no `@ts-ignore` without a comment explaining why.
 - Validate every external input (forms, API bodies, query params, AI output) with zod.
-- Keep changes inside the current stage. Out-of-scope ideas → a GitHub Issue (stage label or `polish`), linked from docs/ru/notes.md «Открытые вопросы».
+- Keep changes inside the current stage. Out-of-scope ideas → a GitHub Issue written in English (stage label or `polish`), linked from docs/ru/notes.md «Открытые вопросы».
 - Prefer small pure functions; side effects at the edges (route handlers, server actions).
 - Не добавляй зависимость, не объяснив зачем и почему без неё нельзя.
 - After each stage or feature change, update the docs in the same change; keeping docs current is required, not optional.
 - When adding or changing env vars (.env.example etc., even optional), list them in chat so the user can update what Claude can't access
 - Don't work around hooks or blocks with scripts or other commands; if something is blocked, ask the user.
+- Everything on GitHub is in English: commits, PRs, issues, comments, reviews, labels, release notes. Russian only inside quoted UI strings.
